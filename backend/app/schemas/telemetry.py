@@ -1,0 +1,347 @@
+"""
+Pydantic schemas for telemetry API requests/responses.
+"""
+from datetime import datetime
+from enum import Enum
+from typing import Optional, List, Dict, Any, Literal
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator
+
+
+# ===== Sensor Reading Schemas =====
+
+class SensorReadingInput(BaseModel):
+    """Input sensor values from device."""
+    tds: Optional[float] = Field(None, ge=0, le=5000, description="Total Dissolved Solids (ppm)")
+    conductivity: Optional[float] = Field(None, ge=0, le=10000, description="Electrical Conductivity (µS/cm)")
+    ph: Optional[float] = Field(None, ge=0, le=14, description="pH (0-14)")
+    turbidity: Optional[float] = Field(None, ge=0, le=1000, description="Turbidity (NTU)")
+    temperature: Optional[float] = Field(None, ge=-20, le=80, description="Temperature (°C)")
+    flow_rate: Optional[float] = Field(None, ge=0, le=100, description="Flow rate (L/min)")
+    inlet_pressure: Optional[float] = Field(None, ge=0, le=2000, description="Inlet pressure (kPa)")
+    outlet_pressure: Optional[float] = Field(None, ge=0, le=2000, description="Outlet pressure (kPa)")
+    tank_level: Optional[float] = Field(None, ge=0, le=100, description="Tank level (%)")
+    leak: Optional[bool] = Field(None, description="Leak detected")
+    pump_current: Optional[float] = Field(None, ge=0, le=20, description="Pump current (A)")
+    pump_power: Optional[float] = Field(None, ge=0, le=10000, description="Pump power (W)")
+    uv_state: Optional[bool] = Field(None, description="UV lamp state")
+
+
+class QualityFlag(BaseModel):
+    """Quality flag for a single sensor."""
+    state: Literal["valid", "suspect", "missing", "out_of_range", "calibration_due"] = "valid"
+    message: Optional[str] = None
+    expected_range: Optional[List[float]] = None
+    actual_value: Optional[float] = None
+
+
+class QualityFlags(BaseModel):
+    """Quality flags for all sensors."""
+    tds: QualityFlag = Field(default_factory=QualityFlag)
+    conductivity: QualityFlag = Field(default_factory=QualityFlag)
+    ph: QualityFlag = Field(default_factory=QualityFlag)
+    turbidity: QualityFlag = Field(default_factory=QualityFlag)
+    temperature: QualityFlag = Field(default_factory=QualityFlag)
+    flow_rate: QualityFlag = Field(default_factory=QualityFlag)
+    inlet_pressure: QualityFlag = Field(default_factory=QualityFlag)
+    outlet_pressure: QualityFlag = Field(default_factory=QualityFlag)
+    tank_level: QualityFlag = Field(default_factory=QualityFlag)
+    leak: QualityFlag = Field(default_factory=QualityFlag)
+    pump_current: QualityFlag = Field(default_factory=QualityFlag)
+    pump_power: QualityFlag = Field(default_factory=QualityFlag)
+
+    def overall(self) -> Literal["good", "suspect", "bad"]:
+        states = [getattr(self, k).state for k in self.__fields__.keys()]
+        if any(s == "out_of_range" for s in states):
+            return "bad"
+        if any(s in ("suspect", "calibration_due") for s in states):
+            return "suspect"
+        if all(s == "missing" for s in states):
+            return "bad"
+        return "good"
+
+
+class TelemetryPayload(BaseModel):
+    """Complete telemetry payload from device."""
+    device_id: UUID
+    timestamp: datetime
+    sequence: Optional[int] = Field(None, ge=0, description="Sequence number for deduplication")
+    firmware_version: Optional[str] = Field(None, max_length=32)
+    readings: SensorReadingInput = Field(default_factory=SensorReadingInput)
+    quality: Optional[QualityFlags] = None
+
+
+class BatchTelemetryPayload(BaseModel):
+    """Batch telemetry payload for buffered readings."""
+    device_id: UUID
+    firmware_version: Optional[str] = Field(None, max_length=32)
+    readings: List[TelemetryPayload] = Field(default_factory=list, min_length=1, max_length=1000)
+
+
+# ===== Device Schemas =====
+
+class SensorConfig(BaseModel):
+    enabled: bool = True
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    rate_limit: Optional[float] = None
+    calibration_offset: float = 0.0
+    calibration_slope: float = 1.0
+
+
+class DeviceSensorConfig(BaseModel):
+    tds: SensorConfig = Field(default_factory=SensorConfig)
+    conductivity: SensorConfig = Field(default_factory=SensorConfig)
+    ph: SensorConfig = Field(default_factory=SensorConfig)
+    turbidity: SensorConfig = Field(default_factory=SensorConfig)
+    temperature: SensorConfig = Field(default_factory=SensorConfig)
+    flow_rate: SensorConfig = Field(default_factory=SensorConfig)
+    inlet_pressure: SensorConfig = Field(default_factory=SensorConfig)
+    outlet_pressure: SensorConfig = Field(default_factory=SensorConfig)
+    tank_level: SensorConfig = Field(default_factory=SensorConfig)
+    leak: SensorConfig = Field(default_factory=SensorConfig)
+    pump_current: SensorConfig = Field(default_factory=SensorConfig)
+    pump_power: SensorConfig = Field(default_factory=SensorConfig)
+
+
+class SafetyConfig(BaseModel):
+    leak_action: Literal["close_inlet_valve", "stop_pump", "both"] = "close_inlet_valve"
+    leak_validate_with: List[str] = Field(default_factory=lambda: ["flow_delta", "pressure_drop"])
+    leak_cooldown_sec: int = 300
+    pressure_max_kpa: float = 600.0
+    pressure_action: Literal["open_relief", "stop_pump"] = "open_relief"
+    pressure_cooldown_sec: int = 60
+    flow_min_lpm: float = 0.1
+    dry_run_action: Literal["stop_pump"] = "stop_pump"
+    dry_run_cooldown_sec: int = 120
+    pump_current_max_a: float = 2.5
+    overcurrent_action: Literal["stop_pump"] = "stop_pump"
+    overcurrent_cooldown_sec: int = 180
+
+
+class DeviceCreate(BaseModel):
+    serial_number: str = Field(..., min_length=1, max_length=64)
+    display_name: Optional[str] = Field(None, max_length=128)
+    model: Optional[str] = Field(None, max_length=64)
+    firmware_version: Optional[str] = Field(None, max_length=32)
+    sensor_config: DeviceSensorConfig = Field(default_factory=DeviceSensorConfig)
+    safety_config: SafetyConfig = Field(default_factory=SafetyConfig)
+    capabilities: Dict[str, Any] = Field(default_factory=dict)
+
+
+class DeviceUpdate(BaseModel):
+    display_name: Optional[str] = Field(None, max_length=128)
+    model: Optional[str] = Field(None, max_length=64)
+    firmware_version: Optional[str] = Field(None, max_length=32)
+    sensor_config: Optional[DeviceSensorConfig] = None
+    safety_config: Optional[SafetyConfig] = None
+    capabilities: Optional[Dict[str, Any]] = None
+    status: Optional[Literal["active", "offline", "degraded", "maintenance"]] = None
+
+
+class DeviceResponse(BaseModel):
+    id: UUID
+    serial_number: str
+    display_name: Optional[str]
+    model: Optional[str]
+    firmware_version: Optional[str]
+    sensor_config: DeviceSensorConfig
+    safety_config: SafetyConfig
+    calibration: Dict[str, Any]
+    status: Literal["active", "offline", "degraded", "maintenance"]
+    last_seen_at: Optional[datetime]
+    capabilities: Dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ===== Telemetry Response Schemas =====
+
+class TelemetryIngestResponse(BaseModel):
+    """Response for telemetry ingestion."""
+    accepted: bool
+    reading_id: int
+    quality: QualityFlags
+    derived: Optional[Dict[str, Any]] = None
+
+
+class BatchTelemetryResult(BaseModel):
+    accepted: int = 0
+    rejected: int = 0
+    duplicates: int = 0
+    invalid: int = 0
+    errors: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class SensorReadingResponse(BaseModel):
+    """Stored sensor reading with quality."""
+    id: int
+    device_id: UUID
+    timestamp: datetime
+    ingestion_timestamp: datetime
+    sequence: Optional[int]
+    tds: Optional[float]
+    conductivity: Optional[float]
+    ph: Optional[float]
+    turbidity: Optional[float]
+    temperature: Optional[float]
+    flow_rate: Optional[float]
+    inlet_pressure: Optional[float]
+    outlet_pressure: Optional[float]
+    tank_level: Optional[float]
+    leak: Optional[bool]
+    pump_current: Optional[float]
+    pump_power: Optional[float]
+    uv_state: Optional[bool]
+    quality: QualityFlags
+    overall_quality: Literal["good", "suspect", "bad"]
+
+    class Config:
+        from_attributes = True
+
+
+class TelemetryHistoryQuery(BaseModel):
+    device_id: UUID
+    start: datetime
+    end: datetime
+    interval: Optional[str] = "1m"  # 1m, 5m, 1h, 1d
+    limit: int = Field(1000, ge=1, le=5000)
+    sensors: Optional[List[str]] = None
+
+
+class TelemetryHistoryResponse(BaseModel):
+    device_id: UUID
+    interval: str
+    series: Dict[str, List[Dict[str, Any]]]
+
+
+class DeviceStatusResponse(BaseModel):
+    device_id: UUID
+    status: Literal["active", "offline", "degraded", "maintenance"]
+    last_seen_at: Optional[datetime]
+    last_reading: Optional[SensorReadingResponse] = None
+    sensor_health: Dict[str, Literal["valid", "suspect", "missing", "out_of_range", "calibration_due"]] = Field(default_factory=dict)
+
+
+# ===== Water Quality Schemas =====
+
+class ParameterScore(BaseModel):
+    parameter: str
+    value: Optional[float]
+    score: int = Field(ge=0, le=100)
+    guideline_min: Optional[float]
+    guideline_max: Optional[float]
+    unit: str
+    status: Literal["ideal", "acceptable", "poor", "missing"]
+
+
+class TrendPoint(BaseModel):
+    timestamp: datetime
+    value: float
+
+
+class TrendAnalysis(BaseModel):
+    parameter: str
+    window: str
+    direction: Literal["improving", "stable", "degrading"]
+    magnitude: float
+    points: List[TrendPoint]
+    slope_per_hour: float
+
+
+class AnomalyFlag(BaseModel):
+    parameter: str
+    score: float
+    threshold: float
+    type: Literal["zscore", "iqr", "rate_of_change", "isolation_forest"]
+    message: str
+
+
+class AquaScoreResponse(BaseModel):
+    device_id: UUID
+    timestamp: datetime
+    overall_score: int = Field(ge=0, le=100)
+    parameter_scores: List[ParameterScore]
+    trends: List[TrendAnalysis]
+    anomaly_score: float
+    anomaly_flags: List[AnomalyFlag]
+    data_freshness_seconds: int
+
+
+# ===== Alert Schemas =====
+
+class AlertSeverity(str, Enum):
+    INFO = "info"
+    WARNING = "warning"
+    CRITICAL = "critical"
+
+
+class AlertStatus(str, Enum):
+    DETECTED = "detected"
+    OPEN = "open"
+    ACKNOWLEDGED = "acknowledged"
+    SNOOZED = "snoozed"
+    RESOLVED = "resolved"
+    AUTO_CLEARED = "auto_cleared"
+
+
+class AlertBase(BaseModel):
+    id: UUID
+    device_id: UUID
+    alert_code: str
+    severity: AlertSeverity
+    status: AlertStatus
+    title: str
+    message: str
+    trigger_source: str
+    trigger_value: Optional[Any] = None
+    threshold_value: Optional[Any] = None
+    evidence: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    acknowledged_at: Optional[datetime] = None
+    snoozed_until: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
+    auto_cleared_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+    acknowledged_by: Optional[str] = None
+    resolved_by: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AlertResponse(AlertBase):
+    pass
+
+
+class AlertListQuery(BaseModel):
+    device_id: Optional[UUID] = None
+    alert_code: Optional[str] = None
+    severity: Optional[AlertSeverity] = None
+    status: Optional[AlertStatus] = None
+    start: Optional[datetime] = None
+    end: Optional[datetime] = None
+    limit: int = Field(50, ge=1, le=200)
+    offset: int = Field(0, ge=0)
+
+
+class AlertAcknowledgeRequest(BaseModel):
+    user: Optional[str] = None
+
+
+class AlertSnoozeRequest(BaseModel):
+    duration_minutes: int = Field(..., ge=1, le=1440)  # Max 24 hours
+    user: Optional[str] = None
+
+
+class AlertResolveRequest(BaseModel):
+    user: Optional[str] = None
+
+
+class AlertTransitionResponse(BaseModel):
+    success: bool
+    alert: AlertResponse
+    message: Optional[str] = None
