@@ -271,6 +271,35 @@ class AquaScoreResponse(BaseModel):
     data_freshness_seconds: int
 
 
+# ===== Filter Health Schemas =====
+
+class ModelMetadata(BaseModel):
+    name: str
+    version: str
+    dataset_version: Optional[str] = None
+    trained_at: Optional[datetime] = None
+    metrics: Dict[str, float] = Field(default_factory=dict)
+
+
+class ExplanationPayload(BaseModel):
+    top_factors: List[Dict[str, Any]]
+    method: str
+
+
+class FilterHealthResponse(BaseModel):
+    device_id: UUID
+    timestamp: datetime
+    fsi: float
+    fhi: float
+    rul_days: Optional[float] = None
+    rul_confidence_lower: Optional[float] = None
+    rul_confidence_upper: Optional[float] = None
+    model_metadata: ModelMetadata
+    input_features: Dict[str, float] = Field(default_factory=dict)
+    explanation: Optional[ExplanationPayload] = None
+    data_freshness_seconds: int
+
+
 # ===== Alert Schemas =====
 
 class AlertSeverity(str, Enum):

@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from app.infrastructure.config import get_settings
 from app.infrastructure.database import Base
-from app.models import device, reading  # Import all models
+from app.models import device, reading, alert, water_quality, filter_health, purification_performance, system_diagnostics  # Import all models
 
 # This is the Alembic Config object
 config = context.config

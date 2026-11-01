@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import select, desc, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.router import api_router
 from app.infrastructure.database import get_db
 from app.infrastructure.security import get_device_claims, verify_api_key, rate_limit
 from app.infrastructure.logging import get_logger
@@ -18,6 +17,7 @@ from app.schemas.telemetry import (
     ParameterScore,
     TrendAnalysis,
     AnomalyFlag,
+    TrendPoint,
 )
 from app.models.water_quality import WaterQualityScore as WaterQualityScoreModel
 

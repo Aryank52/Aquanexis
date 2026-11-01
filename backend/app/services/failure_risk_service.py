@@ -2,7 +2,7 @@
 Failure Risk service - classifies failure risk level.
 """
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from uuid import UUID
 
 from app.domain.filter_intelligence import (
@@ -47,7 +47,7 @@ class FailureRiskService:
         components['rul'] = rul_risk
         
         # 2. Filter health risk component
-        health_risk = self._assess_health_risk(filter_stress)
+        health_risk = self._assess_health_risk(filter_health)
         components['health'] = health_risk
         
         # 3. Stress state risk component
