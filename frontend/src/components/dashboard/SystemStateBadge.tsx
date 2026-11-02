@@ -1,5 +1,5 @@
 import { cn } from '@utils/cn';
-import { CheckCircle, AlertTriangle, XCircle, Pulse } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, Activity } from 'lucide-react';
 
 type SystemState = 'healthy' | 'degraded' | 'critical';
 
@@ -47,7 +47,7 @@ export function SystemStateBadge({ state, pulse = false, size = 'md' }: SystemSt
       <config.icon className={cn(iconSizes[size], 'flex-shrink-0')} aria-hidden="true" />
       <span className={cn(textSizes[size], 'whitespace-nowrap')}>{config.label}</span>
       {pulse && state === 'critical' && (
-        <Pulse className={cn(iconSizes[size], 'text-critical/50 animate-pulse')} aria-hidden="true" />
+        <Activity className={cn(iconSizes[size], 'text-critical/50 animate-pulse')} aria-hidden="true" />
       )}
     </span>
   );

@@ -320,6 +320,14 @@ class AlertStatus(str, Enum):
     AUTO_CLEARED = "auto_cleared"
 
 
+class DeviceStatus(str, Enum):
+    ONLINE = "online"
+    DEGRADED = "degraded"
+    OFFLINE = "offline"
+    MAINTENANCE = "maintenance"
+    ERROR = "error"
+
+
 class AlertBase(BaseModel):
     id: UUID
     device_id: UUID
@@ -558,6 +566,60 @@ class SafetyActionResponse(BaseModel):
     firmware_response: Optional[Dict[str, Any]] = None
 
 
+# ===== Additional Response Models for Dashboard =====
+
+class AquaScoreResponse(BaseModel):
+    device_id: UUID
+    timestamp: datetime
+    aquascore: int
+    parameter_scores: List[ParameterScore] = Field(default_factory=list)
+    trends: Dict[str, TrendAnalysis] = Field(default_factory=dict)
+    anomaly_score: Optional[float] = None
+    anomaly_flags: Dict[str, float] = Field(default_factory=dict)
+
+
+class DiagnosticsDataResponse(BaseModel):
+    device_id: UUID
+    timestamp: datetime
+    pressure: Optional[float] = None
+    flow: Optional[float] = None
+    leak: Optional[bool] = None
+    tank: Optional[float] = None
+    pump: Optional[float] = None
+
+
+class PurificationPerformanceResponse(BaseModel):
+    device_id: UUID
+    timestamp: datetime
+    rejection_rate: Optional[float] = None
+    recovery_ratio: Optional[float] = None
+    permeate_quality: Optional[float] = None
+    feed_quality: Optional[float] = None
+    efficiency: Optional[float] = None
+
+
+# Aliases for backward compatibility
+WaterQualityResponse = AquaScoreResponse
+# FilterHealthResponse uses the domain FilterHealthIndex model from app.domain.filter_intelligence
+from app.domain.filter_intelligence import FilterHealthIndex
+FilterHealthResponse = FilterHealthIndex
+DiagnosticsDataResponse = DiagnosticsDataResponse
+PurificationPerformanceResponse = PurificationPerformanceResponse
+
+
+# ===== Dashboard Composite =====
+
+class DashboardData(BaseModel):
+    device: DeviceResponse
+    latest_telemetry: Optional[SensorReadingResponse] = None
+    water_quality: Optional[WaterQualityResponse] = None
+    filter_health: Optional[FilterHealthResponse] = None
+    diagnostics: Optional[DiagnosticsDataResponse] = None
+    purification: Optional[PurificationPerformanceResponse] = None
+    active_alert: Optional[AlertResponse] = None
+    data_freshness_seconds: int
+
+
 class SafetyConfigResponse(BaseModel):
     device_id: UUID
     leak_action: str
@@ -638,3 +700,57 @@ class SafetyActionResponse(BaseModel):
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
     firmware_response: Optional[Dict[str, Any]] = None
+
+
+# ===== Additional Response Models for Dashboard =====
+
+class AquaScoreResponse(BaseModel):
+    device_id: UUID
+    timestamp: datetime
+    aquascore: int
+    parameter_scores: List[ParameterScore] = Field(default_factory=list)
+    trends: Dict[str, TrendAnalysis] = Field(default_factory=dict)
+    anomaly_score: Optional[float] = None
+    anomaly_flags: Dict[str, float] = Field(default_factory=dict)
+
+
+class DiagnosticsDataResponse(BaseModel):
+    device_id: UUID
+    timestamp: datetime
+    pressure: Optional[float] = None
+    flow: Optional[float] = None
+    leak: Optional[bool] = None
+    tank: Optional[float] = None
+    pump: Optional[float] = None
+
+
+class PurificationPerformanceResponse(BaseModel):
+    device_id: UUID
+    timestamp: datetime
+    rejection_rate: Optional[float] = None
+    recovery_ratio: Optional[float] = None
+    permeate_quality: Optional[float] = None
+    feed_quality: Optional[float] = None
+    efficiency: Optional[float] = None
+
+
+# Aliases for backward compatibility
+WaterQualityResponse = AquaScoreResponse
+# FilterHealthResponse uses the domain FilterHealthIndex model from app.domain.filter_intelligence
+from app.domain.filter_intelligence import FilterHealthIndex
+FilterHealthResponse = FilterHealthIndex
+DiagnosticsDataResponse = DiagnosticsDataResponse
+PurificationPerformanceResponse = PurificationPerformanceResponse
+
+
+# ===== Dashboard Composite =====
+
+class DashboardData(BaseModel):
+    device: DeviceResponse
+    latest_telemetry: Optional[SensorReadingResponse] = None
+    water_quality: Optional[WaterQualityResponse] = None
+    filter_health: Optional[FilterHealthResponse] = None
+    diagnostics: Optional[DiagnosticsDataResponse] = None
+    purification: Optional[PurificationPerformanceResponse] = None
+    active_alert: Optional[AlertResponse] = None
+    data_freshness_seconds: int

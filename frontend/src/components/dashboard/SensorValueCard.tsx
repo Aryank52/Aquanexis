@@ -12,10 +12,17 @@ interface SensorValueCardProps {
 }
 
 const qualityConfig = {
-  GOOD: { icon: CheckCircle, color: 'text-success', bg: 'bg-success/10', label: 'Good' },
-  SUSPECT: { icon: AlertTriangle, color: 'text-warning', bg: 'bg-warning/10', label: 'Suspect' },
-  BAD: { icon: XCircle, color: 'text-critical', bg: 'bg-critical/10', label: 'Bad' },
-  null: { icon: Minus, color: 'text-text-muted', bg: 'bg-text-muted/10', label: 'No Data' },
+  GOOD: { color: 'text-success', bg: 'bg-success/10', label: 'Good' },
+  SUSPECT: { color: 'text-warning', bg: 'bg-warning/10', label: 'Suspect' },
+  BAD: { color: 'text-critical', bg: 'bg-critical/10', label: 'Bad' },
+  UNKNOWN: { color: 'text-text-muted', bg: 'bg-text-muted/10', label: 'No Data' },
+};
+
+const qualityIcons = {
+  GOOD: CheckCircle,
+  SUSPECT: AlertTriangle,
+  BAD: XCircle,
+  UNKNOWN: Minus,
 };
 
 const freshnessConfig = (seconds: number) => {
@@ -33,7 +40,9 @@ export function SensorValueCard({
   freshness = 0,
   icon,
 }: SensorValueCardProps) {
-  const q = qualityConfig[quality];
+  const qKey = (quality ?? 'UNKNOWN') as keyof typeof qualityConfig;
+  const q = qualityConfig[qKey];
+  const QualityIcon = qualityIcons[qKey];
   const f = freshnessConfig(freshness);
 
   const trendIcon = trend === null ? null :
@@ -53,7 +62,7 @@ export function SensorValueCard({
           <div>
             <p className="text-caption text-text-secondary font-medium">{label}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={cn('status-dot', q.bg.replace('bg-', 'bg-'))} />
+              <QualityIcon className={cn('w-4 h-4', q.color)} />
               <span className={cn('text-caption font-medium', q.color)}>{q.label}</span>
             </div>
           </div>
@@ -71,7 +80,7 @@ export function SensorValueCard({
           <span className="text-data text-text-secondary">{unit}</span>
         </div>
         <div className="flex items-center gap-1">
-          {trendIcon && trendText && (
+          {trendIcon && trendText && trend !== null && (
             <span className={cn('flex items-center gap-0.5 text-caption font-medium', trend > 0 ? 'text-success' : trend < 0 ? 'text-critical' : 'text-text-muted')}>
               {trendIcon}
               <span>{trendText}</span>

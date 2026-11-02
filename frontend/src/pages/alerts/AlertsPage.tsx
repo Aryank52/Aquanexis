@@ -8,7 +8,7 @@ import { Skeleton, QueryError, EmptyState } from '@components/ui/PageSkeleton';
 import { AlertEvidenceDrawer } from '@/components/alerts/AlertEvidenceDrawer';
 import { cn } from '@utils/cn';
 import { useAlerts, useAcknowledgeAlert } from '@/hooks/useAlerts';
-import type { Alert, AlertSeverity, AlertState } from '@/types/api';
+import type { AlertResponse, AlertSeverity, AlertState } from '@/types/api';
 
 const DEVICE_ID = import.meta.env.VITE_DEVICE_ID ?? '00000000-0000-0000-0000-000000000001';
 
@@ -19,10 +19,12 @@ const severityConfig: Record<AlertSeverity, { icon: typeof AlertTriangle; color:
 };
 
 const stateVariant: Record<AlertState, 'critical' | 'warning' | 'info' | 'success'> = {
-  ACTIVE: 'critical',
+  DETECTED: 'critical',
+  OPEN: 'critical',
   ACKNOWLEDGED: 'warning',
   SNOOZED: 'info',
   RESOLVED: 'success',
+  AUTO_CLEARED: 'success',
 };
 
 function snakeToTitle(s: string): string {
@@ -32,7 +34,7 @@ function snakeToTitle(s: string): string {
 export function AlertsPage() {
   const [filterState, setFilterState] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<AlertResponse | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = useAlerts(DEVICE_ID, {
@@ -47,7 +49,7 @@ export function AlertsPage() {
   }
 
   const allAlerts = data?.items ?? [];
-  const activeAlerts = allAlerts.filter(a => a.state === 'ACTIVE' || a.state === 'ACKNOWLEDGED');
+  const activeAlerts = allAlerts.filter(a => a.status === 'DETECTED' || a.status === 'ACKNOWLEDGED' || a.status === 'SNOOZED');
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -64,10 +66,11 @@ export function AlertsPage() {
             aria-label="Filter by state"
           >
             <option value="all">All States</option>
-            <option value="ACTIVE">Active</option>
+            <option value="DETECTED">Detected</option>
             <option value="ACKNOWLEDGED">Acknowledged</option>
             <option value="SNOOZED">Snoozed</option>
             <option value="RESOLVED">Resolved</option>
+            <option value="AUTO_CLEARED">Auto Cleared</option>
           </select>
           <select
             className="input text-body-sm"
@@ -105,18 +108,17 @@ export function AlertsPage() {
                     <SevIcon className={cn('h-5 w-5 flex-shrink-0', sev.color)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-body-sm text-text-primary">{snakeToTitle(alert.alert_type)}</span>
+                        <span className="font-medium text-body-sm text-text-primary">{snakeToTitle(alert.alert_code)}</span>
                         <Badge variant={sev.variant}>{alert.severity}</Badge>
-                        <Badge variant={stateVariant[alert.state]}>{alert.state}</Badge>
+                        <Badge variant={stateVariant[alert.status]}>{alert.status}</Badge>
                       </div>
-                      <p className="text-body-sm text-text-secondary mt-0.5 truncate">{alert.explanation?.message ?? ''}</p>
                       <span className="text-caption text-text-muted flex items-center gap-1 mt-1">
                         <Clock className="h-3 w-3" />
                         {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
                       </span>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
-                      {alert.state === 'ACTIVE' && (
+                      {alert.status === 'DETECTED' && (
                         <Button
                           variant="secondary"
                           onClick={() => acknowledge.mutate({ alertId: alert.id, data: { acknowledged_by: 'operator' } })}
@@ -171,10 +173,10 @@ export function AlertsPage() {
                     return (
                       <tr key={alert.id} className="hover:bg-hover transition-colors">
                         <td className="py-2 px-3"><SevIcon className={cn('h-4 w-4', sev.color)} /></td>
-                        <td className="py-2 px-3 font-medium text-text-primary">{snakeToTitle(alert.alert_type)}</td>
-                        <td className="py-2 px-3 text-text-secondary max-w-xs truncate">{alert.explanation?.message ?? '—'}</td>
+                        <td className="py-2 px-3 font-medium text-text-primary">{snakeToTitle(alert.alert_code)}</td>
+                        <td className="py-2 px-3 text-text-secondary max-w-xs truncate">{alert.message ?? '—'}</td>
                         <td className="py-2 px-3 text-text-muted whitespace-nowrap">{formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}</td>
-                        <td className="py-2 px-3"><Badge variant={stateVariant[alert.state]}>{alert.state}</Badge></td>
+                        <td className="py-2 px-3"><Badge variant={stateVariant[alert.status]}>{alert.status}</Badge></td>
                         <td className="py-2 px-3">
                           <Button variant="ghost" onClick={() => { setSelectedAlert(alert); setDrawerOpen(true); }}>
                             <Eye className="h-4 w-4" />

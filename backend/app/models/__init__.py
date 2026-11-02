@@ -18,6 +18,23 @@ from app.models.notification import (
     NotificationStatus,
     NotificationErrorCategory,
 )
+from app.models.maintenance import (
+    FilterCatalogModel,
+    InstalledFilterModel,
+    MaintenanceEventModel,
+    MaintenanceWorkflowModel,
+    CalibrationRecordModel,
+    CalibrationPolicyModel,
+    VerificationRunModel,
+    BaselineVersionModel,
+    MaintenanceRecommendationModel,
+    FilterCategory,
+    FilterLifecycleState,
+    MaintenanceEventType,
+    MaintenanceWorkflowState,
+    CalibrationState,
+    VerificationState,
+)
 
 __all__ = [
     "Device", 
@@ -35,4 +52,19 @@ __all__ = [
     "NotificationChannel",
     "NotificationStatus",
     "NotificationErrorCategory",
+    "FilterCatalogModel",
+    "InstalledFilterModel",
+    "MaintenanceEventModel",
+    "MaintenanceWorkflowModel",
+    "CalibrationRecordModel",
+    "CalibrationPolicyModel",
+    "VerificationRunModel",
+    "BaselineVersionModel",
+    "MaintenanceRecommendationModel",
+    "FilterCategory",
+    "FilterLifecycleState",
+    "MaintenanceEventType",
+    "MaintenanceWorkflowState",
+    "CalibrationState",
+    "VerificationState",
 ]

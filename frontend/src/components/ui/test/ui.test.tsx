@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@components/ui/Card';

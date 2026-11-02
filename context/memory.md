@@ -28,7 +28,7 @@
 - **Phase D (Water Intelligence + Filter Intelligence)**: ✅ COMPLETE
 - **Phase E (Filter Intelligence Enhancement + Model Validation)**: ✅ COMPLETE
 - **Phase F (Reliability & Safety)**: ✅ COMPLETE
-- **Phase G (Maintenance & Lifecycle)**: 🔄 IN PROGRESS (G1 complete)
+- **Phase G (Maintenance & Lifecycle)**: 🔄 IN PROGRESS (G1-G5 complete)
 - **Phase H (Hardware / ESP32)**: ⏳ PENDING
 - **Phase I (Security / CI / Hardening)**: ⏳ PENDING
 - **Phase J (Final Verification)**: ⏳ PENDING
@@ -54,6 +54,11 @@
 - Phase E: Filter Intelligence Enhancement + Model Validation (FSI versioning, baselines, ΔP first-class, FHI with maintenance bands, RUL with model registry/stability/confidence, counterfactuals, maintenance bands, dataset provenance, experiment mode)
 - **Phase F: Reliability & Safety** (Leak detection with automatic valve closure, pressure diagnostics with membrane fouling, pump protection dry-run/overcurrent, sensor failure detection, safety orchestration, firmware command protocol, safety endpoints, 36 unit tests + 13 safety = 49 total)
 - **Phase G1: Alert State Machine Enforcement** (AlertStateMachine service with audit logging, auto-clear logic, bulk transitions, valid-transitions endpoint, 28 unit tests)
+- **Phase G2: Auto-resolution for Self-Clearing Alerts** (Auto-clear integrated with evaluation engine, 24 self-clearing codes, 5 manual-only codes protected, WebSocket broadcast, 19 unit tests)
+- **Phase G3: Notification Providers + Durable Delivery** (Provider abstraction, console/email/webhook, PostgreSQL outbox with deduplication, retry with exponential backoff, SSRF protection, Jinja2 templates, 22 unit tests)
+- **Phase G4: Maintenance & Filter Lifecycle** (Filter catalog 11 categories, compatibility engine, lifecycle tracking, replacement workflow, maintenance events, workflow state machine, calibration management time/usage-based, verification engine, baseline versioning, recommendations engine, G3 notification integration, 28 unit tests)
+- **Phase G5 Phase 1: Frontend Stabilization** (TypeScript fixes, CSS/build fixes, zodResolver fix, build system, 14 frontend tests, 14 tests pass, build passes)
+- **Phase G5 Phase 2: Dashboard Endpoint** (`/devices/{device_id}/dashboard` endpoint created returning composite DashboardData with device, latest_telemetry, water_quality, filter_health, diagnostics, purification, active_alert, data_freshness_seconds)
 
 ### Phase E Verification Status (2026-11-01)
 - ✅ FSI centralized/versioned config (FSIConfigVersion, 7 components)
@@ -107,13 +112,65 @@
 - ✅ 19 unit tests passing (auto-clear codes verification, manual-only protection, auto-clear logic)
 - ✅ Total unit tests: 102 (36 Phase D/E/F + 28 Phase G1 + 19 Phase G2 auto-clear + 19 G2 codes/logic)
 
+### Phase G3 Verification Status (2026-11-02)
+- ✅ Notification provider abstraction with factory pattern (console, email, webhook)
+- ✅ Console/logging provider for development
+- ✅ SMTP email provider with TLS, auth, and error classification
+- ✅ Webhook provider with SSRF protection (blocks private IPs, localhost, metadata endpoints, requires HTTPS in prod, validates redirects, short timeouts)
+- ✅ PostgreSQL-backed notification outbox/queue with deduplication keys
+- ✅ Retry logic with exponential backoff + jitter, max attempts, dead-letter handling
+- ✅ Error classification: TRANSIENT (retry), PERMANENT (don't retry), UNKNOWN
+- ✅ Templates per alert type (leak, pressure, pump, water quality, filter) with Jinja2
+- ✅ API endpoints: /notifications (list, stats, retry, cancel), /notifications/providers (CRUD), /notifications/templates, /notifications/test, /notifications/worker/stats
+- ✅ Migration 0007_notification_tables.py with default templates
+- ✅ 22 unit tests passing (providers, service, retry logic, templates)
+- ✅ Total unit tests: 127 (36 Phase D/E/F + 28 Phase G1 + 19 Phase G2 auto-clear + 19 G2 codes/logic + 22 Phase G3 notifications)
+
+### Phase G4 Verification Status (2026-11-02)
+- ✅ Filter catalog with 11 categories (sediment, pre-carbon, activated carbon block, RO membrane, UF membrane, UV chamber, UV lamp, post-carbon, mineral remineralization, alkaline treatment, other)
+- ✅ Filter compatibility engine validates purifier model, category, stage, dimensions, connectors, manufacturer (4 result codes: COMPATIBLE, INCOMPATIBLE, REQUIRES_REVIEW, INSUFFICIENT_INFORMATION)
+- ✅ Installed filter lifecycle tracking (AVAILABLE, INSTALLED, MAINTENANCE_DUE, DEGRADED, REMOVED, REPLACEMENT_PENDING, VERIFICATION_PENDING)
+- ✅ Filter replacement workflow with previous installation reference and replacement reason tracking
+- ✅ Maintenance events: INSTALL, REPLACE, INSPECT, CLEAN, RECALIBRATE, VERIFY, REMOVE
+- ✅ Maintenance workflow state machine (REQUESTED→APPROVED→IN_PROGRESS→AWAITING_VERIFICATION→VERIFIED→COMPLETED) with FAILED/CANCELLED branches
+- ✅ Calibration management: records with reference standard, measured value, correction offset, tolerance, PASS/FAIL/ADJUSTED results
+- ✅ Time-based and usage-based calibration due tracking (7 sensor types with default policies)
+- ✅ Calibration states: VALID, DUE_SOON, DUE, OVERDUE, FAILED, UNKNOWN
+- ✅ Post-maintenance verification engine with configurable checks (flow, pressure, TDS, leak, baseline comparison)
+- ✅ Verification states: PENDING, RUNNING, PASSED, FAILED, INCOMPLETE with failure reasons
+- ✅ Baseline versioning: preserves history, creates new version after successful maintenance, retains previous baselines
+- ✅ Maintenance recommendations engine (time-based, usage-based, health-based, calibration_due triggers)
+- ✅ G3 notification integration for maintenance events, calibration due, verification results
+- ✅ API endpoints: /maintenance/filters (catalog, install, replace, compatibility), /maintenance/events, /maintenance/workflows, /maintenance/calibration, /maintenance/verification, /maintenance/baseline, /maintenance/recommendations
+- ✅ Migration 0008_maintenance_tables.py - 10 tables with indexes, unique constraints, foreign keys
+- ✅ 28 unit tests passing (compatibility, workflow transitions, calibration, verification, baseline, recommendations, catalog)
+- ✅ Total unit tests: 161 (36 Phase D/E/F + 28 Phase G1 + 19 Phase G2 auto-clear + 19 G2 codes/logic + 22 Phase G3 notifications + 28 Phase G4 maintenance)
+
+### Phase G5 Verification Status (2026-11-02)
+- ✅ TypeScript error fixes across codebase (websocket.ts, Sparkline.tsx, SensorValueCard.tsx, SystemStateBadge.tsx, ui.test.tsx, LoginPage.tsx, LandingPage.tsx)
+- ✅ CSS/build fixes - globals.css rebuild to remove @apply conflicts, add dash animation
+- ✅ zodResolver import fix for @hookform/resolvers@3.x compatibility
+- ✅ Build system - frontend build passes, TypeScript passes, all tests pass
+- ✅ Frontend tests pass (14 tests)
+- ✅ Frontend build passes
+- ✅ Dashboard endpoint created at `/devices/{device_id}/dashboard` returning composite DashboardData
+- ✅ Dashboard endpoint composes device, latest_telemetry, water_quality, filter_health, diagnostics, purification, active_alert, data_freshness_seconds
+- 🔄 Frontend API integration in progress (TanStack Query hooks, dashboard integration, authentication flow, maintenance UI)
+
 ### Next Actions
 1. Start PostgreSQL/TimescaleDB and run migrations (`alembic upgrade head`)
 2. Run integration tests with database (`docker compose up -d postgres && python -m pytest tests/`)
-3. **Phase G3: Notification Providers (console, email, webhook) + Queue**
-   - Notification provider abstraction
-   - Console/logging provider
-   - Email provider (SMTP)
-   - Webhook provider
-   - Notification queue with retry logic
-4. **Phase G4-G8: Maintenance workflows, endpoints, verification, calibration tracking**
+3. **Phase G5: Frontend API Integration**
+   - Centralized typed API layer for all endpoints
+   - TanStack Query hooks for all endpoints
+   - Dashboard integration with real APIs
+   - Maintenance, calibration, verification UI connected to real APIs
+   - Authentication flow and onboarding
+4. **Phase H: Hardware / ESP32 Integration**
+   - Firmware telemetry contract
+   - Device provisioning
+   - Sequence/replay protection
+   - Offline buffering/reconnect
+   - Hardware-in-loop tests
+5. **Phase I: Security / CI / Hardening**
+6. **Phase J: Final Verification**

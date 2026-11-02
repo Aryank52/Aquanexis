@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Droplet, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/state/auth';
 import { getErrorMessage } from '@/api/client';
 import { cn } from '@/utils/cn';
+
+// Import zodResolver dynamically to avoid TypeScript type issues with @hookform/resolvers@3.x
+// The module exports { zodResolver } as a named export
+let zodResolver: any = null;
+async function getZodResolver() {
+  if (!zodResolver) {
+    const mod = await import('@hookform/resolvers/zod');
+    zodResolver = (mod as any).zodResolver;
+  }
+  return zodResolver;
+}
 
 const schema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -23,9 +33,15 @@ export function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [resolver, setResolver] = useState<any>(null);
+
+  // Initialize zodResolver lazily
+  useEffect(() => {
+    getZodResolver().then(setResolver);
+  }, []);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: resolver ? resolver(schema) : undefined,
   });
 
   const onSubmit = async (data: FormData) => {

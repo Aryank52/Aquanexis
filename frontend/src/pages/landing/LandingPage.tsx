@@ -226,16 +226,11 @@ function SystemVisualization() {
               strokeWidth="2"
               strokeDasharray="8 4"
               markerEnd="url(#arrowhead)"
-              className="text-info/30"
-              style={{ animation: `dash 1s linear infinite`, animationDelay: `${i * 200}ms` }}
+              className="text-info/30 animate-dash"
+              style={{ animationDelay: `${i * 200}ms` }}
             />
           );
         })}
-        <style jsx>{`
-          @keyframes dash {
-            to { stroke-dashoffset: -12; }
-          }
-        `}</style>
       </svg>
 
       {/* Nodes */}

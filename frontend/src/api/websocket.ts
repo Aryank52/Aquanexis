@@ -83,7 +83,7 @@ export class WebSocketManager {
       }
     };
 
-    this.ws.onclose = (event) => {
+    this.ws.onclose = (_event) => {
       this.stopPing();
       if (!this.isDestroyed) {
         this.setStatus('reconnecting');

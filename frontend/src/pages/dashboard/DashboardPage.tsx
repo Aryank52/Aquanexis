@@ -91,8 +91,8 @@ export function DashboardPage() {
           data.active_alert.severity === 'WARNING' ? 'bg-warning/10 border-warning/30 text-warning' :
           'bg-info/10 border-info/30 text-info',
         )}>
-          <span className="font-semibold text-body-sm">{data.active_alert.alert_type.replace(/_/g, ' ')}</span>
-          <span className="text-body-sm">{data.active_alert.explanation?.message ?? ''}</span>
+          <span className="font-semibold text-body-sm">{data.active_alert.alert_code.replace(/_/g, ' ')}</span>
+          <span className="text-body-sm">{data.active_alert.message ?? ''}</span>
         </div>
       )}
 
@@ -210,22 +210,46 @@ export function DashboardPage() {
         <div>
           <h2 className="text-h2 font-semibold text-text-primary mb-4">System Diagnostics</h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {([
-              { key: 'pressure', label: 'Pressure', status: data.diagnostics.pressure.status },
-              { key: 'flow', label: 'Flow', status: data.diagnostics.flow.status },
-              { key: 'leak', label: 'Leak', status: data.diagnostics.leak.status === 'dry' ? 'normal' : data.diagnostics.leak.status === 'suspected' ? 'elevated' : 'critical' },
-              { key: 'tank', label: 'Tank', status: data.diagnostics.tank.status === 'normal' ? 'normal' : data.diagnostics.tank.status === 'stagnation' ? 'elevated' : 'critical' },
-              { key: 'pump', label: 'Pump', status: data.diagnostics.pump.status === 'normal' ? 'normal' : data.diagnostics.pump.status === 'degraded' ? 'elevated' : 'critical' },
-            ] as const).map((d) => (
-              <Card key={d.key}>
-                <CardContent className="p-3 text-center">
-                  <div className="text-body-sm text-text-secondary">{d.label}</div>
-                  <Badge variant={d.status === 'normal' ? 'success' : d.status === 'elevated' ? 'warning' : 'critical'}>
-                    {d.status === 'normal' ? 'OK' : d.status === 'elevated' ? 'Warning' : 'Critical'}
-                  </Badge>
-                </CardContent>
-              </Card>
-            ))}
+            <Card key="pressure">
+              <CardContent className="p-3 text-center">
+                <div className="text-body-sm text-text-secondary">Pressure</div>
+                <Badge variant={data.diagnostics.pressure !== null && data.diagnostics.pressure > 500 ? 'critical' : data.diagnostics.pressure !== null && data.diagnostics.pressure > 400 ? 'warning' : 'success'}>
+                  {data.diagnostics.pressure !== null ? `${data.diagnostics.pressure} kPa` : '—'}
+                </Badge>
+              </CardContent>
+            </Card>
+            <Card key="flow">
+              <CardContent className="p-3 text-center">
+                <div className="text-body-sm text-text-secondary">Flow</div>
+                <Badge variant="success">
+                  {data.diagnostics.flow !== null ? `${data.diagnostics.flow} L/min` : '—'}
+                </Badge>
+              </CardContent>
+            </Card>
+            <Card key="leak">
+              <CardContent className="p-3 text-center">
+                <div className="text-body-sm text-text-secondary">Leak</div>
+                <Badge variant={data.diagnostics.leak === true ? 'critical' : 'success'}>
+                  {data.diagnostics.leak ? 'Detected' : 'None'}
+                </Badge>
+              </CardContent>
+            </Card>
+            <Card key="tank">
+              <CardContent className="p-3 text-center">
+                <div className="text-body-sm text-text-secondary">Tank</div>
+                <Badge variant={data.diagnostics.tank !== null && data.diagnostics.tank < 20 ? 'warning' : 'success'}>
+                  {data.diagnostics.tank !== null ? `${data.diagnostics.tank}%` : '—'}
+                </Badge>
+              </CardContent>
+            </Card>
+            <Card key="pump">
+              <CardContent className="p-3 text-center">
+                <div className="text-body-sm text-text-secondary">Pump</div>
+                <Badge variant={data.diagnostics.pump !== null && data.diagnostics.pump > 3 ? 'warning' : 'success'}>
+                  {data.diagnostics.pump !== null ? `${data.diagnostics.pump} A` : '—'}
+                </Badge>
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}

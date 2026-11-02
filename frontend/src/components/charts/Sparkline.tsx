@@ -1,5 +1,5 @@
 import { useRef, useEffect, useMemo } from 'react';
-import * as uPlot from 'uplot';
+import uPlot, { type Options } from 'uplot';
 import { cn } from '@utils/cn';
 
 interface SparklineProps {
@@ -22,7 +22,7 @@ export function Sparkline({
   const containerRef = useRef<HTMLDivElement>(null);
   const uplotRef = useRef<uPlot | null>(null);
 
-  const opts = useMemo(() => ({
+  const opts = useMemo((): Options => ({
     width: width || 300,
     height,
     title: '',
@@ -42,7 +42,7 @@ export function Sparkline({
     ],
     scales: {
       x: { time: false },
-      y: { range: (u: uPlot, dataMin: number, dataMax: number) => [dataMin * 0.98, dataMax * 1.02] },
+      y: { range: (_u: uPlot, dataMin: number, dataMax: number) => [dataMin * 0.98, dataMax * 1.02] as const },
     },
     cursor: { show: false },
     hooks: {
@@ -50,10 +50,14 @@ export function Sparkline({
         (u: uPlot) => {
           // Draw current value indicator
           const { ctx, series, scales, bbox } = u;
-          const lastIdx = series[1].data.length - 1;
+          const ySeries = series[1];
+          // Access series data via u.series or direct access
+          const yData = (ySeries as { data?: Float64Array | number[] }).data ?? (u.series[1] as { data?: Float64Array | number[] }).data;
+          const yDataArray = (yData as Float64Array | number[]) ?? [];
+          const lastIdx = yDataArray.length - 1;
           const x = u.valToPos(lastIdx, 'x', true);
-          const y = u.valToPos(series[1].data[lastIdx], 'y', true);
-          
+          const y = u.valToPos(yDataArray[lastIdx], 'y', true);
+
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, 4, 0, 2 * Math.PI);
@@ -71,9 +75,9 @@ export function Sparkline({
   useEffect(() => {
     if (!containerRef.current || data.length === 0) return;
 
-    const series = [
-      data.map(d => new Date(d.t).getTime()),
-      data.map(d => d.y),
+    const series: [Float64Array, Float64Array] = [
+      new Float64Array(data.map(d => new Date(d.t).getTime())),
+      new Float64Array(data.map(d => d.y)),
     ];
 
     uplotRef.current = new uPlot(opts, series, containerRef.current);

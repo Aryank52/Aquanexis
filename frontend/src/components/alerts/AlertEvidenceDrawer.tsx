@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X, Clock, CheckCircle2, AlertTriangle, XCircle, Info, BellOff, Check } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAcknowledgeAlert, useResolveAlert, useSnoozeAlert } from '@/hooks/useAlerts';
-import type { Alert, AlertSeverity } from '@/types/api';
+import type { AlertResponse, AlertSeverity } from '@/types/api';
 import { formatDistanceToNow, format } from 'date-fns';
 
 const SNOOZE_OPTIONS = [
@@ -13,14 +13,14 @@ const SNOOZE_OPTIONS = [
   { label: '24 hours', value: 1440 },
 ];
 
-const severityStyles: Record<AlertSeverity, { icon: typeof AlertTriangle; color: string; bg: string; border: string }> = {
+const severityStyles: Record<AlertSeverity, { icon: typeof XCircle; color: string; bg: string; border: string }> = {
   CRITICAL: { icon: XCircle, color: 'text-critical', bg: 'bg-critical/10', border: 'border-critical/30' },
   WARNING: { icon: AlertTriangle, color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/30' },
   INFO: { icon: Info, color: 'text-info', bg: 'bg-info/10', border: 'border-info/30' },
 };
 
 interface Props {
-  alert: Alert | null;
+  alert: AlertResponse | null;
   open: boolean;
   onClose: () => void;
   currentUser?: string;
@@ -104,10 +104,10 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
                 {alert.severity}
               </span>
               <span className="text-caption text-text-muted">
-                {alert.alert_type.replace(/_/g, ' ')}
+                {alert.alert_code.replace(/_/g, ' ')}
               </span>
             </div>
-            <p className="text-body-sm text-text-primary mt-1">{alert.explanation?.message || 'No message available.'}</p>
+            <p className="text-body-sm text-text-primary mt-1">{alert.message || 'No message available.'}</p>
             <p className="text-caption text-text-muted mt-1">
               {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
             </p>
@@ -119,27 +119,6 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Evidence */}
-          {alert.explanation?.evidence && alert.explanation.evidence.length > 0 && (
-            <section aria-label="Alert evidence">
-              <h2 className="text-body-sm font-semibold text-text-primary mb-3">Evidence</h2>
-              <div className="space-y-2">
-                {alert.explanation.evidence.map((ev, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-surface rounded-button border border-subtle">
-                    <span className="text-caption text-text-secondary">{ev.label}</span>
-                    <span className={cn(
-                      'text-caption font-mono font-medium',
-                      ev.severity === 'CRITICAL' ? 'text-critical' :
-                      ev.severity === 'WARNING' ? 'text-warning' : 'text-text-primary'
-                    )}>
-                      {ev.value}{ev.unit ? ` ${ev.unit}` : ''}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* Trigger values */}
           {(alert.trigger_value !== null || alert.threshold_value !== null) && (
             <section className="grid grid-cols-2 gap-3">
@@ -155,14 +134,6 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
                   <p className="text-data font-mono font-semibold text-text-primary">{alert.threshold_value}</p>
                 </div>
               )}
-            </section>
-          )}
-
-          {/* Recommended action */}
-          {alert.explanation?.recommended_action && (
-            <section className="p-3 bg-info/5 border border-info/20 rounded-button">
-              <p className="text-caption font-semibold text-info mb-1">Recommended Action</p>
-              <p className="text-body-sm text-text-primary">{alert.explanation.recommended_action}</p>
             </section>
           )}
 
@@ -193,7 +164,7 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
                     className="btn btn-secondary btn-sm text-center"
                     onClick={() => handleSnooze(opt.value)}
                     disabled={snooze.isPending}>
-                    {opt.label}
+                  {opt.label}
                   </button>
                 ))}
               </div>
@@ -226,12 +197,13 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
               </div>
             </section>
           )}
+
         </div>
 
         {/* Actions */}
-        {alert.state !== 'RESOLVED' && !showResolveForm && !showSnooze && (
+        {alert.status !== 'RESOLVED' && !showResolveForm && !showSnooze && (
           <div className="p-5 border-t border-subtle flex flex-wrap gap-2">
-            {alert.state === 'ACTIVE' && (
+            {alert.status === 'DETECTED' && (
               <button className="btn btn-secondary btn-sm flex-1"
                 onClick={handleAcknowledge}
                 disabled={acknowledge.isPending}>
@@ -239,7 +211,7 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
                 {acknowledge.isPending ? 'Acknowledging…' : 'Acknowledge'}
               </button>
             )}
-            {(alert.state === 'ACTIVE' || alert.state === 'ACKNOWLEDGED') && (
+            {(alert.status === 'DETECTED' || alert.status === 'ACKNOWLEDGED') && (
               <>
                 <button className="btn btn-primary btn-sm flex-1"
                   onClick={() => setShowResolveForm(true)}>
