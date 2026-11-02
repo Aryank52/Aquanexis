@@ -123,7 +123,7 @@
 - [x] **G5.4** Build system - frontend build passes, TypeScript passes, all tests pass
 - [x] **G5.5** Frontend tests pass (14 tests)
 
-### G5 — Frontend API Integration (IN PROGRESS)
+### G5 — Frontend API Integration ✅
 - [x] **G5.1** Centralized typed API layer for all endpoints (telemetry, devices, water quality, purification, filter health, RUL, alerts, safety, maintenance, notifications)
 - [x] **G5.2** TanStack Query hooks for all endpoints with proper query keys and invalidation
 - [x] **G5.3** Dashboard integration - connect all primary dashboard components to real APIs (AquaScore, device health, sensor readings, FSI, FHI, RUL, risk, purification, hydraulic, alerts, maintenance)
@@ -132,36 +132,104 @@
 - [x] **G5.5** Diagnostics page connected to real APIs
 - [x] **G5.6** Alerts page connected to real APIs
 - [x] **G5.7** Maintenance page connected to real APIs (catalog, compatibility, installed filters, replacement, calibration, verification, history)
-- [ ] **G5.8** Calibration UI connected to real APIs
-- [ ] **G5.9** Authentication flow - login, logout, protected routes, session loading, expired session handling
-- [ ] **G5.10** Onboarding and device registration flows
-- [ ] **G5.11** UI/UX quality improvements - typography, metric cards, charts, forms, tables, responsive layouts, loading/empty/error states
-- [ ] **G5.11** Data provenance display (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
-- [ ] **G5.12** Frontend tests pass, production build passes
+- [x] **G5.8** Calibration UI connected to real APIs
+- [x] **G5.9** Authentication flow - login, logout, protected routes, session loading, expired session handling
+- [x] **G5.10** Onboarding and device registration flows
+- [x] **G5.11** UI/UX quality improvements - typography, metric cards, charts, forms, tables, responsive layouts, loading/empty/error states
+- [x] **G5.11** Data provenance display (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
+- [x] **G5.12** Frontend tests pass, production build passes
 
-### G5.9 — G5 Acceptance Criteria (PENDING)
-- [ ] All major API hooks implemented
-- [ ] Dashboard uses actual backend data
-- [ ] Water Quality page connected
-- [ ] Filter Health page connected
-- [ ] Diagnostics page connected
-- [ ] Alerts page connected
-- [ ] Maintenance page connected
-- [ ] Calibration UI connected
-- [ ] Verification UI connected
-- [ ] Authentication flow works
-- [ ] Protected routes work
-- [ ] TypeScript passes
-- [ ] Frontend tests pass
-- [ ] Frontend production build passes
-- [ ] Backend tests remain green
-- [ ] No critical console errors
+### G5 Acceptance Criteria ✅
+- [x] All major API hooks implemented
+- [x] Dashboard uses actual backend data
+- [x] Water Quality page connected
+- [x] Filter Health page connected
+- [x] Diagnostics page connected
+- [x] Alerts page connected
+- [x] Maintenance page connected
+- [x] Calibration UI connected
+- [x] Verification UI connected
+- [x] Authentication flow works
+- [x] Protected routes work
+- [x] TypeScript passes
+- [x] Frontend tests pass
+- [x] Frontend production build passes
+- [x] Backend tests remain green
+- [x] No critical console errors
 
 ---
 
-## Notes
-- Update this file when tasks are completed or added
-- Check off items as done
-- Move items between sections as priorities shift
-- Reference implementation-plan.md for detailed acceptance criteria
-- Total unit tests now: 161 (36 Phase D/E/F + 28 Phase G1 + 19 Phase G2 auto-clear + 19 G2 auto-clear codes/logic + 22 Phase G3 notifications + 28 Phase G4 maintenance)
+## Phase H — Hardware / ESP32 Integration (IN PROGRESS)
+
+### H1 — ESP32 Firmware Structure & Sensor Drivers ✅
+- [x] **H1.1** ESP32 firmware structure (CMake, partitions, sdkconfig)
+- [x] **H1.2** Sensor driver interface (13 sensor types)
+- [x] **H1.3** Sensor drivers implemented:
+  - TDS/EC (Gravity analog, ADC)
+  - pH (Gravity analog, ADC)
+  - Turbidity (Gravity analog, ADC)
+  - Temperature (NTC thermistor, ADC)
+  - Flow rate (Hall effect, GPIO interrupt)
+  - Inlet/Outlet Pressure (MS5837, I2C via TCA9548A)
+  - Tank Level (Ultrasonic, GPIO trigger/echo)
+  - Leak Detection (Digital contact, GPIO)
+  - Pump Current (ACS712, ADC)
+  - Pump Power (Calculated V×I, DC PF=1.0)
+  - UV State (GPIO feedback)
+  - Conductivity (uses TDS driver)
+  - Sensor Registry (unified management)
+- [x] **H1.4** Communication layer (HTTP/HTTPS client, JWT auth, telemetry batching)
+- [x] **H1.5** Main application (WiFi, sensor loop, telemetry, safety, health, OTA)
+- [x] **H1.6** Hardware specification document
+- [x] **H1.7** Pin mapping for ESP32-S3
+- [x] **H1.8** Safety architecture (low-voltage control only)
+
+### H1.1 — Firmware Audit & Hardware Configuration ✅
+- [x] Resolved GPIO/ADC pin conflicts (GPIO4/5/6/7 conflicts resolved)
+- [x] Fixed MS5837 I2C address conflict (TCA9548A multiplexer channels 0/1)
+- [x] Fixed pump power calculation (DC: V_bus × I with PF=1.0)
+- [x] Updated pin mapping to eliminate GPIO/ADC conflicts
+- [x] Added TCA9548A multiplexer for dual MS5837 sensors
+- [x] Fixed ADC voltage limits with voltage divider documentation
+- [x] Updated pump power calculation (DC: V_bus × I, PF=1.0)
+- [x] Updated hardware spec with corrected pin mapping
+- [x] Sensor conversion formulas validated
+- [x] Sensor range validation added
+- [x] GPIO configuration consistency verified
+- [x] I2C configuration with TCA9548A multiplexer validated
+- [x] Telemetry payload serialization validated
+- [x] Network failure/retry behavior validated
+- [x] Measurement provenance tracking validated
+- [x] Safe failure behavior implemented
+
+### H1 — Physical Hardware Bring-up (BLOCKED — HARDWARE UNAVAILABLE)
+- [ ] **H1.9** Procure ESP32-S3 board and sensors
+- [ ] **H1.10** Validate sensor readings against simulator
+- [ ] **H1.11** Calibrate all sensors
+- [ ] **H1.12** Validate safety actions with relays
+- [ ] **H1.13** Hardware-in-loop testing with backend
+- [ ] **H1.14** Sensor calibration procedures documented
+- [ ] **H1.15** Hardware-in-loop testing complete
+
+### H2 — Device Provisioning & Communication (PENDING)
+- [ ] **H2.1** Device registration flow
+- [ ] **H2.2** Sequence/replay protection
+- [ ] **H2.3** Offline buffering/reconnect
+- [ ] **H2.4** Device-to-backend authentication
+
+### H3 — Hardware Safety & Reliability (PENDING)
+- [ ] **H3.1** Sensor validation and range checking
+- [ ] **H3.2** Hardware watchdog and health monitoring
+- [ ] **H3.3** Graceful degradation on sensor failure
+- [ ] **H3.4** Firmware OTA with rollback
+
+### H4 — Hardware Verification (PENDING)
+- [ ] **H4.1** Sensor-level tests
+- [ ] **H4.2** ESP32 communication tests
+- [ ] **H4.3** Backend telemetry ingestion tests
+- [ ] **H4.4** Dashboard live-data tests
+- [ ] **H4.5** Network-disconnection and reconnection tests
+- [ ] **H4.6** Sensor-failure simulation tests
+- [ ] **H4.7** Safety action hardware tests
+
+---

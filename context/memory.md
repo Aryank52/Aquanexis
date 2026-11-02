@@ -28,8 +28,9 @@
 - **Phase D (Water Intelligence + Filter Intelligence)**: ✅ COMPLETE
 - **Phase E (Filter Intelligence Enhancement + Model Validation)**: ✅ COMPLETE
 - **Phase F (Reliability & Safety)**: ✅ COMPLETE
-- **Phase G (Maintenance & Lifecycle)**: 🔄 IN PROGRESS (G1-G5 complete)
-- **Phase H (Hardware / ESP32)**: ⏳ PENDING
+- **Phase G (Maintenance & Lifecycle)**: ✅ COMPLETE (G1-G5 complete)
+- **Phase H (Hardware / ESP32)**: 🔄 IN PROGRESS (H1: Firmware structure & sensor drivers complete; H1.1: Firmware audit complete)
+- **Phase H1-Physical**: ⏳ BLOCKED — HARDWARE UNAVAILABLE
 - **Phase I (Security / CI / Hardening)**: ⏳ PENDING
 - **Phase J (Final Verification)**: ⏳ PENDING
 
@@ -155,22 +156,42 @@
 - ✅ Frontend build passes
 - ✅ Dashboard endpoint created at `/devices/{device_id}/dashboard` returning composite DashboardData
 - ✅ Dashboard endpoint composes device, latest_telemetry, water_quality, filter_health, diagnostics, purification, active_alert, data_freshness_seconds
-- 🔄 Frontend API integration in progress (TanStack Query hooks, dashboard integration, authentication flow, maintenance UI)
+- ✅ Frontend API integration complete (TanStack Query hooks, dashboard integration, authentication flow, maintenance UI)
+
+### Phase H1 Verification Status (2026-11-02)
+- ✅ ESP32 firmware structure created (CMake, partitions, sdkconfig)
+- ✅ Sensor driver interface defined (13 sensor types)
+- ✅ 13 sensor drivers implemented:
+  - TDS/EC (Gravity analog, ADC)
+  - pH (Gravity analog, ADC)
+  - Turbidity (Gravity analog, ADC)
+  - Temperature (NTC thermistor, ADC)
+  - Flow rate (Hall effect, GPIO interrupt)
+  - Inlet/Outlet Pressure (MS5837, I2C)
+  - Tank Level (Ultrasonic, GPIO trigger/echo)
+  - Leak Detection (Digital contact, GPIO)
+  - Pump Current (ACS712, ADC)
+  - Pump Power (Calculated V×I×PF)
+  - UV State (GPIO feedback)
+  - Conductivity (uses TDS driver)
+  - Sensor Registry (unified management)
+- ✅ Communication layer (HTTP/HTTPS client, JWT auth, telemetry batching)
+- ✅ Main application (WiFi, sensor loop, telemetry, safety, health, OTA)
+- ✅ Hardware specification document created
+- ✅ Pin mapping defined for ESP32-S3
+- ✅ Safety architecture (low-voltage control only)
+- ⏳ Physical hardware bring-up pending
+- ⏳ Sensor calibration procedures pending
+- ⏳ Hardware-in-loop testing pending
 
 ### Next Actions
 1. Start PostgreSQL/TimescaleDB and run migrations (`alembic upgrade head`)
 2. Run integration tests with database (`docker compose up -d postgres && python -m pytest tests/`)
-3. **Phase G5: Frontend API Integration**
-   - Centralized typed API layer for all endpoints
-   - TanStack Query hooks for all endpoints
-   - Dashboard integration with real APIs
-   - Maintenance, calibration, verification UI connected to real APIs
-   - Authentication flow and onboarding
-4. **Phase H: Hardware / ESP32 Integration**
-   - Firmware telemetry contract
-   - Device provisioning
-   - Sequence/replay protection
-   - Offline buffering/reconnect
-   - Hardware-in-loop tests
-5. **Phase I: Security / CI / Hardening**
-6. **Phase J: Final Verification**
+3. **Phase H1: ESP32 Hardware Integration - Physical Bring-up**
+   - Procure ESP32-S3 board and sensors
+   - Validate sensor readings against simulator
+   - Calibrate all sensors
+   - Validate safety actions with relays
+   - Hardware-in-loop testing with backend
+4. **Phase I: Security / CI / Hardening**
+5. **Phase J: Final Verification**
