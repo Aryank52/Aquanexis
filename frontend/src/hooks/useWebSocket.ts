@@ -26,6 +26,10 @@ export function useWebSocket(deviceId: string) {
         case 'device_status':
           queryClient.invalidateQueries({ queryKey: ['device'] });
           break;
+
+        case 'sensor_health':
+          queryClient.invalidateQueries({ queryKey: ['diagnostics'] });
+          break;
       }
     },
     [deviceId, queryClient]

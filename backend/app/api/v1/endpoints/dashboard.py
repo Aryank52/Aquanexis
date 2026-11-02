@@ -154,6 +154,8 @@ async def get_dashboard(
             trends=trends,
             anomaly_score=wq_model.anomaly_score,
             anomaly_flags=anomaly_flags,
+            data_freshness_seconds=data_freshness_seconds,
+            provenance="CALCULATED",
         )
     
     # Get filter health
@@ -287,6 +289,7 @@ async def get_dashboard(
             uv_state=latest_telemetry.uv_state,
             quality=QualityFlags(**latest_telemetry.quality_flags) if latest_telemetry.quality_flags else QualityFlags(),
             overall_quality=latest_telemetry.overall_quality,
+            provenance="SIMULATED",
         )
         
         if latest_telemetry.ingestion_timestamp:
@@ -424,6 +427,8 @@ async def get_dashboard(
             trends=trends,
             anomaly_score=wq_model.anomaly_score,
             anomaly_flags=anomaly_flags,
+            data_freshness_seconds=data_freshness_seconds,
+            provenance="CALCULATED",
         )
     
     # Get filter health
@@ -557,6 +562,7 @@ async def get_dashboard(
             uv_state=latest_telemetry.uv_state,
             quality=QualityFlags(**latest_telemetry.quality_flags) if latest_telemetry.quality_flags else QualityFlags(),
             overall_quality=latest_telemetry.overall_quality,
+            provenance="SIMULATED",
         )
         
         if latest_telemetry.ingestion_timestamp:
@@ -694,6 +700,8 @@ async def get_dashboard(
             trends=trends,
             anomaly_score=wq_model.anomaly_score,
             anomaly_flags=anomaly_flags,
+            data_freshness_seconds=data_freshness_seconds,
+            provenance="CALCULATED",
         )
     
     # Get filter health
@@ -827,6 +835,7 @@ async def get_dashboard(
             uv_state=latest_telemetry.uv_state,
             quality=QualityFlags(**latest_telemetry.quality_flags) if latest_telemetry.quality_flags else QualityFlags(),
             overall_quality=latest_telemetry.overall_quality,
+            provenance="SIMULATED",
         )
         
         if latest_telemetry.ingestion_timestamp:

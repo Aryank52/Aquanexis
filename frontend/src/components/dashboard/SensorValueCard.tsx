@@ -1,5 +1,5 @@
 import { cn } from '@utils/cn';
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 
 interface SensorValueCardProps {
   label: string;
@@ -26,9 +26,10 @@ const qualityIcons = {
 };
 
 const freshnessConfig = (seconds: number) => {
-  if (seconds < 10) return { color: 'text-success', label: 'Live' };
-  if (seconds < 60) return { color: 'text-warning', label: `${seconds}s ago` };
-  return { color: 'text-critical', label: `${Math.round(seconds / 60)}m ago` };
+  if (seconds < 10) return { color: 'text-success', label: 'Live', isStale: false };
+  if (seconds < 60) return { color: 'text-warning', label: `${seconds}s ago`, isStale: false };
+  if (seconds < 300) return { color: 'text-critical', label: `${Math.round(seconds / 60)}m ago`, isStale: true };
+  return { color: 'text-critical', label: `${Math.round(seconds / 60)}m ago (stale)`, isStale: true };
 };
 
 export function SensorValueCard({
@@ -55,7 +56,7 @@ export function SensorValueCard({
     trend < 0 ? `${trend.toFixed(1)}%` : '—';
 
   return (
-    <article className="card p-4 transition-all duration-200 hover:shadow-card-hover">
+    <article className={cn("card p-4 transition-all duration-200 hover:shadow-card-hover", f.isStale && "opacity-75 border-warning/30")}>
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
           {icon && <span className="w-8 h-8 bg-info/10 rounded-lg flex items-center justify-center">{icon}</span>}
@@ -64,11 +65,18 @@ export function SensorValueCard({
             <div className="flex items-center gap-1.5 mt-0.5">
               <QualityIcon className={cn('w-4 h-4', q.color)} />
               <span className={cn('text-caption font-medium', q.color)}>{q.label}</span>
+              {f.isStale && (
+                <span className="flex items-center gap-0.5 text-xs text-warning">
+                  <AlertCircle className="w-3 h-3" />
+                  Stale
+                </span>
+              )}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-caption">
-          <span className={cn('px-1.5 py-0.5 rounded', f.color.replace('text-', 'bg-').replace('text-', 'bg-') + '/10', f.color)}>
+          <span className={cn('px-1.5 py-0.5 rounded flex items-center gap-0.5', f.color.replace('text-', 'bg-').replace('text-', 'bg-') + '/10', f.color)}>
+            {f.isStale && <Clock className="w-3 h-3" />}
             {f.label}
           </span>
         </div>

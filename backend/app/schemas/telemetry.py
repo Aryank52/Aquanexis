@@ -201,6 +201,7 @@ class SensorReadingResponse(BaseModel):
     uv_state: Optional[bool]
     quality: QualityFlags
     overall_quality: Literal["good", "suspect", "bad"]
+    provenance: Literal["MEASURED", "SIMULATED", "CALCULATED", "MODEL_PREDICTED"] = "MEASURED"
 
     class Config:
         from_attributes = True
@@ -272,6 +273,7 @@ class AquaScoreResponse(BaseModel):
     anomaly_score: float
     anomaly_flags: List[AnomalyFlag]
     data_freshness_seconds: int
+    provenance: Literal["MEASURED", "SIMULATED", "CALCULATED", "MODEL_PREDICTED"] = "CALCULATED"
 
 
 # ===== Filter Health Schemas =====
@@ -301,6 +303,7 @@ class FilterHealthResponse(BaseModel):
     input_features: Dict[str, float] = Field(default_factory=dict)
     explanation: Optional[ExplanationPayload] = None
     data_freshness_seconds: int
+    provenance: Literal["MEASURED", "SIMULATED", "CALCULATED", "MODEL_PREDICTED"] = "MODEL_PREDICTED"
 
 
 # ===== Alert Schemas =====

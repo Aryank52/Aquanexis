@@ -58,6 +58,7 @@ export interface TelemetryReading {
   received_at: string;
   readings: SensorReadings;
   quality: QualityAssessment;
+  provenance?: DataProvenance;
 }
 
 export interface TelemetryHistoryPoint {
@@ -105,6 +106,7 @@ export interface WaterQualityResponse {
   trends: Record<string, TrendAnalysis>;
   anomaly_score: number | null;
   anomaly_flags: Record<string, number>;
+  provenance?: DataProvenance;
 }
 
 // Alias for backward compatibility
@@ -134,6 +136,7 @@ export interface FilterHealthResponse {
   explanation: FilterExplanation | null;
   maintenance_band: MaintenanceBand;
   confidence_level: PredictionConfidence;
+  provenance?: DataProvenance;
 }
 
 // Alias for backward compatibility
@@ -382,6 +385,7 @@ export interface WaterQualityResponse {
   trends: Record<string, TrendAnalysis>;
   anomaly_score: number | null;
   anomaly_flags: Record<string, number>;
+  provenance?: DataProvenance;
 }
 
 export interface FilterHealthResponse {
@@ -399,6 +403,7 @@ export interface FilterHealthResponse {
   explanation: FilterExplanation | null;
   maintenance_band: MaintenanceBand;
   confidence_level: PredictionConfidence;
+  provenance?: DataProvenance;
 }
 
 export interface DiagnosticsDataResponse {
@@ -429,6 +434,7 @@ export interface WaterQualityResponse {
   trends: Record<string, TrendAnalysis>;
   anomaly_score: number | null;
   anomaly_flags: Record<string, number>;
+  provenance?: DataProvenance;
 }
 
 export interface FilterHealthResponse {
@@ -446,6 +452,7 @@ export interface FilterHealthResponse {
   explanation: FilterExplanation | null;
   maintenance_band: MaintenanceBand;
   confidence_level: PredictionConfidence;
+  provenance?: DataProvenance;
 }
 
 export interface DiagnosticsDataResponse {
@@ -519,6 +526,7 @@ export type WSMessageType =
   | 'alert_updated'
   | 'safety_action'
   | 'device_status'
+  | 'sensor_health'
   | 'pong';
 
 export interface WSMessage<T = unknown> {

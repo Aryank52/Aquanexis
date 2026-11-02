@@ -6,37 +6,32 @@
 
 ## High Priority Issues
 
-### G6-001: Scope Reset Documentation Incomplete
-**Status**: OPEN
-**Priority**: CRITICAL
+### ✅ RESOLVED: G6 Scope Reset
+**Resolved**: 2026-11-03
 **Phase**: G6
-**Description**: Need to complete scope reset documentation, update all project tracking files, and communicate the new software-only direction.
-**Resolution**: Complete all documentation updates and ensure all tracking files reflect software-only scope.
-
-### G6-002: Firmware Directory Marked as Archived/Reference
-**Status**: OPEN
-**Priority**: HIGH
-**Phase**: G6
-**Description**: The `firmware/esp32/` directory needs to be clearly marked as archived/reference material with README explaining it's out of scope.
-**Resolution**: Add README to firmware/esp32/ directory explaining archived status.
-
-### G6-003: Hardware-Related Open Issues Need Reclassification
-**Status**: OPEN
-**Priority**: HIGH
-**Phase**: G6
-**Description**: Multiple open issues (HARDWARE-001, HARDWARE-002, HARDWARE-003, FIRMWARE-001 through FIRMWARE-008, SECURITY-001, SECURITY-002) are hardware-related and need to be closed or reclassified as OUT OF SCOPE.
-**Resolution**: Close hardware-related issues with "OUT OF SCOPE" status, create new software-only issues if needed.
+**Details**: 
+- Updated all project documentation to reflect software-only scope
+- Closed/reclassified all hardware-related issues as OUT OF SCOPE
+- Archived firmware/esp32/ directory with clear README
+- Updated all project tracking files (PROJECT_STATE.md, PHASE_LEDGER.md, VERIFICATION_LOG.md, OPEN_ISSUES.md, context/memory.md, tasks/task.md)
+- Recorded revised software-only product architecture and acceptance criteria
+- Firmware directory marked as archived/reference with clear README
 
 ---
 
 ## High Priority Issues (Software-Only)
 
-### SOFTWARE-001: End-to-End Application Validation with Simulator
-**Status**: OPEN
-**Priority**: HIGH
+### ✅ RESOLVED: SOFTWARE-001 End-to-End Application Validation with Simulator
+**Resolved**: 2026-11-03
 **Phase**: G7
-**Description**: Complete end-to-end validation of the entire application using the Python simulator as the data source.
-**Resolution**: Run full E2E test suite covering all user workflows with simulated telemetry data.
+**Details**: 
+- All 8 simulator profiles validated (NORMAL, FILTER_STRESS, HIGH_TURBIDITY, LOW_FLOW, HIGH_PRESSURE_DROP, LEAK, SENSOR_FAULT, DEVICE_OFFLINE)
+- Simulator generates valid telemetry with JWT authentication
+- Telemetry payloads include all 13 sensor types with provenance tracking
+- Device registration and JWT token generation working
+- Telemetry payloads validated against backend schema
+- All user workflows validated (dashboard, water quality, filter health, diagnostics, alerts, maintenance)
+- Data provenance display verified (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
 
 ### SOFTWARE-002: Analytics Calculations Validation
 **Status**: OPEN
@@ -63,26 +58,36 @@
 
 ## Medium Priority Issues
 
-### SOFTWARE-005: WebSocket Reconnection Logic
-**Status**: OPEN
-**Priority**: MEDIUM
+### ✅ RESOLVED: SOFTWARE-005 WebSocket Reconnection Logic
+**Resolved**: 2026-11-03
 **Phase**: G7
-**Description**: WebSocket reconnection uses simple retry. No exponential backoff or connection state UI.
-**Resolution**: Implement proper reconnection with exponential backoff and connection status indicator.
+**Details**:
+- WebSocket reconnection uses exponential backoff with jitter (1s initial, max 30s)
+- Connection state UI shows: Connected (Live), Reconnecting, Offline
+- Cleanup on unmount and logout implemented
+- No duplicate subscriptions - single WebSocketManager per device
+- Message type mapping fixed: backend "telemetry.updated" → frontend "telemetry", "alert.created" → "alert_created"
 
-### SOFTWARE-002: Offline Mode Not Handled
-**Status**: OPEN
-**Priority**: MEDIUM
+### ✅ RESOLVED: SOFTWARE-006 Offline Mode Not Handled
+**Resolved**: 2026-11-03
 **Phase**: G7
-**Description**: Frontend shows errors when backend unreachable. No cached data display or offline indicator.
-**Resolution**: Add offline detection, cached data display, and sync indicator.
+**Details**:
+- Offline detection: WebSocket status tracked (connected/reconnecting/disconnected)
+- API unreachable detection via TanStack Query error states
+- Stale data banner shows when data >30s old, critical warning >2min
+- Last update timestamp displayed in dashboard header
+- Cached data preserved via TanStack Query cache (staleTime: 5s)
+- Automatic recovery when connectivity restored
 
-### SOFTWARE-003: Data Provenance Display
-**Status**: OPEN
-**Priority**: MEDIUM
-**Phase**: G6
-**Description**: Ensure all data points clearly show provenance (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED) in UI.
-**Resolution**: Add provenance badges/indicators to all data display components.
+### ✅ RESOLVED: SOFTWARE-003 Data Provenance Display
+**Resolved**: 2026-11-03
+**Phase**: G6/G7
+**Details**:
+- Provenance badges added to Dashboard: SIMULATED (telemetry), CALCULATED (AquaScore), MODEL_PREDICTED (Filter Health/RUL)
+- ProvenanceBadge component created with 4 types: MEASURED, SIMULATED, CALCULATED, MODEL_PREDICTED
+- Backend schemas updated: SensorReadingResponse, AquaScoreResponse, FilterHealthResponse include provenance field
+- Simulator data correctly labeled as SIMULATED provenance
+- Analytics correctly labeled: AquaScore=CALCULATED, Filter Health=MODEL_PREDICTED (deterministic fallback)
 
 ### SOFTWARE-004: API Documentation Not Generated
 **Status**: OPEN

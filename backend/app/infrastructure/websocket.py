@@ -73,28 +73,37 @@ class ConnectionManager:
     async def broadcast_telemetry(self, device_id: UUID, telemetry_data: dict) -> None:
         """Broadcast telemetry update."""
         await self.broadcast(device_id, {
-            "type": "telemetry.updated",
+            "type": "telemetry",
             "device_id": str(device_id),
             "timestamp": datetime.utcnow().isoformat(),
-            "payload": telemetry_data,
+            "data": telemetry_data,
         })
 
     async def broadcast_alert(self, device_id: UUID, alert_data: dict, event_type: str) -> None:
         """Broadcast alert event."""
+        # Map backend event types to frontend expected types
+        frontend_event_type = event_type
+        if event_type == "alert.created":
+            frontend_event_type = "alert_created"
+        elif event_type == "alert.updated":
+            frontend_event_type = "alert_updated"
+        elif event_type == "alert.auto_cleared":
+            frontend_event_type = "alert_updated"
+        
         await self.broadcast(device_id, {
-            "type": event_type,
+            "type": frontend_event_type,
             "device_id": str(device_id),
             "timestamp": datetime.utcnow().isoformat(),
-            "payload": alert_data,
+            "data": alert_data,
         })
 
     async def broadcast_device_status(self, device_id: UUID, status: str, last_seen: str) -> None:
         """Broadcast device status change."""
         await self.broadcast(device_id, {
-            "type": "device.status_changed",
+            "type": "device_status",
             "device_id": str(device_id),
             "timestamp": datetime.utcnow().isoformat(),
-            "payload": {
+            "data": {
                 "status": status,
                 "last_seen": last_seen,
             },
@@ -103,10 +112,10 @@ class ConnectionManager:
     async def broadcast_sensor_health(self, device_id: UUID, sensor_health: dict) -> None:
         """Broadcast sensor health change."""
         await self.broadcast(device_id, {
-            "type": "sensor.health_changed",
+            "type": "sensor_health",
             "device_id": str(device_id),
             "timestamp": datetime.utcnow().isoformat(),
-            "payload": sensor_health,
+            "data": sensor_health,
         })
 
     def get_connection_count(self, device_id: UUID) -> int:

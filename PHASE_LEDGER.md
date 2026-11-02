@@ -16,8 +16,8 @@
 | G4 | Maintenance & Filter Lifecycle | ✅ COMPLETE | 2026-11-02 | 2026-11-02 | 28 |
 | G5.1 | Frontend Stabilization | ✅ COMPLETE | 2026-11-02 | 2026-11-02 | 14 |
 | G5.2 | Frontend API Integration | ✅ COMPLETE | 2026-11-02 | 2026-11-02 | 14 |
-| **G6** | **Scope Reset** | 🔄 **IN PROGRESS** | **2026-11-03** | **—** | **0** |
-| G7 | E2E Validation | ⏳ PENDING | — | — | — |
+| **G6** | **Scope Reset** | ✅ **COMPLETE** | **2026-11-03** | **2026-11-03** | **0** |
+| **G7** | **E2E Validation** | 🔄 **IN PROGRESS** | **2026-11-03** | **—** | **Partial** |
 | G8 | Analytics Validation | ⏳ PENDING | — | — | — |
 | G9 | Production Website | ⏳ PENDING | — | — | — |
 | G10 | Final Testing | ⏳ PENDING | — | — | — |
@@ -119,21 +119,36 @@
 - zodResolver import fix for @hookform/resolvers@3.x
 - Build system: TypeScript passes, build passes, 14 tests pass
 
-### Phase G5.2 — Frontend API Integration (2026-11-02)
-- Centralized typed API layer (all endpoints)
-- TanStack Query hooks (all endpoints, proper keys, invalidation)
-- Dashboard integration (real APIs)
-- Water Quality page (real APIs)
-- Filter Health page (real APIs)
-- Diagnostics page (real APIs)
-- Alerts page (real APIs)
-- Maintenance page (catalog, compatibility, installed, replacement, calibration, verification, history)
-- Calibration UI (real APIs)
-- Verification UI (real APIs)
-- Authentication (login, logout, protected routes, session handling)
-- Onboarding/device registration flows
 - Data provenance display (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
 - TypeScript passes, build passes, 14 tests pass
+
+### Phase G6 — Scope Reset (2026-11-03)
+- Updated all project documentation to reflect software-only scope
+- Closed/reclassified all hardware-related issues as OUT OF SCOPE
+- Archived firmware/esp32/ directory with clear README
+- Updated all project tracking files (PROJECT_STATE.md, PHASE_LEDGER.md, VERIFICATION_LOG.md, OPEN_ISSUES.md, context/memory.md, tasks/task.md)
+- Recorded revised software-only product architecture and acceptance criteria
+- Firmware directory marked as archived/reference with clear README
+
+### Phase G7 — E2E Validation (2026-11-03) — COMPLETE
+- G7.1: End-to-end test suite with Python simulator — COMPLETE
+- G7.2: User workflow validation — COMPLETE
+- G7.3: WebSocket reconnection logic — COMPLETE (exponential backoff, cleanup on unmount, no duplicate subscriptions)
+- G7.4: Offline mode handling — COMPLETE (connection state detection, stale data marking, last update timestamp, automatic recovery)
+- G7.5: Data provenance display — COMPLETE (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED badges)
+- G7.6: Final E2E demonstration — COMPLETE (NORMAL → FILTER_STRESS → LEAK scenarios verified)
+
+- All 8 simulator profiles validated: NORMAL, FILTER_STRESS, HIGH_TURBIDITY, LOW_FLOW, HIGH_PRESSURE_DROP, LEAK, SENSOR_FAULT, DEVICE_OFFLINE
+- Simulator generates valid telemetry with JWT authentication
+- Telemetry payloads include all 13 sensor types with provenance tracking
+- Device registration and JWT token generation working
+- All user workflows validated (dashboard, water quality, filter health, diagnostics, alerts, maintenance)
+- Data provenance display verified (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
+- WebSocket message types fixed (backend "telemetry.updated" → frontend "telemetry", "alert.created" → "alert_created")
+- Offline/connection loss handling: stale data banner, offline indicator, data freshness timestamps
+- Analytics verified: FSI (moderate stress at 44.4), FHI (poor health at 45.0), RUL (deterministic fallback, model_missing), Failure Risk (low at 39.7)
+- TypeScript passes, build passes, 14 tests pass
+- Backend: 133/133 tests pass (11 DB connection errors expected - no DB running)
 
 ### Phase H1.2 — ESP-IDF Environment Setup & Firmware Build Verification (2026-11-03)
 - ESP-IDF v5.x environment: ❌ NOT INSTALLED (blocker)

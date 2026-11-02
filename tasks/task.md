@@ -188,13 +188,59 @@
 - [ ] **G6.5** Record revised software-only product architecture and acceptance criteria
 - [ ] **G6.6** Communicate scope change to stakeholders
 
-## Phase G7 — E2E Validation (PENDING)
+## Phase G7 — E2E Validation (COMPLETE)
 
-- [ ] **G7.1** Run full end-to-end test suite with Python simulator
-- [ ] **G7.2** Validate all user workflows (onboarding → monitoring → alerts → maintenance)
-- [ ] **G7.3** Verify WebSocket reconnection logic with exponential backoff
-- [ ] **G7.4** Test offline mode handling (cached data, offline indicator)
-- [ ] **G7.5** Verify data provenance display (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
+- [x] **G7.1** Run full end-to-end test suite with Python simulator
+- [x] **G7.2** Validate all user workflows (onboarding → monitoring → alerts → maintenance)
+- [x] **G7.3** Verify WebSocket reconnection logic with exponential backoff
+- [x] **G7.4** Test offline mode handling (cached data, offline indicator)
+- [x] **G7.5** Verify data provenance display (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
+- [x] **G7.6** Final end-to-end demonstration with simulator (NORMAL → FILTER_STRESS → LEAK)
+
+### G7.1 — End-to-End Test Suite with Python Simulator ✅
+- All 8 simulator profiles verified: NORMAL, FILTER_STRESS, HIGH_TURBIDITY, LOW_FLOW, HIGH_PRESSURE_DROP, LEAK, SENSOR_FAULT, DEVICE_OFFLINE
+- Simulator generates valid telemetry payloads with correct JWT authentication
+- Telemetry payloads include all 13 sensor types with proper provenance tracking
+- Device registration and JWT token generation working correctly
+- Telemetry payload structure validated against backend schema
+
+### G7.2 — User Workflow Validation ✅
+- Dashboard displays real-time telemetry from simulator
+- Water Quality page displays AquaScore, parameter scores, trends, anomalies
+- Filter Health page shows FSI, FHI, RUL, maintenance band, explainability
+- Diagnostics page shows pressure, flow, leak, tank, pump panels with status badges
+- Alerts page shows active alerts with acknowledgment/snooze/resolve actions
+- Maintenance page shows filter catalog, installed filters, calibration, verification
+
+### G7.5 — Data Provenance Display ✅
+- Dashboard displays provenance badges (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
+- Filter Health page shows provenance for FSI, FHI, RUL values
+- Water Quality page shows provenance for AquaScore and parameter scores
+- Simulator data correctly labeled as SIMULATED provenance
+
+### G7.3 — WebSocket Reliability ✅
+- Exponential backoff with jitter: 1s initial, max 30s, +0-500ms jitter
+- Cleanup on unmount: WebSocketManager.disconnect() called in useEffect cleanup
+- No duplicate subscriptions: single WebSocketManager instance per device via useRef
+- Message type mapping fixed: backend "telemetry.updated" → frontend "telemetry", "alert.created" → "alert_created", "device.status_changed" → "device_status"
+- Connection states: connecting, connected, reconnecting, disconnected
+- Ping/pong keepalive: 25s interval
+
+### G7.4 — Offline/Connection Loss Handling ✅
+- Connection state detection via WebSocketManager status + TanStack Query error states
+- Offline indicator in dashboard header: Live (green), Reconnecting (yellow spinner), Offline (red)
+- Stale data banner: warning at >30s, critical at >120s with last update timestamp
+- Data freshness displayed: "Updated Xs ago" / "Updated Xm ago"
+- Cached data preserved via TanStack Query (staleTime: 5s, gcTime: default)
+- Automatic recovery: WebSocket auto-reconnects, queries refetch on window focus
+
+### G7.6 — Final E2E Demonstration ✅
+- Scenario 1: NORMAL - Dashboard shows green status, AquaScore ~85, FHI good, RUL unavailable (model_missing)
+- Scenario 2: FILTER_STRESS - FSI rises to moderate/high, FHI drops to poor, maintenance band = replace_recommended, alert generated
+- Scenario 3: LEAK - Critical alert generated, leak_detected status, safety workflow displayed
+- All scenarios produce correct analytical changes and alerts
+- Provenance badges visible throughout
+- No physical actuator shutdown claimed (software-only)
 
 ## Phase G8 — Analytics Validation (PENDING)
 

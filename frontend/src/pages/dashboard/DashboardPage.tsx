@@ -1,10 +1,11 @@
-import { Droplet, Filter, Gauge, Activity, Clock, Wifi, WifiOff } from 'lucide-react';
+import { Droplet, Filter, Gauge, Activity, Clock, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/Card';
 import { Badge } from '@components/ui/Badge';
 import { Skeleton, QueryError } from '@components/ui/PageSkeleton';
 import { cn } from '@utils/cn';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { ProvenanceBadge, type DataProvenance } from '@components/dashboard/ProvenanceBadge';
 import type { DeviceStatus } from '@/types/api';
 
 const DEVICE_ID = import.meta.env.VITE_DEVICE_ID ?? '00000000-0000-0000-0000-000000000001';
@@ -53,6 +54,11 @@ export function DashboardPage() {
   const deviceStatus = data?.device?.status ?? 'offline';
   const cfg = statusConfig[deviceStatus] ?? statusConfig.offline;
   const aquascore = data?.water_quality?.aquascore ?? 0;
+  
+  // Determine data freshness status
+  const dataFreshness = data?.data_freshness_seconds ?? 0;
+  const isDataStale = dataFreshness > 30; // Stale if older than 30 seconds
+  const isDataVeryStale = dataFreshness > 120; // Very stale if older than 2 minutes
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -62,26 +68,52 @@ export function DashboardPage() {
           <h1 className="text-h1 font-semibold text-text-primary">
             {isLoading ? <Skeleton className="h-8 w-48" /> : (data?.device?.name ?? 'AquaNexis Dashboard')}
           </h1>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
             {!isLoading && <Badge variant={cfg.variant}>{cfg.label}</Badge>}
             <span className="flex items-center gap-1 text-caption text-text-muted">
               {wsStatus === 'connected' ? (
                 <><Wifi className="h-3 w-3 text-success" /> Live</>
+              ) : wsStatus === 'reconnecting' ? (
+                <><Activity className="h-3 w-3 text-warning animate-spin" /> Reconnecting...</>
               ) : (
-                <><WifiOff className="h-3 w-3 text-text-muted" /> Reconnecting</>
+                <><WifiOff className="h-3 w-3 text-critical" /> Offline</>
               )}
             </span>
+            {!isLoading && data?.data_freshness_seconds != null && (
+              <span className={cn(
+                'text-caption flex items-center gap-1',
+                isDataVeryStale ? 'text-critical' : isDataStale ? 'text-warning' : 'text-text-muted'
+              )}>
+                <Clock className="h-3 w-3" />
+                {isDataVeryStale ? 'Data stale - ' : isDataStale ? 'Data aging - ' : ''}
+                Updated {dataFreshness < 60
+                  ? `${Math.round(dataFreshness)}s ago`
+                  : `${Math.round(dataFreshness / 60)}m ago`}
+              </span>
+            )}
           </div>
         </div>
-        {!isLoading && data?.data_freshness_seconds != null && (
-          <span className="text-caption text-text-muted flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            Updated {data.data_freshness_seconds < 60
-              ? `${Math.round(data.data_freshness_seconds)}s ago`
-              : `${Math.round(data.data_freshness_seconds / 60)}m ago`}
-          </span>
-        )}
       </div>
+
+      {/* Offline/Stale Data Banner */}
+      {!isLoading && (wsStatus !== 'connected' || isDataStale) && (
+        <div className={cn(
+          'rounded-card border px-4 py-3 flex items-center gap-3 text-sm',
+          wsStatus !== 'connected' ? 'bg-critical/10 border-critical/30 text-critical' : 'bg-warning/10 border-warning/30 text-warning'
+        )}>
+          {wsStatus !== 'connected' ? (
+            <>
+              <WifiOff className="h-4 w-4 flex-shrink-0" />
+              <span>Connection lost. Showing last known data.</span>
+            </>
+          ) : (
+            <>
+              <Activity className="h-4 w-4 flex-shrink-0" />
+              <span>Data is {isDataVeryStale ? 'very stale' : 'aging'}. Last update {dataFreshness < 60 ? `${Math.round(dataFreshness)}s` : `${Math.round(dataFreshness / 60)}m`} ago.</span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Active Alert Banner */}
       {data?.active_alert && (
@@ -105,7 +137,12 @@ export function DashboardPage() {
               <Skeleton className="h-20 w-20 rounded-full mx-auto" />
             ) : (
               <>
-                <div className={cn('text-data-xl', scoreColor(aquascore))}>{aquascore.toFixed(0)}</div>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className={cn('text-data-xl', scoreColor(aquascore))}>{aquascore.toFixed(0)}</div>
+                  {data?.water_quality?.provenance && (
+                    <ProvenanceBadge provenance={data.water_quality.provenance as DataProvenance} size="sm" />
+                  )}
+                </div>
                 <div className="text-caption text-text-secondary mt-1">AquaScore™</div>
               </>
             )}
@@ -115,7 +152,12 @@ export function DashboardPage() {
         {/* Filter Health */}
         <Card>
           <CardHeader>
-            <CardTitle>Filter Health</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Filter Health</CardTitle>
+              {data?.filter_health?.provenance && (
+                <ProvenanceBadge provenance={data.filter_health.provenance as DataProvenance} size="sm" />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -180,7 +222,12 @@ export function DashboardPage() {
 
       {/* Sensor Grid */}
       <div>
-        <h2 className="text-h2 font-semibold text-text-primary mb-4">Live Sensor Readings</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-h2 font-semibold text-text-primary">Live Sensor Readings</h2>
+          {data?.latest_telemetry?.provenance && (
+            <ProvenanceBadge provenance={data.latest_telemetry.provenance as DataProvenance} size="sm" showDescription />
+          )}
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {Object.entries(sensorLabels).map(([key, meta]) => {
             const value = data?.latest_telemetry?.readings?.[key as keyof typeof data.latest_telemetry.readings];

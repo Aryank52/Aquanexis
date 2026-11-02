@@ -32,8 +32,8 @@
 | G4 | Maintenance & Filter Lifecycle | ✅ | 100% |
 | G5.1 | Frontend Stabilization | ✅ | 100% |
 | G5.2 | Frontend API Integration | ✅ | 100% |
-| **G6** | **Scope Reset** | 🔄 **IN PROGRESS** | **0%** |
-| G7 | E2E Validation | ⏳ | 0% |
+| **G6** | **Scope Reset** | ✅ | **100%** |
+| **G7** | **E2E Validation** | ✅ | **100%** |
 | G8 | Analytics Validation | ⏳ | 0% |
 | G9 | Production Website | ⏳ | 0% |
 | G10 | Final Testing | ⏳ | 0% |

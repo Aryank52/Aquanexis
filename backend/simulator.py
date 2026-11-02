@@ -338,7 +338,7 @@ def parse_args():
         args.device_jwt = create_device_token(device_uuid)
         print(f"Generated device JWT: {args.device_jwt[:20]}...")
     
-    return config
+    return args
 
 
 async def main():
@@ -352,16 +352,16 @@ async def main():
         # Windows doesn't support add_signal_handler
         pass
     
-    config = parse_args()
+    args = parse_args()
     
     simulator_config = SimulatorConfig(
-        backend_url=config.backend_url,
-        device_id=UUID(config.device_id),
-        device_jwt=config.device_jwt,
-        interval_seconds=config.interval,
-        profile=SimulationProfile(config.profile),
-        seed=config.seed,
-        simulate_duration_seconds=config.duration,
+        backend_url=args.backend_url,
+        device_id=UUID(args.device_id),
+        device_jwt=args.device_jwt,
+        interval_seconds=args.interval,
+        profile=SimulationProfile(args.profile),
+        seed=args.seed,
+        simulate_duration_seconds=args.duration,
     )
     
     try:
