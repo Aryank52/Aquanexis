@@ -7,6 +7,15 @@
 
 ---
 
+# AquaNexis Project State
+
+## Current Status: Phase G6 (Scope Reset) — IN PROGRESS
+
+**Last Updated**: 2026-11-03
+**Overall Progress**: 75% (12/16 phases complete)
+
+---
+
 ## Phase Completion Status
 
 | Phase | Name | Status | Completion |
@@ -23,12 +32,12 @@
 | G4 | Maintenance & Filter Lifecycle | ✅ | 100% |
 | G5.1 | Frontend Stabilization | ✅ | 100% |
 | G5.2 | Frontend API Integration | ✅ | 100% |
-| **H1** | **ESP32 Firmware & Sensor Drivers** | ✅ | **100%** |
-| **H1.1** | **Firmware Audit & Hardware Config** | ✅ | **100%** |
-| H1-Physical | Physical Hardware Bring-up | ⏳ | 0% |
-| H2 | Device Provisioning & Communication | ⏳ | 0% |
-| H3 | Hardware Safety & Reliability | ⏳ | 0% |
-| H4 | Hardware Verification | ⏳ | 0% |
+| **G6** | **Scope Reset** | 🔄 **IN PROGRESS** | **0%** |
+| G7 | E2E Validation | ⏳ | 0% |
+| G8 | Analytics Validation | ⏳ | 0% |
+| G9 | Production Website | ⏳ | 0% |
+| G10 | Final Testing | ⏳ | 0% |
+| **H (Hardware/ESP32)** | **OUT OF SCOPE** | 📦 **ARCHIVED** | **N/A** |
 | I | Security / CI / Hardening | ⏳ | 0% |
 | J | Final Verification | ⏳ | 0% |
 

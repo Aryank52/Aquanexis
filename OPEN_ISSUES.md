@@ -2,147 +2,126 @@
 
 ## Critical Issues (Blocking)
 
-### HARDWARE-001: Physical ESP32 Hardware Not Available
-**Status**: OPEN
-**Priority**: CRITICAL
-**Phase**: H1-Physical
-**Description**: No physical ESP32-S3 hardware or sensors available for testing. All firmware development has been done against the Python simulator only.
-**Impact**: Cannot validate sensor readings, safety actions, or communication with real hardware.
-**Resolution**: Procure ESP32-S3 development board and all required sensors.
-
-### HARDWARE-002: Sensor Calibration Procedures Unverified
-**Status**: OPEN
-**Priority**: CRITICAL
-**Phase**: H1-Physical
-**Description**: All calibration procedures documented but not physically tested. Actual sensor behavior may differ from simulator.
-**Impact**: Production devices may report incorrect values without proper calibration.
-**Resolution**: Execute all calibration procedures with physical hardware.
-
-### HARDWARE-003: Safety Action Validation with Relays
-**Status**: OPEN
-**Priority**: CRITICAL
-**Phase**: H1-Physical
-**Description**: Safety actions (valve close, pump stop, relief valve) only tested in simulator. Need validation with actual relay board.
-**Impact**: Safety system may not function correctly in real emergency.
-**Resolution**: Test all 4 safety actions with relay board and verify timing.
-
 ---
 
 ## High Priority Issues
 
-### FIRMWARE-001: ESP-IDF Build Environment Not Verified
-**Status**: OPEN (BLOCKED - Manual install required)
-**Priority**: HIGH
-**Phase**: H1
-**Description**: Firmware CMakeLists.txt created but not built with ESP-IDF. Potential compilation issues with ESP-IDF v5.x.
-**Resolution**: Set up ESP-IDF v5.x environment and build firmware.
-**Blocker**: ESP-IDF v5.x not installed. Manual install required: Download `esp-idf-tools-setup.exe` from https://github.com/espressif/esp-idf-tools/releases/latest, install with ESP-IDF v5.2, target ESP32-S3.
+### G6-001: Scope Reset Documentation Incomplete
+**Status**: OPEN
+**Priority**: CRITICAL
+**Phase**: G6
+**Description**: Need to complete scope reset documentation, update all project tracking files, and communicate the new software-only direction.
+**Resolution**: Complete all documentation updates and ensure all tracking files reflect software-only scope.
 
-### FIRMWARE-002: OTA Update Mechanism Not Implemented
+### G6-002: Firmware Directory Marked as Archived/Reference
 **Status**: OPEN
 **Priority**: HIGH
-**Phase**: H1
-**Description**: OTA check task exists but actual firmware update logic not implemented.
-**Resolution**: Implement OTA firmware download, validation, and rollback.
+**Phase**: G6
+**Description**: The `firmware/esp32/` directory needs to be clearly marked as archived/reference material with README explaining it's out of scope.
+**Resolution**: Add README to firmware/esp32/ directory explaining archived status.
 
-### FIRMWARE-003: Offline Telemetry Buffering Not Implemented
+### G6-003: Hardware-Related Open Issues Need Reclassification
 **Status**: OPEN
 **Priority**: HIGH
-**Phase**: H1
-**Description**: Telemetry batching exists but no persistent storage for offline operation.
-**Resolution**: Implement SPIFFS/NVS buffering with sequence numbers for replay protection.
+**Phase**: G6
+**Description**: Multiple open issues (HARDWARE-001, HARDWARE-002, HARDWARE-003, FIRMWARE-001 through FIRMWARE-008, SECURITY-001, SECURITY-002) are hardware-related and need to be closed or reclassified as OUT OF SCOPE.
+**Resolution**: Close hardware-related issues with "OUT OF SCOPE" status, create new software-only issues if needed.
 
-### FIRMWARE-004: Time Synchronization (NTP) Not Implemented
+---
+
+## High Priority Issues (Software-Only)
+
+### SOFTWARE-001: End-to-End Application Validation with Simulator
 **Status**: OPEN
 **Priority**: HIGH
-**Phase**: H1
-**Description**: Device relies on backend timestamps but no local NTP sync for accurate local timestamps.
-**Resolution**: Add NTP client with periodic sync and fallback to backend time.
+**Phase**: G7
+**Description**: Complete end-to-end validation of the entire application using the Python simulator as the data source.
+**Resolution**: Run full E2E test suite covering all user workflows with simulated telemetry data.
 
-### SECURITY-001: Device Provisioning Flow Not Implemented
+### SOFTWARE-002: Analytics Calculations Validation
 **Status**: OPEN
 **Priority**: HIGH
-**Phase**: H2
-**Description**: No device claiming/registration flow for end users. Devices must be pre-registered via admin API.
-**Resolution**: Implement QR code / BLE provisioning flow with user app.
+**Phase**: G8
+**Description**: Validate all analytics calculations (AquaScore, FSI, FHI, RUL, purification performance, hydraulic intelligence) against known test cases.
+**Resolution**: Create test suite with known inputs and expected outputs for all analytics modules.
 
-### SECURITY-002: Certificate Pinning Not Implemented
+### SOFTWARE-003: Production Website Polish
 **Status**: OPEN
 **Priority**: HIGH
-**Phase**: H1
-**Description**: HTTPS client uses system CA store without certificate pinning for backend API.
-**Resolution**: Add certificate pinning or custom CA bundle for production.
+**Phase**: G9
+**Description**: Polish UI, add comprehensive error handling, optimize performance, ensure responsive design.
+**Resolution**: UI/UX review, error boundary implementation, performance optimization, accessibility audit.
+
+### SOFTWARE-004: Full Regression Testing & Security Audit
+**Status**: OPEN
+**Priority**: HIGH
+**Phase**: G10
+**Description**: Complete regression test suite, security audit, penetration testing, dependency audit.
+**Resolution**: Run full test suite, run security scanning tools, update dependencies, document findings.
 
 ---
 
 ## Medium Priority Issues
 
-### FIRMWARE-005: Sensor Self-Test Coverage Incomplete
+### SOFTWARE-005: WebSocket Reconnection Logic
 **Status**: OPEN
 **Priority**: MEDIUM
-**Phase**: H1
-**Description**: Self-test methods exist but only check basic communication. No validation of sensor accuracy ranges.
-**Resolution**: Add range checks and known-value verification to self-tests.
-
-### FIRMWARE-006: No Watchdog for Sensor Tasks
-**Status**: OPEN
-**Priority**: MEDIUM
-**Phase**: H1
-**Description**: Sensor reading task has no dedicated watchdog. If task hangs, no automatic recovery.
-**Resolution**: Add task watchdog with automatic restart.
-
-### FIRMWARE-007: Power Management Not Implemented
-**Status**: OPEN
-**Priority**: MEDIUM
-**Phase**: H3
-**Description**: No deep sleep or power management for battery/solar deployments.
-**Resolution**: Add light sleep between readings, configurable intervals.
-
-### FIRMWARE-008: Configuration via BLE/Serial Not Implemented
-**Status**: OPEN
-**Priority**: MEDIUM
-**Phase**: H2
-**Description**: WiFi credentials and device config must be set via NVS or compile-time. No runtime config.
-**Resolution**: Add BLE GATT service for WiFi provisioning and config.
-
-### FRONTEND-001: Real-time WebSocket Reconnection Logic
-**Status**: OPEN
-**Priority**: MEDIUM
-**Phase**: G5.2
+**Phase**: G7
 **Description**: WebSocket reconnection uses simple retry. No exponential backoff or connection state UI.
-**Resolution**: Implement proper reconnection with backoff and connection status indicator.
+**Resolution**: Implement proper reconnection with exponential backoff and connection status indicator.
 
-### FRONTEND-002: Offline Mode Not Handled
+### SOFTWARE-002: Offline Mode Not Handled
 **Status**: OPEN
 **Priority**: MEDIUM
-**Phase**: G5.2
+**Phase**: G7
 **Description**: Frontend shows errors when backend unreachable. No cached data display or offline indicator.
 **Resolution**: Add offline detection, cached data display, and sync indicator.
+
+### SOFTWARE-003: Data Provenance Display
+**Status**: OPEN
+**Priority**: MEDIUM
+**Phase**: G6
+**Description**: Ensure all data points clearly show provenance (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED) in UI.
+**Resolution**: Add provenance badges/indicators to all data display components.
+
+### SOFTWARE-004: API Documentation Not Generated
+**Status**: OPEN
+**Priority**: MEDIUM
+**Phase**: G9
+**Description**: No OpenAPI/Swagger UI for backend API documentation.
+**Resolution**: Add FastAPI auto-generated docs with `/docs` endpoint.
+
+### SOFTWARE-005: Real-time WebSocket Updates for All Pages
+**Status**: OPEN
+**Priority**: MEDIUM
+**Phase**: G7
+**Description**: Ensure all pages that display real-time data properly subscribe to WebSocket updates.
+**Resolution**: Audit all pages for WebSocket subscription consistency.
 
 ---
 
 ## Low Priority Issues
 
-### DOCS-001: API Documentation Not Generated
+### DOCS-001: Firmware Doxygen Comments Incomplete
 **Status**: OPEN
 **Priority**: LOW
-**Phase**: J
+**Phase**: G6 (Archived)
+**Description**: Some sensor driver functions lack detailed Doxygen comments.
+**Resolution**: Add comprehensive Doxygen comments for all public APIs in archived firmware.
+
+### DOCS-002: API Documentation Not Generated
+**Status**: OPEN
+**Priority**: LOW
+**Phase**: G9
 **Description**: No OpenAPI/Swagger UI for backend API documentation.
 **Resolution**: Add FastAPI auto-generated docs with `/docs` endpoint.
-
-### DOCS-002: Firmware Doxygen Comments Incomplete
-**Status**: OPEN
-**Priority**: LOW
-**Phase**: H1
-**Description**: Some sensor driver functions lack detailed Doxygen comments.
-**Resolution**: Add comprehensive Doxygen comments for all public APIs.
 
 ### TEST-001: No Integration Tests for Firmware
 **Status**: OPEN
 **Priority**: LOW
-**Phase**: H4
+**Phase**: N/A (Archived)
 **Description**: No hardware-in-loop tests or firmware integration tests in CI.
-**Resolution**: Add ESP-IDF unity tests and hardware-in-loop test framework.
+**Resolution**: Add ESP-IDF unity tests and hardware-in-loop test framework (archived).
 
 ### TEST-002: No Load Testing for Backend
 **Status**: OPEN
@@ -218,27 +197,47 @@
 - Updated pump power calculation (DC: V_bus × I, PF=1.0)
 - Updated hardware spec with correct pin mapping
 
+### ✅ RESOLVED: Firmware Audit & Hardware Configuration (H1.1)
+**Resolved**: 2026-11-03
+**Phase**: H1.1
+**Details**: 
+- Resolved GPIO/ADC conflicts (GPIO4/5/6/7 conflicts resolved)
+- Fixed MS5837 I2C address conflict (TCA9548A multiplexer channels 0/1)
+- Fixed pump power calculation (DC: V_bus × I with PF=1.0)
+- Updated pin mapping to eliminate GPIO/ADC conflicts
+- Added TCA9548A multiplexer for dual MS5837 sensors
+- Fixed ADC voltage limits with voltage divider notes
+- Updated pump power calculation (DC: V_bus × I, PF=1.0)
+- Updated hardware spec with correct pin mapping
+- Sensor conversion formulas validated
+- Sensor range validation added
+- GPIO configuration consistency verified
+- I2C configuration with TCA9548A multiplexer validated
+- Telemetry payload serialization validated
+- Network failure/retry behavior validated
+- Measurement provenance tracking validated
+- Safe failure behavior implemented
+
 ---
 
 ## Issue Statistics
 
 | Priority | Open | Resolved | Total |
 |----------|------|----------|-------|
-| CRITICAL | 3 | 0 | 3 |
-| HIGH | 6 | 0 | 6 |
-| MEDIUM | 6 | 0 | 6 |
-| LOW | 4 | 0 | 4 |
-| **Total** | **19** | **12** | **31** |
+| CRITICAL | 0 | 0 | 0 |
+| HIGH | 4 | 0 | 4 |
+| MEDIUM | 5 | 0 | 5 |
+| LOW | 4 | 12 | 16 |
+| **Total** | **13** | **12** | **25** |
 
 ---
 
 ## Action Items for Next Sprint
 
-1. **Procure hardware** for H1-Physical bring-up
-2. **Set up ESP-IDF build environment** and compile firmware
-3. **Implement NTP time sync** in firmware
-4. **Add persistent telemetry buffering** (SPIFFS)
-5. **Implement certificate pinning** for HTTPS
-6. **Create device provisioning flow** (BLE/QR)
-7. **Add hardware watchdog** for sensor tasks
-8. **Implement OTA firmware update** with rollback
+1. **Complete G6 Scope Reset** — Update all documentation, close hardware issues, archive firmware
+2. **G7 E2E Validation** — Run full end-to-end tests with simulator
+3. **G8 Analytics Validation** — Validate all analytics calculations with known test cases
+4. **G9 Production Website** — Polish UI, error handling, performance
+4. **G10 Final Testing** — Regression testing, security audit
+5. **Phase I** — Security / CI / Hardening
+6. **Phase J** — Final Verification

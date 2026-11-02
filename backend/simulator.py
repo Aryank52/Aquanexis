@@ -343,10 +343,14 @@ def parse_args():
 
 async def main():
     """Main entry point."""
-    # Setup signal handling
+    # Setup signal handling (Windows compatible)
     loop = asyncio.get_event_loop()
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown()))
+    try:
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown()))
+    except NotImplementedError:
+        # Windows doesn't support add_signal_handler
+        pass
     
     config = parse_args()
     

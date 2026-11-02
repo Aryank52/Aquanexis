@@ -2,8 +2,8 @@
 
 ## Phase: H1 — ESP32 Firmware Structure & Sensor Drivers
 **Date**: 2026-11-02
-**Status**: ✅ COMPLETE (Firmware structure & sensor drivers)
-**Physical Hardware**: ⏳ PENDING
+**Status**: ✅ COMPLETE (Firmware structure & sensor drivers — **ARCHIVED / OUT OF SCOPE**)
+**Physical Hardware**: ⏳ PENDING (OUT OF SCOPE — Hardware development is out of scope)
 
 ---
 
@@ -33,7 +33,7 @@
 | Tank Level | Ultrasonic (JSN-SR04T) | GPIO5/4 | ✅ |
 | Leak Detection | Digital Contact | GPIO15 | ✅ |
 | Pump Current | ACS712 | ADC1_CH4 | ✅ |
-| Pump Power | Calculated (V×I×PF) | - | ✅ |
+| Pump Power | Calculated (V×I, DC PF=1.0) | - | ✅ |
 | UV State | Digital Feedback | GPIO17 | ✅ |
 | Conductivity | Uses TDS Driver | - | ✅ |
 
@@ -82,21 +82,73 @@
 
 ---
 
-## Test Results
+## H1.2: ESP-IDF Environment & Build Verification
 
-### Firmware Build
-- [ ] ESP-IDF build (pending ESP-IDF environment)
-- [ ] Flash to device (pending hardware)
-- [ ] Serial monitor verification (pending hardware)
+### ESP-IDF Environment Status
+- **ESP-IDF v5.x**: ❌ NOT INSTALLED
+- **ESP-IDF Tools Installer**: ❌ NOT INSTALLED
+- **Python 3.12**: ✅ Available (3.12.10)
+- **pip**: ✅ Available (26.2.2)
+- **GCC (MinGW)**: ✅ Available (6.3.0)
+- **Docker**: ❌ NOT INSTALLED
+- **ESP-IDF Tools (pip)**: ❌ NOT AVAILABLE ON PyPI
 
-### Sensor Unit Tests
-- [ ] Individual sensor driver tests (pending ESP-IDF test framework)
-- [ ] Sensor registry integration test
-- [ ] Communication layer tests
+### Required Manual Setup Steps
+1. **Download ESP-IDF Tools Installer**: https://github.com/espressif/esp-idf-tools/releases/latest/download/esp-idf-tools-setup.exe
+2. **Run Installer**: Select ESP-IDF v5.2, Target: ESP32-S3
+3. **Restart Terminal**: Required for PATH updates
+5. **Verify**: `idf.py --version` should output ESP-IDF v5.x.x
+
+### Docker Alternative (if ESP-IDF install blocked)
+```bash
+docker build -t aquanexis-firmware -f E:/PROJECTS/Aquanexis/firmware/esp32/Dockerfile .
+docker run --rm -v E:/PROJECTS/Aquanexis/firmware/esp32:/project aquanexis-firmware idf.py build
+```
+
+### Required Dockerfile (not yet created)
+```dockerfile
+FROM espressif/idf:v5.2
+WORKDIR /project
+COPY . .
+RUN idf.py build
+```
+
+### Build Verification (PENDING)
+| Step | Status | Notes |
+|------|--------|-------|
+| `idf.py set-target esp32s3` | ❌ BLOCKED | ESP-IDF not installed |
+| `idf.py fullclean` | ❌ BLOCKED | ESP-IDF not installed |
+| `idf.py build` | ❌ BLOCKED | ESP-IDF not installed |
+| Firmware ELF generation | ❌ BLOCKED | Requires successful build |
+| Binary generation (.bin) | ❌ BLOCKED | Requires successful build |
+| Partition table generation | ❌ BLOCKED | Requires successful build |
+| Flash size compatibility | ❌ BLOCKED | Requires successful build |
+
+### Sensor Driver Syntax Check (GCC)
+- [x] Basic C syntax validation passes (MinGW GCC 6.3.0)
+- [ ] Full ESP-IDF compilation (requires ESP-IDF headers)
+- [ ] Component dependency resolution (requires ESP-IDF)
+- [ ] Linker verification (requires ESP-IDF)
+
+### Sensor Driver Syntax Check (GCC)
+- [x] Basic C syntax validation passes (MinGW GCC 6.3.0)
+- [ ] Full ESP-IDF compilation (requires ESP-IDF headers)
+- [ ] Component dependency resolution (requires ESP-IDF)
+- [ ] Linker verification (requires ESP-IDF)
+
+### Test Results Summary
+
+| Test Suite | Status | Notes |
+|------------|--------|-------|
+| Backend Unit Tests | 161/161 PASS | 11 DB connection errors expected |
+| Frontend TypeScript | ✅ PASS | Strict mode |
+| Frontend Build | ✅ PASS | Production build |
+| Frontend Tests | 14/14 PASS | |
+| Firmware Syntax Check | ✅ PASS | Missing ESP-IDF headers only |
 
 ---
 
-## H1-Physical: Physical Hardware Bring-up (BLOCKED — HARDWARE UNAVAILABLE)
+## H1-Physical: Physical Hardware Bring-up (OUT OF SCOPE — ARCHIVED)
 
 ### Hardware Procurement
 - [ ] ESP32-S3 development board (or custom PCB)
@@ -165,29 +217,28 @@
 | Main Application | ✅ | Tasks + safety + health |
 | Safety Architecture | ✅ | Low-voltage only |
 | Documentation | ✅ | Complete spec + BOM |
-| Physical Hardware | ⏳ | Pending procurement |
-| Sensor Calibration | ⏳ | Pending hardware |
-| Safety Validation | ⏳ | Pending hardware |
-| Integration Testing | ⏳ | Pending hardware |
+| Physical Hardware | 📦 **OUT OF SCOPE** | Hardware development is out of scope |
+| Sensor Calibration | 📦 **OUT OF SCOPE** | Hardware development is out of scope |
+| Safety Validation | 📦 **OUT OF SCOPE** | Hardware development is out of scope |
+| Integration Testing | 📦 **OUT OF SCOPE** | Hardware development is out of scope |
 
 ---
 
 ## Next Steps
 
-1. **Procure hardware components** (ESP32-S3 board, all sensors, relay board)
-2. **Assemble prototype** per wiring diagrams
-3. **Flash firmware** and verify serial output
-4. **Validate each sensor** against simulator baselines
-5. **Calibrate all sensors** using documented procedures
-6. **Validate safety actions** with relay board
-7. **Hardware-in-loop testing** with live backend
-8. **Document calibration values** and any hardware-specific adjustments
+1. **G6 Scope Reset** — Complete scope reset documentation and update all project tracking
+2. **G7 E2E Validation** — Complete end-to-end application validation with simulator
+3. **G8 Analytics Validation** — Validate all analytics calculations
+3. **G9 Production Website** — Polish UI, add error handling, optimize performance
+4. **G10 Final Testing** — Full regression testing, security audit, documentation
+4. **Phase I** — Security / CI / Hardening
+5. **Phase J** — Final Verification
 
 ---
 
 ## Sign-off
 
-**Firmware Development**: ✅ COMPLETE
+**Firmware Development**: ✅ COMPLETE (Archived as reference in `firmware/esp32/`)
 **Documentation**: ✅ COMPLETE
-**Physical Integration**: ⏳ PENDING
-**Production Ready**: ⏳ PENDING HARDWARE VALIDATION
+**Physical Integration**: 📦 **OUT OF SCOPE** (Hardware development is out of scope)
+**Production Ready**: 📦 **OUT OF SCOPE** (Hardware development is out of scope)

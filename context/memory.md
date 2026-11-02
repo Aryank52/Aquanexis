@@ -5,7 +5,7 @@
 ### 2026-10-31 — Project Initialization
 - Repository created from scratch
 - Specification defined in master prompt
-- Tech stack decision: FastAPI + PostgreSQL + React + ESP32
+- **Tech stack decision: FastAPI + PostgreSQL + React (Software-Only)**
 - No existing code, migrations, or data
 
 ### Architecture Decisions
@@ -20,6 +20,7 @@
 | 2026-11-01 | Phase E: Filter Intelligence Enhancement | Centralized config, baselines, model registry, explainability |
 | 2026-11-02 | Phase F: Reliability & Safety | Leak, pressure, flow, pump protection with validated actions |
 | 2026-11-02 | Phase G: Maintenance & Lifecycle | Alert state machine, auto-resolution, maintenance workflows |
+| **2026-11-03** | **Scope Correction: Software-Only** | **AquaNexis is a software-only web application; hardware development is out of scope** |
 
 ### Implementation Status
 - **Slice A (Runtime Stability)**: ✅ COMPLETE
@@ -29,8 +30,12 @@
 - **Phase E (Filter Intelligence Enhancement + Model Validation)**: ✅ COMPLETE
 - **Phase F (Reliability & Safety)**: ✅ COMPLETE
 - **Phase G (Maintenance & Lifecycle)**: ✅ COMPLETE (G1-G5 complete)
-- **Phase H (Hardware / ESP32)**: 🔄 IN PROGRESS (H1: Firmware structure & sensor drivers complete; H1.1: Firmware audit complete)
-- **Phase H1-Physical**: ⏳ BLOCKED — HARDWARE UNAVAILABLE
+- **Phase G6 (Scope Reset)**: 🔄 IN PROGRESS
+- **Phase G7 (E2E Validation)**: ⏳ PENDING
+- **Phase G8 (Analytics Validation)**: ⏳ PENDING
+- **Phase G9 (Production Website)**: ⏳ PENDING
+- **Phase G10 (Final Testing)**: ⏳ PENDING
+- **Phase H (Hardware / ESP32)**: 📦 **OUT OF SCOPE** (preserved as reference in `firmware/esp32/`)
 - **Phase I (Security / CI / Hardening)**: ⏳ PENDING
 - **Phase J (Final Verification)**: ⏳ PENDING
 

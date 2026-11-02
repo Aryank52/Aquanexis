@@ -16,13 +16,14 @@
 | G4 | Maintenance & Filter Lifecycle | ✅ COMPLETE | 2026-11-02 | 2026-11-02 | 28 |
 | G5.1 | Frontend Stabilization | ✅ COMPLETE | 2026-11-02 | 2026-11-02 | 14 |
 | G5.2 | Frontend API Integration | ✅ COMPLETE | 2026-11-02 | 2026-11-02 | 14 |
-| **H1** | **ESP32 Firmware & Sensor Drivers** | ✅ **COMPLETE** | **2026-11-02** | **2026-11-02** | **N/A** |
-| H1-Physical | Physical Hardware Bring-up | ⏳ PENDING | - | - | - |
-| H2 | Device Provisioning & Communication | ⏳ PENDING | - | - | - |
-| H3 | Hardware Safety & Reliability | ⏳ PENDING | - | - | - |
-| H4 | Hardware Verification | ⏳ PENDING | - | - | - |
-| I | Security / CI / Hardening | ⏳ PENDING | - | - | - |
-| J | Final Verification | ⏳ PENDING | - | - | - |
+| **G6** | **Scope Reset** | 🔄 **IN PROGRESS** | **2026-11-03** | **—** | **0** |
+| G7 | E2E Validation | ⏳ PENDING | — | — | — |
+| G8 | Analytics Validation | ⏳ PENDING | — | — | — |
+| G9 | Production Website | ⏳ PENDING | — | — | — |
+| G10 | Final Testing | ⏳ PENDING | — | — | — |
+| **H (Hardware/ESP32)** | **OUT OF SCOPE** | 📦 **ARCHIVED** | — | — | — |
+| I | Security / CI / Hardening | ⏳ PENDING | — | — | — |
+| J | Final Verification | ⏳ PENDING | — | — | — |
 
 ---
 
@@ -134,35 +135,21 @@
 - Data provenance display (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
 - TypeScript passes, build passes, 14 tests pass
 
-### Phase H1 — ESP32 Firmware & Sensor Drivers (2026-11-02)
-- ESP32-S3 firmware structure (CMake, partitions, sdkconfig)
-- Sensor driver interface (13 types)
-- 13 sensor drivers (TDS, pH, Turbidity, Temperature, Flow, Pressure×2, Tank Level, Leak, Pump Current, Pump Power, UV State, Conductivity, Sensor Registry)
-- Communication layer (HTTP/HTTPS, JWT, telemetry batching)
-- Main application (WiFi, sensor loop, telemetry, safety, health, OTA)
-- Safety architecture (low-voltage control only)
-- Hardware specification document
-- Pin mapping for ESP32-S3
+### Phase H1.2 — ESP-IDF Environment Setup & Firmware Build Verification (2026-11-03)
+- ESP-IDF v5.x environment: ❌ NOT INSTALLED (blocker)
+- Python 3.12: ✅ Available
+- GCC (MinGW): ✅ Available
+- Docker: ❌ NOT INSTALLED
+- CMakeLists.txt, partitions.csv, sdkconfig.defaults: ✅ Validated
+- Sensor drivers (13): ✅ Syntax validated (GCC)
+- Firmware build: ❌ BLOCKED (ESP-IDF not installed)
+- Firmware ELF/binary generation: ❌ BLOCKED
+- Partition table generation: ❌ BLOCKED
+- Sensor driver syntax check: ✅ PASS (GCC)
+- Communication layer: ✅ Syntax validated
+- Main application: ✅ Syntax validated
 
-### Phase H1.1 — Firmware Audit & Hardware Configuration (2026-11-02)
-- Resolved GPIO/ADC pin conflicts (GPIO4/5/6/7 conflicts resolved)
-- Fixed MS5837 I2C address conflict via TCA9548A multiplexer (channels 0/1)
-- Fixed pump power calculation (DC: V_bus × I with PF=1.0)
-- Updated pin mapping to eliminate GPIO/ADC conflicts
-- Added TCA9548A multiplexer for dual MS5837 sensors
-- Fixed ADC voltage limits with voltage divider documentation
-- Updated pump power calculation (DC: V_bus × I, PF=1.0)
-- Updated hardware spec with corrected pin mapping
-- Sensor conversion formulas validated
-- Sensor range validation added
-- GPIO configuration consistency verified
-- I2C configuration with TCA9548A multiplexer validated
-- Telemetry payload serialization validated
-- Network failure/retry behavior validated
-- Measurement provenance tracking validated
-- Safe failure behavior implemented
-
----
+### Phase H1-Physical — Physical Hardware Bring-up (BLOCKED — HARDWARE UNAVAILABLE)
 
 ## Cumulative Test Count
 

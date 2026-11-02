@@ -1,6 +1,6 @@
 # AquaNexis — Task Checklist
 
-## Current Sprint: Phase G — Maintenance & Lifecycle (IN PROGRESS)
+## Current Sprint: Phase G6 — Scope Reset (IN PROGRESS)
 
 ### Slice A — Runtime Stability ✅
 ### Slice B — Telemetry Foundation ✅
@@ -34,6 +34,26 @@
 - [x] SafetyAction, SafetyEvent, SafetyActionCommand, SafetyActionResponse, SafetyConfig, SafetyActionCommand, SafetyActionResponse, SafetyAuditEvent
 - [x] Firmware command protocol (FirmwareCommand, FirmwareResponse)
 - [x] Safety audit events (SafetyAuditEvent)
+
+### Services (`app/services/`)
+- [x] `app/services/leak_protection.py` - Leak detection and protection
+- [x] `app/services/pressure_protection.py` - Pressure monitoring and protection
+- [x] `app/services/flow_protection.py` - Flow monitoring and protection
+- [x] `app/services/energy_protection.py` - Pump current/power monitoring and protection
+- [x] `app/services/safety_service.py` - Main safety orchestration service
+
+### API Endpoints (`app/api/v1/endpoints/`)
+- [x] `safety.py` - GET /safety/config, PUT /safety/config/{device_id}, POST /safety/test, POST /safety/action, POST /safety/action/test, GET /safety/events/{device_id}, GET /safety/audit/{device_id}
+
+### Schemas (`app/schemas/safety.py`)
+- [x] SafetyConfigResponse, SafetyConfigUpdate
+- [x] SafetyTestRequest, SafetyTestResponse
+- [x] SafetyActionCommand, SafetyActionResponse
+
+### Database Models (`app/models/safety.py`)
+- [x] SafetyEventModel - Safety event audit trail with indexes
+- [x] SafetyActionModel - Safety action command log with indexes
+- [x] SafetyActionType, SafetyEventType, SafetyActionStatus, SafetyEventType enums with native_enum=False
 
 ### Services (`app/services/`)
 - [x] `app/services/leak_protection.py` - Leak detection and protection
@@ -103,18 +123,18 @@
 - [x] **G4.3** Verification workflow (`app/services/maintenance_service.py` - start_verification, run_verification_checks)
 - [x] **G4.4** Maintenance history tracking (`app/services/maintenance_service.py` - get_installed_filters, get_maintenance_events)
 - [x] **G4.5** Filter catalog with 11 categories (`app/domain/maintenance.py` - FilterCategory enum)
-- [x] **G4.6** Filter compatibility engine (`app/services/compatibility_engine.py`)
-- [x] **G4.7** Installed filter lifecycle tracking (`app/domain/maintenance.py` - InstalledFilter, FilterLifecycleState)
-- [x] **G4.8** Maintenance workflow state machine (`app/domain/maintenance.py` - MaintenanceWorkflow, MAINTENANCE_WORKFLOW_TRANSITIONS)
-- [x] **G4.9** Calibration management with time/usage-based due tracking (`app/services/maintenance_service.py` - get_calibration_due, CalibrationPolicyModel)
-- [x] **G4.10** Post-maintenance verification engine (`app/services/maintenance_service.py` - run_verification_checks)
-- [x] **G4.11** Baseline versioning (`app/services/maintenance_service.py` - create_baseline_version, BaselineVersionModel)
-- [x] **G4.12** Maintenance recommendations engine (`app/services/maintenance_service.py` - generate_recommendations)
-- [x] **G4.13** Notification integration via G3 outbox (`app/services/maintenance_service.py` - _enqueue_maintenance_notification, etc.)
-- [x] **G4.14** API endpoints for all maintenance operations (`app/api/v1/endpoints/maintenance.py`)
-- [x] **G4.15** Database models for all maintenance entities (`app/models/maintenance.py`)
-- [x] **G4.16** Migration `0008_maintenance_tables.py` - 10 tables with indexes and constraints
-- [x] **G4.17** Unit tests: 28 tests passing (`test_maintenance.py`)
+- [x] **G4.2** Filter compatibility engine (`app/services/compatibility_engine.py`)
+- [x] **G4.3** Installed filter lifecycle tracking (`app/domain/maintenance.py` - InstalledFilter, FilterLifecycleState)
+- [x] **G4.4** Maintenance workflow state machine (`app/domain/maintenance.py` - MaintenanceWorkflow, MAINTENANCE_WORKFLOW_TRANSITIONS)
+- [x] **G4.4** Calibration management with time/usage-based due tracking (`app/services/maintenance_service.py` - get_calibration_due, CalibrationPolicyModel)
+- [x] **G4.5** Post-maintenance verification engine (`app/services/maintenance_service.py` - run_verification_checks)
+- [x] **G4.5** Baseline versioning (`app/services/maintenance_service.py` - create_baseline_version, BaselineVersionModel)
+- [x] **G4.6** Maintenance recommendations engine (`app/services/maintenance_service.py` - generate_recommendations)
+- [x] **G4.6** Notification integration via G3 outbox (`app/services/maintenance_service.py` - _enqueue_maintenance_notification, etc.)
+- [x] **G4.6** API endpoints for all maintenance operations (`app/api/v1/endpoints/maintenance.py`)
+- [x] **G4.7** Database models for all maintenance entities (`app/models/maintenance.py`)
+- [x] **G4.7** Migration `0008_maintenance_tables.py` - 10 tables with indexes and constraints
+- [x] **G4.7** Unit tests: 28 tests passing (`test_maintenance.py`)
 
 ### G5 — Frontend Integration & Stabilization ✅
 - [x] **G5.1** TypeScript error fixes across codebase (websocket.ts, Sparkline.tsx, SensorValueCard.tsx, SystemStateBadge.tsx, ui.test.tsx, LoginPage.tsx, LandingPage.tsx)
@@ -159,77 +179,97 @@
 
 ---
 
-## Phase H — Hardware / ESP32 Integration (IN PROGRESS)
+## Phase G6 — Scope Reset (IN PROGRESS)
 
-### H1 — ESP32 Firmware Structure & Sensor Drivers ✅
-- [x] **H1.1** ESP32 firmware structure (CMake, partitions, sdkconfig)
-- [x] **H1.2** Sensor driver interface (13 sensor types)
-- [x] **H1.3** Sensor drivers implemented:
-  - TDS/EC (Gravity analog, ADC)
-  - pH (Gravity analog, ADC)
-  - Turbidity (Gravity analog, ADC)
-  - Temperature (NTC thermistor, ADC)
-  - Flow rate (Hall effect, GPIO interrupt)
-  - Inlet/Outlet Pressure (MS5837, I2C via TCA9548A)
-  - Tank Level (Ultrasonic, GPIO trigger/echo)
-  - Leak Detection (Digital contact, GPIO)
-  - Pump Current (ACS712, ADC)
-  - Pump Power (Calculated V×I, DC PF=1.0)
-  - UV State (GPIO feedback)
-  - Conductivity (uses TDS driver)
-  - Sensor Registry (unified management)
-- [x] **H1.4** Communication layer (HTTP/HTTPS client, JWT auth, telemetry batching)
-- [x] **H1.5** Main application (WiFi, sensor loop, telemetry, safety, health, OTA)
-- [x] **H1.6** Hardware specification document
-- [x] **H1.7** Pin mapping for ESP32-S3
-- [x] **H1.8** Safety architecture (low-voltage control only)
+- [ ] **G6.1** Update all project documentation to reflect software-only scope
+- [ ] **G6.2** Close/reclassify all hardware-related issues in OPEN_ISSUES.md
+- [ ] **G6.3** Add README to `firmware/esp32/` marking it as archived/reference
+- [ ] **G6.4** Update all project tracking documents (PROJECT_STATE.md, PHASE_LEDGER.md, VERIFICATION_LOG.md, OPEN_ISSUES.md, context/memory.md, tasks/task.md)
+- [ ] **G6.5** Record revised software-only product architecture and acceptance criteria
+- [ ] **G6.6** Communicate scope change to stakeholders
 
-### H1.1 — Firmware Audit & Hardware Configuration ✅
-- [x] Resolved GPIO/ADC pin conflicts (GPIO4/5/6/7 conflicts resolved)
-- [x] Fixed MS5837 I2C address conflict (TCA9548A multiplexer channels 0/1)
-- [x] Fixed pump power calculation (DC: V_bus × I with PF=1.0)
-- [x] Updated pin mapping to eliminate GPIO/ADC conflicts
-- [x] Added TCA9548A multiplexer for dual MS5837 sensors
-- [x] Fixed ADC voltage limits with voltage divider documentation
-- [x] Updated pump power calculation (DC: V_bus × I, PF=1.0)
-- [x] Updated hardware spec with corrected pin mapping
-- [x] Sensor conversion formulas validated
-- [x] Sensor range validation added
-- [x] GPIO configuration consistency verified
-- [x] I2C configuration with TCA9548A multiplexer validated
-- [x] Telemetry payload serialization validated
-- [x] Network failure/retry behavior validated
-- [x] Measurement provenance tracking validated
-- [x] Safe failure behavior implemented
+## Phase G7 — E2E Validation (PENDING)
 
-### H1 — Physical Hardware Bring-up (BLOCKED — HARDWARE UNAVAILABLE)
-- [ ] **H1.9** Procure ESP32-S3 board and sensors
-- [ ] **H1.10** Validate sensor readings against simulator
-- [ ] **H1.11** Calibrate all sensors
-- [ ] **H1.12** Validate safety actions with relays
-- [ ] **H1.13** Hardware-in-loop testing with backend
-- [ ] **H1.14** Sensor calibration procedures documented
-- [ ] **H1.15** Hardware-in-loop testing complete
+- [ ] **G7.1** Run full end-to-end test suite with Python simulator
+- [ ] **G7.2** Validate all user workflows (onboarding → monitoring → alerts → maintenance)
+- [ ] **G7.3** Verify WebSocket reconnection logic with exponential backoff
+- [ ] **G7.4** Test offline mode handling (cached data, offline indicator)
+- [ ] **G7.5** Verify data provenance display (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
 
-### H2 — Device Provisioning & Communication (PENDING)
-- [ ] **H2.1** Device registration flow
-- [ ] **H2.2** Sequence/replay protection
-- [ ] **H2.3** Offline buffering/reconnect
-- [ ] **H2.4** Device-to-backend authentication
+## Phase G8 — Analytics Validation (PENDING)
 
-### H3 — Hardware Safety & Reliability (PENDING)
-- [ ] **H3.1** Sensor validation and range checking
-- [ ] **H3.2** Hardware watchdog and health monitoring
-- [ ] **H3.3** Graceful degradation on sensor failure
-- [ ] **H3.4** Firmware OTA with rollback
+- [ ] **G8.1** Validate AquaScore calculation with known test cases
+- [ ] **G8.2** Validate Filter Stress Index (FSI) with known inputs
+- [ ] **G8.3** Validate Filter Health Index (FHI) with known inputs
+- [ ] **G8.4** Validate RUL prediction (deterministic fallback)
+- [ ] **G8.5** Validate Purification Performance (rejection, recovery, efficiency)
+- [ ] **G8.5** Validate Hydraulic Intelligence (ΔP, fouling, recovery ratio)
+- [ ] **G8.6** Validate Failure Risk assessment with known inputs
 
-### H4 — Hardware Verification (PENDING)
-- [ ] **H4.1** Sensor-level tests
-- [ ] **H4.2** ESP32 communication tests
-- [ ] **H4.3** Backend telemetry ingestion tests
-- [ ] **H4.4** Dashboard live-data tests
-- [ ] **H4.5** Network-disconnection and reconnection tests
-- [ ] **H4.6** Sensor-failure simulation tests
-- [ ] **H4.7** Safety action hardware tests
+## Phase G9 — Production Website (PENDING)
+
+- [ ] **G9.1** UI/UX review and polish
+- [ ] **G9.2** Comprehensive error handling and error boundaries
+- [ ] **G9.3** Performance optimization (bundle size, lazy loading, caching)
+- [ ] **G9.4** Accessibility audit (WCAG 2.1 AA)
+- [ ] **G9.5** Responsive design verification (mobile, tablet, desktop)
+- [ ] **G9.6** Add OpenAPI/Swagger documentation (`/docs` endpoint)
+- [ ] **G9.7** Error boundary implementation
+- [ ] **G9.8** Offline mode handling (cached data, offline indicator)
+
+## Phase G10 — Final Testing & Demonstration (PENDING)
+
+- [ ] **G10.1** Full regression test suite execution
+- [ ] **G10.2** Security audit (dependency audit, penetration testing basics)
+- [ ] **G10.3** Performance testing (load testing with k6/locust)
+- [ ] **G10.4** Documentation completeness audit
+- [ ] **G10.4** Final demonstration preparation
+
+## Phase I — Security / CI / Hardening (PENDING)
+
+- [ ] **I1** Dependency audit and update (npm audit, pip-audit, cargo audit)
+- [ ] **I2** Certificate pinning for HTTPS
+- [ ] **I3** Rate limiting on all API endpoints
+- [ ] **I4** CSP headers and security headers
+- [ ] **I5** CI/CD pipeline with automated testing
+- [ ] **I6** Secrets management (no hardcoded secrets)
+- [ ] **I7** GDPR/privacy compliance review
+- [ ] **I8** API rate limiting and abuse prevention
+
+## Phase J — Final Verification (PENDING)
+
+- [ ] **J1** Complete regression test suite
+- [ ] **J2** Security audit sign-off
+- [ ] **J3** Performance benchmarks documented
+- [ ] **J4** Documentation completeness sign-off
+- [ ] **J5** Stakeholder demonstration and sign-off
 
 ---
+
+## Hardware Development (ARCHIVED — OUT OF SCOPE)
+
+The following hardware development work has been completed as reference implementation but is **OUT OF SCOPE** for the AquaNexis software product. The `firmware/esp32/` directory is preserved as archived reference material.
+
+### H1 — ESP32 Firmware Structure & Sensor Drivers ✅ (ARCHIVED)
+- [x] ESP32 firmware structure (CMake, partitions, sdkconfig)
+- [x] Sensor driver interface (13 sensor types)
+- [x] 13 sensor drivers (TDS, pH, Turbidity, Temperature, Flow, Pressure×2, Tank Level, Leak, Pump Current, Pump Power, UV State, Conductivity, Sensor Registry)
+- [x] Communication layer (HTTP/HTTPS client, JWT auth, telemetry batching)
+- [x] Main application (WiFi, sensor loop, telemetry, safety, health, OTA)
+- [x] Safety architecture (low-voltage control only)
+- [x] Hardware specification document
+- [x] Pin mapping for ESP32-S3
+
+### H1.1 — Firmware Audit & Hardware Configuration ✅ (ARCHIVED)
+- [x] Resolved GPIO/ADC pin conflicts
+- [x] Fixed MS5837 I2C address conflict (TCA9548A multiplexer)
+- [x] Fixed pump power calculation (DC: V_bus × I, PF=1.0)
+- [x] Updated pin mapping, ADC voltage limits, I2C mux configuration
+- [x] Sensor conversion formulas validated
+- [x] GPIO/I2C configuration verified
+
+### H1.2 — ESP-IDF Environment Setup & Build Verification (ARCHIVED - OUT OF SCOPE)
+
+### H1 — Physical Hardware Bring-up (ARCHIVED — OUT OF SCOPE)
+
+### H2-H4 Hardware Phases (ARCHIVED — OUT OF SCOPE)
