@@ -1,5 +1,5 @@
 """
-Filter Health API endpoints.
+Filter Health API endpoints - Enhanced for Phase E.
 """
 from datetime import datetime, timedelta
 from typing import Optional, List
@@ -16,6 +16,9 @@ from app.schemas.telemetry import (
     FilterHealthResponse,
     ModelMetadata,
     ExplanationPayload,
+    CounterfactualAnalysisResponse,
+    MaintenanceBandResponse,
+    RULStabilityResponse,
 )
 from app.models.filter_health import FilterHealth as FilterHealthModel
 
@@ -30,6 +33,25 @@ def _model_to_response(model: FilterHealthModel) -> FilterHealthResponse:
         explanation = ExplanationPayload(
             top_factors=model.explanation.get('top_factors', []),
             method=model.explanation.get('method', 'deterministic'),
+        )
+    
+    counterfactual = None
+    if model.counterfactual:
+        counterfactual = CounterfactualAnalysisResponse(
+            previous_rul_days=model.counterfactual.get('previous_rul_days'),
+            current_rul_days=model.counterfactual.get('current_rul_days'),
+            rul_change_days=model.counterfactual.get('rul_change_days'),
+            rul_change_pct=model.counterfactual.get('rul_change_pct'),
+            contributing_changes=model.counterfactual.get('contributing_changes', []),
+            narrative=model.counterfactual.get('narrative', ''),
+        )
+    
+    maintenance_band = None
+    if model.maintenance_band:
+        maintenance_band = MaintenanceBandResponse(
+            band=model.maintenance_band,
+            description=_get_maintenance_band_description(model.maintenance_band),
+            threshold_score=0,  # Would be computed
         )
     
     return FilterHealthResponse(
@@ -48,9 +70,22 @@ def _model_to_response(model: FilterHealthModel) -> FilterHealthResponse:
             metrics={},
         ),
         input_features=model.input_features or {},
-        explanation=explanation,
+        explanation=model.explanation,
         data_freshness_seconds=0,
+        counterfactual=counterfactual,
+        maintenance_band=maintenance_band,
+        rul_stability=None,  # Would be computed separately
     )
+
+
+def _get_maintenance_band_description(band: str) -> str:
+    descriptions = {
+        "normal": "Filter operating normally. No action required.",
+        "monitor": "Filter health declining. Increase monitoring frequency.",
+        "plan_maintenance": "Filter approaching end of life. Plan replacement soon.",
+        "replace_recommended": "Filter at end of life. Replacement recommended immediately.",
+    }
+    return descriptions.get(band, "Unknown maintenance state")
 
 
 @router.get("/{device_id}", response_model=FilterHealthResponse)
@@ -134,7 +169,7 @@ async def get_filter_health_history(
     }
 
 
-@router.get("/{device_id}/rul")
+@router.get("/{device_id}/rul", response_model=None)
 async def get_rul_prediction(
     device_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -166,10 +201,121 @@ async def get_rul_prediction(
         },
         "input_features": health.input_features or {},
         "explanation": health.explanation or {},
+        "confidence_level": getattr(health, 'confidence_level', 'unknown'),
+        "is_stable": getattr(health, 'is_stable', True),
+        "previous_rul_days": getattr(health, 'previous_rul_days', None),
+        "rul_change_days": getattr(health, 'rul_change_days', None),
         "data_freshness_seconds": int(
             (datetime.utcnow() - health.timestamp).total_seconds()
         ),
     }
+
+
+@router.get("/{device_id}/counterfactual", response_model=CounterfactualAnalysisResponse)
+async def get_counterfactual_analysis(
+    device_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    device_claims = Depends(get_device_claims),
+):
+    if device_claims and device_claims.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.execute(
+        select(FilterHealthModel)
+        .where(FilterHealthModel.device_id == device_id)
+        .order_by(desc(FilterHealthModel.timestamp))
+        .limit(2)
+    )
+    records = result.scalars().all()
+    
+    if len(records) < 2:
+        raise HTTPException(status_code=404, detail="Insufficient history for counterfactual analysis")
+    
+    current = records[0]
+    previous = records[1]
+    
+    return CounterfactualAnalysisResponse(
+        device_id=device_id,
+        timestamp=datetime.utcnow(),
+        previous_rul_days=previous.rul_days,
+        current_rul_days=current.rul_days,
+        rul_change_days=(current.rul_days - previous.rul_days) if current.rul_days and previous.rul_days else None,
+        rul_change_pct=((current.rul_days - previous.rul_days) / previous.rul_days * 100) if current.rul_days and previous.rul_days else None,
+        contributing_changes=[],
+        narrative="RUL changed based on updated sensor readings and filter health assessment.",
+    )
+
+
+@router.get("/{device_id}/rul-stability", response_model=RULStabilityResponse)
+async def get_rul_stability(
+    device_id: UUID,
+    window_hours: int = Query(24, ge=1, le=168),
+    db: AsyncSession = Depends(get_db),
+    device_claims = Depends(get_device_claims),
+):
+    if device_claims and device_claims.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get RUL history
+    result = await db.execute(
+        select(FilterHealthModel)
+        .where(
+            and_(
+                FilterHealthModel.device_id == device_id,
+                FilterHealthModel.timestamp >= datetime.utcnow() - timedelta(hours=window_hours),
+            )
+        ).order_by(FilterHealthModel.timestamp)
+    )
+    records = result.scalars().all()
+    
+    rul_values = [r.rul_days for r in records if r.rul_days is not None]
+    
+    max_change = 0.0
+    for i in range(1, len(rul_values)):
+        if rul_values[i-1] > 0:
+            change = abs(rul_values[i] - rul_values[i-1]) / rul_values[i-1] * 100
+            max_change = max(max_change, change)
+    
+    is_stable = max_change <= 30  # 30% threshold
+    
+    return RULStabilityResponse(
+        device_id=device_id,
+        window_hours=window_hours,
+        readings_count=len(rul_values),
+        rul_values=rul_values,
+        max_change_pct=round(max_change, 1),
+        is_stable=is_stable,
+        instability_reason=None if max_change <= 30 else f"RUL changed by {max_change:.1f}% in window (threshold: 30%)",
+    )
+
+
+@router.get("/{device_id}/maintenance-band", response_model=MaintenanceBandResponse)
+async def get_maintenance_band(
+    device_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    device_claims = Depends(get_device_claims),
+):
+    if device_claims and device_claims.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.execute(
+        select(FilterHealthModel)
+        .where(FilterHealthModel.device_id == device_id)
+        .order_by(desc(FilterHealthModel.timestamp))
+        .limit(1)
+    )
+    health = result.scalar_one_or_none()
+    
+    if not health:
+        raise HTTPException(status_code=404, detail="No filter health data for device")
+    
+    band = getattr(health, 'maintenance_band', 'normal')
+    
+    return MaintenanceBandResponse(
+        band=band,
+        description=_get_maintenance_band_description(band),
+        threshold_score=health.fhi if hasattr(health, 'fhi') else 0,
+    )
 
 
 @router.get("/{device_id}/risk")
@@ -199,5 +345,40 @@ async def get_failure_risk(
         "confidence": 0.8,
         "contributing_factors": [],
         "evidence": {},
+        "maintenance_band": getattr(health, 'maintenance_band', 'normal'),
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+@router.get("/{device_id}/baseline")
+async def get_baseline(
+    device_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    device_claims = Depends(get_device_claims),
+):
+    if device_claims and device_claims.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    from app.services.baseline_service import BaselineService
+    baseline_service = BaselineService()
+    status = await baseline_service.get_baseline_status(device_id)
+    
+    if not status.is_established:
+        return {
+            "device_id": str(device_id),
+            "status": status.status,
+            "needed_samples": status.needed_samples,
+            "message": f"Baseline not yet established. Need {status.needed_samples} more samples.",
+        }
+    
+    return await BaselineService().get_baseline_metrics(device_id)
+
+
+def _get_maintenance_band_description(band: str) -> str:
+    descriptions = {
+        "normal": "Filter operating normally. No action required.",
+        "monitor": "Filter health declining. Increase monitoring frequency.",
+        "plan_maintenance": "Filter approaching end of life. Plan replacement soon.",
+        "replace_recommended": "Filter at end of life. Replacement recommended immediately.",
+    }
+    return descriptions.get(band, "Unknown maintenance state")

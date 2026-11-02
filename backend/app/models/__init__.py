@@ -9,6 +9,15 @@ from app.models.water_quality import WaterQualityScore
 from app.models.filter_health import FilterHealth
 from app.models.purification_performance import PurificationPerformance
 from app.models.system_diagnostics import SystemDiagnostics
+from app.models.safety import SafetyEventModel, SafetyActionModel
+from app.models.notification import (
+    NotificationOutbox,
+    NotificationProviderConfig,
+    NotificationTemplate,
+    NotificationChannel,
+    NotificationStatus,
+    NotificationErrorCategory,
+)
 
 __all__ = [
     "Device", 
@@ -18,4 +27,12 @@ __all__ = [
     "FilterHealth",
     "PurificationPerformance",
     "SystemDiagnostics",
+    "SafetyEventModel",
+    "SafetyActionModel",
+    "NotificationOutbox",
+    "NotificationProviderConfig",
+    "NotificationTemplate",
+    "NotificationChannel",
+    "NotificationStatus",
+    "NotificationErrorCategory",
 ]

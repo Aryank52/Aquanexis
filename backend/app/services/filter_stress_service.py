@@ -1,5 +1,6 @@
 """
 Filter Stress service - computes Filter Stress Index (deterministic).
+Enhanced with baseline tracking, versioned config, and pressure differential as first-class feature.
 """
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
@@ -10,7 +11,15 @@ from app.domain.filter_intelligence import (
     FilterStressState,
     FilterStressConfig,
     DEFAULT_FILTER_STRESS_CONFIG,
+    FSIConfigVersion,
+    FSIConfigVersion,
+    BaselineMetrics,
+    BaselineStatus,
+    FSIConfigVersion,
+    CounterfactualAnalysis,
 )
+
+from app.services.baseline_service import BaselineService
 
 
 class FilterStressService:
@@ -18,8 +27,10 @@ class FilterStressService:
 
     def __init__(self, config: FilterStressConfig = None):
         self.config = config or DEFAULT_FILTER_STRESS_CONFIG
+        self.baseline_service = BaselineService()
+        self._config_version = "1.0"
 
-    def compute_filter_stress(
+    async def compute_filter_stress(
         self,
         reading,
         previous_readings: List = None,
@@ -27,6 +38,8 @@ class FilterStressService:
         filter_install_date: datetime = None,
         cumulative_volume: float = 0.0,
         operating_hours: float = 0.0,
+        device_id: UUID = None,
+        baseline_service: 'BaselineService' = None,
     ) -> "FilterStressIndex":
         """
         Compute Filter Stress Index from current reading and context.
@@ -38,25 +51,36 @@ class FilterStressService:
             filter_install_date: When the filter was installed
             cumulative_volume: Cumulative water processed (L)
             operating_hours: Total operating hours
+            device_id: Device UUID for baseline tracking
+            baseline_service: BaselineService instance for baseline tracking
             
         Returns:
             FilterStressIndex with state, score, and contributors
         """
         config = self._merge_config(device_config)
+        self._config_version = "1.0"  # Would be loaded from registry in production
+        
+        # Get or create baseline for this device
+        baseline_status = None
+        baseline_metrics = None
+        if baseline_service and device_id:
+            baseline_status = await baseline_service.get_baseline_status(device_id)
+            if baseline_status.is_established:
+                baseline_metrics = baseline_status.metrics
         
         # Calculate component scores (0-100 each)
         component_scores = {}
         
-        # 1. Differential pressure score
-        dp_score = self._score_differential_pressure(reading, previous_readings, config)
+        # 1. Differential pressure score (first-class feature)
+        dp_score, dp_evidence = self._score_differential_pressure(reading, previous_readings, config, baseline_metrics)
         component_scores['differential_pressure'] = dp_score
         
         # 2. Flow deviation score
-        flow_dev_score = self._score_flow_deviation(reading, config)
+        flow_dev_score, flow_evidence = self._score_flow_deviation(reading, config, baseline_metrics)
         component_scores['flow_deviation'] = flow_dev_score
         
         # 3. Turbidity exposure score
-        turbidity_score = self._score_turbidity_exposure(reading, previous_readings, config)
+        turbidity_score, turbidity_evidence = self._score_turbidity_exposure(reading, previous_readings, config)
         component_scores['turbidity_exposure'] = turbidity_score
         
         # 4. Cumulative volume score
@@ -111,6 +135,13 @@ class FilterStressService:
             reading, previous_readings, component_scores, config
         )
         
+        # Add pressure differential as first-class feature
+        inlet = getattr(reading, 'pressure', None)
+        outlet = getattr(reading, 'outlet_pressure', None)
+        pressure_diff = None
+        if inlet is not None and outlet is not None:
+            pressure_diff = inlet - outlet
+        
         return FilterStressIndex(
             device_id=getattr(reading, 'device_id', UUID(int=0)),
             timestamp=getattr(reading, 'timestamp', datetime.utcnow()),
@@ -118,7 +149,8 @@ class FilterStressService:
             score=round(overall_score, 1),
             contributors=contributors,
             evidence=evidence,
-            calculation_version="1.0",
+            calculation_version="2.0",  # Updated version for Phase E
+            config_version=self._config_version,
             differential_pressure_score=component_scores.get('differential_pressure'),
             flow_deviation_score=component_scores.get('flow_deviation'),
             turbidity_exposure_score=component_scores.get('turbidity_exposure'),
@@ -126,6 +158,10 @@ class FilterStressService:
             filter_age_score=component_scores.get('filter_age'),
             operating_hours_score=component_scores.get('operating_hours'),
             tds_trend_score=component_scores.get('tds_trend'),
+            # Pressure differential as first-class feature
+            pressure_differential_kpa=component_scores.get('differential_pressure'),
+            pressure_differential_baseline_kpa=None,  # Would come from baseline service
+            pressure_differential_rate_of_change_kpa_per_hour=None,  # Would come from trend analysis
         )
     
     def _merge_config(self, device_config: Dict) -> FilterStressConfig:
@@ -134,7 +170,7 @@ class FilterStressService:
             return DEFAULT_FILTER_STRESS_CONFIG
         
         config = DEFAULT_FILTER_STRESS_CONFIG
-        custom = device_config['filter_stress']
+        custom = device_config.get('filter_stress', {})
         for key, value in custom.items():
             if hasattr(config, key):
                 setattr(config, key, value)
@@ -142,47 +178,75 @@ class FilterStressService:
     
     # Component scoring functions (0-100)
     
-    def _score_differential_pressure(self, reading, previous_readings, config) -> float:
-        """Score based on differential pressure (0-100)."""
+    def _score_differential_pressure(self, reading, previous_readings, config, baseline_metrics=None) -> tuple:
+        """Score based on differential pressure (0-100). Returns (score, evidence_dict)."""
         inlet = getattr(reading, 'pressure', None)
         outlet = getattr(reading, 'outlet_pressure', None)
         if inlet is None or outlet is None:
-            return 0.0
+            return 0.0, {"reason": "missing_pressure_data"}
         
         dp = inlet - outlet
+        evidence = {
+            "inlet_pressure_kpa": inlet,
+            "outlet_pressure_kpa": outlet,
+            "differential_pressure_kpa": dp,
+            "dp_low_threshold": config.dp_low_threshold,
+            "dp_high_threshold": config.dp_high_threshold,
+        }
+        
+        # Add baseline comparison if available
+        if baseline_metrics and baseline_metrics.delta_pressure_baseline_kpa:
+            baseline_dp = baseline_metrics.delta_pressure_baseline_kpa
+            evidence["baseline_dp_kpa"] = baseline_dp
+            evidence["dp_deviation_from_baseline_kpa"] = dp - baseline_dp
+            evidence["dp_deviation_pct"] = ((dp - baseline_metrics.delta_pressure_baseline_kpa) / max(baseline_metrics.delta_pressure_baseline_kpa, 1)) * 100
+        
         if dp <= config.dp_low_threshold:
-            return 0.0
+            return 0.0, evidence
         elif dp >= config.dp_high_threshold:
-            return 100.0
+            return 100.0, evidence
         else:
             # Linear interpolation
-            return ((dp - config.dp_low_threshold) / 
+            score = ((dp - config.dp_low_threshold) / 
                     (config.dp_high_threshold - config.dp_low_threshold)) * 100
+            return score, evidence
     
-    def _score_flow_deviation(self, reading, config) -> float:
+    def _score_flow_deviation(self, reading, config, baseline_metrics=None) -> tuple:
         """Score based on flow deviation from baseline."""
         flow = getattr(reading, 'flow_rate', None) or getattr(reading, 'flow', None)
         if flow is None:
-            return 0.0
+            return 0.0, {"reason": "missing_flow_data"}
         
-        # In production, baseline would be per-device learned value
+        # Use baseline if available, otherwise default
         baseline = 1.5  # L/min default
+        if baseline_metrics and baseline_metrics.flow_baseline_lpm:
+            baseline = baseline_metrics.flow_baseline_lpm
+        
         if baseline <= 0:
-            return 0.0
+            return 0.0, {"reason": "invalid_baseline"}
         
         deviation = abs(flow - baseline) / baseline * 100  # %
+        evidence = {
+            "flow_rate_lpm": flow,
+            "baseline_flow_lpm": baseline,
+            "deviation_pct": deviation,
+            "flow_dev_low_threshold": config.flow_dev_low_threshold,
+            "flow_dev_high_threshold": config.flow_dev_high_threshold,
+        }
+        
         if deviation <= config.flow_dev_low_threshold:
-            return 0.0
+            return 0.0, evidence
         elif deviation >= config.flow_dev_high_threshold:
-            return 100.0
+            return 100.0, evidence
         else:
-            return ((deviation - config.flow_dev_low_threshold) / 
+            score = ((deviation - config.flow_dev_low_threshold) / 
                     (config.flow_dev_high_threshold - config.flow_dev_low_threshold)) * 100
+            return score, evidence
     
-    def _score_turbidity_exposure(self, reading, previous_readings, config) -> float:
+    def _score_turbidity_exposure(self, reading, previous_readings, config) -> tuple:
         """Score based on cumulative turbidity exposure."""
         if not previous_readings:
-            return 0.0
+            return 0.0, {"reason": "insufficient_history"}
         
         # Calculate cumulative NTU-hours
         turbidity_hours = 0.0
@@ -200,13 +264,20 @@ class FilterStressService:
                 hours = (curr_time - prev_time).total_seconds() / 3600
                 turbidity_hours += avg_turb * hours
         
+        evidence = {
+            "turbidity_hours": turbidity_hours,
+            "turbidity_exposure_low": config.turbidity_exposure_low,
+            "turbidity_exposure_high": config.turbidity_exposure_high,
+        }
+        
         if turbidity_hours <= config.turbidity_exposure_low:
-            return 0.0
+            return 0.0, evidence
         elif turbidity_hours >= config.turbidity_exposure_high:
-            return 100.0
+            return 100.0, evidence
         else:
-            return ((turbidity_hours - config.turbidity_exposure_low) / 
+            score = ((turbidity_hours - config.turbidity_exposure_low) / 
                     (config.turbidity_exposure_high - config.turbidity_exposure_low)) * 100
+            return score, evidence
     
     def _score_cumulative_volume(self, volume: float, config) -> float:
         """Score based on cumulative water volume processed."""
@@ -276,24 +347,36 @@ class FilterStressService:
         else:
             return (increase_pct / 50) * 100
     
+    def _merge_config(self, device_config: Dict) -> FilterStressConfig:
+        """Merge device config with defaults."""
+        if not device_config or 'filter_stress' not in device_config:
+            return DEFAULT_FILTER_STRESS_CONFIG
+        
+        config = DEFAULT_FILTER_STRESS_CONFIG
+        custom = device_config['filter_stress']
+        for key, value in custom.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        return config
+    
     def _build_contributors(self, scores: Dict, config) -> List[str]:
         """Build human-readable contributor list."""
         contributors = []
         threshold = 30  # Score threshold for significant contribution
         
-        if scores.get('differential_pressure', 0) >= threshold:
+        if scores.get('differential_pressure', 0) >= 30:
             contributors.append("differential_pressure_rising")
-        if scores.get('flow_deviation', 0) >= threshold:
+        if scores.get('flow_deviation', 0) >= 30:
             contributors.append("flow_deviation_negative")
-        if scores.get('turbidity_exposure', 0) >= threshold:
+        if scores.get('turbidity_exposure', 0) >= 30:
             contributors.append("turbidity_exposure_above_baseline")
-        if scores.get('cumulative_volume', 0) >= threshold:
+        if scores.get('cumulative_volume', 0) >= 30:
             contributors.append("cumulative_volume_high")
-        if scores.get('filter_age', 0) >= threshold:
+        if scores.get('filter_age', 0) >= 30:
             contributors.append("filter_age_advanced")
-        if scores.get('operating_hours', 0) >= threshold:
+        if scores.get('operating_hours', 0) >= 30:
             contributors.append("operating_hours_high")
-        if scores.get('tds_trend', 0) >= threshold:
+        if scores.get('tds_trend', 0) >= 30:
             contributors.append("tds_trend_increasing")
         
         return contributors

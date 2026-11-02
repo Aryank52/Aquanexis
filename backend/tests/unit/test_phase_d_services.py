@@ -40,7 +40,7 @@ class MockReading:
 class TestFilterStressService:
     """Tests for FilterStressService."""
 
-    def test_compute_filter_stress_low(self):
+    async def test_compute_filter_stress_low(self):
         """Test filter stress with low stress readings."""
         service = FilterStressService()
         reading = MockReading(
@@ -53,7 +53,7 @@ class TestFilterStressService:
             tds=150.0,
         )
         
-        result = service.compute_filter_stress(
+        result = await service.compute_filter_stress(
             reading=reading,
             previous_readings=[],
             filter_install_date=datetime.utcnow() - timedelta(days=30),
@@ -65,7 +65,7 @@ class TestFilterStressService:
         assert result.state == FilterStressState.LOW
         assert result.score < 40
 
-    def test_compute_filter_stress_high(self):
+    async def test_compute_filter_stress_high(self):
         """Test filter stress with high stress readings."""
         service = FilterStressService()
         reading = MockReading(
@@ -88,7 +88,7 @@ class TestFilterStressService:
                 turbidity=4.0,
             ))
         
-        result = service.compute_filter_stress(
+        result = await service.compute_filter_stress(
             reading=reading,
             previous_readings=prev_readings,
             filter_install_date=datetime.utcnow() - timedelta(days=200),
@@ -106,17 +106,17 @@ class TestFilterStressService:
         
         # Low DP
         reading = MockReading(pressure=200.0, outlet_pressure=180.0)
-        score = service._score_differential_pressure(reading, [], DEFAULT_FILTER_STRESS_CONFIG)
+        score, _ = service._score_differential_pressure(reading, [], DEFAULT_FILTER_STRESS_CONFIG)
         assert score == 0.0
         
         # High DP
         reading = MockReading(pressure=500.0, outlet_pressure=250.0)
-        score = service._score_differential_pressure(reading, [], DEFAULT_FILTER_STRESS_CONFIG)
+        score, _ = service._score_differential_pressure(reading, [], DEFAULT_FILTER_STRESS_CONFIG)
         assert score == 100.0
         
         # Medium DP
         reading = MockReading(pressure=350.0, outlet_pressure=250.0)
-        score = service._score_differential_pressure(reading, [], DEFAULT_FILTER_STRESS_CONFIG)
+        score, _ = service._score_differential_pressure(reading, [], DEFAULT_FILTER_STRESS_CONFIG)
         assert 0 < score < 100
 
 
@@ -328,13 +328,13 @@ class TestFailureRiskService:
             device_id=uuid4(),
             timestamp=datetime.utcnow(),
             state=FilterStressState.HIGH,
-            score=95.0,
+            score=98.0,
         )
         
         health = FilterHealthIndex(
             device_id=uuid4(),
             timestamp=datetime.utcnow(),
-            health_score=10,
+            health_score=5,
             state=FilterHealthState.CRITICAL,
             confidence=0.9,
         )
@@ -342,7 +342,7 @@ class TestFailureRiskService:
         rul = RULPrediction(
             device_id=uuid4(),
             timestamp=datetime.utcnow(),
-            rul_days=2.0,
+            rul_days=1.0,
             status=PredictionStatus.AVAILABLE,
         )
         

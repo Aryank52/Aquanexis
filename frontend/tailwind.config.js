@@ -78,6 +78,9 @@ export default {
         10: '40px',
         12: '48px',
         16: '64px',
+        18: '72px',
+        20: '80px',
+        24: '96px',
       },
       borderRadius: {
         card: '12px',

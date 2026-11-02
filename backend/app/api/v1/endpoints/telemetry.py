@@ -40,6 +40,7 @@ from app.schemas.telemetry import (
 from app.models.device import Device as DeviceModel
 from app.models.reading import SensorReading as SensorReadingModel
 from app.models.alert import Alert as AlertModel, AlertSeverity as AlertSeverityModel, AlertStatus as AlertStatusModel
+from app.services.alert_state_machine import AlertStateMachine, TransitionResult
 
 logger = get_logger(__name__)
 
@@ -365,6 +366,57 @@ async def evaluate_alerts(
         await db.commit()
         for alert in new_alerts:
             await db.refresh(alert)
+    
+    # ===== Auto-clear self-resolving alerts =====
+    # Create AlertStateMachine instance for auto-clear checks
+    state_machine = AlertStateMachine(db)
+    
+    # Track which alert conditions are currently met
+    conditions_met = {
+        "water_quality_degraded": reading.tds and reading.tds > 500,
+        "pressure_high": reading.pressure and reading.pressure > pressure_max,
+        "pressure_low": reading.pressure and reading.pressure < 50,
+        "flow_low": reading.flow is not None and reading.flow < flow_min,
+        "pump_overcurrent": reading.pump_current and reading.pump_current > pump_max,
+        "tank_level_low": reading.tank_level is not None and reading.tank_level < 10,
+        "leak_detected": reading.leak_detected,
+    }
+    
+    # Check and auto-clear alerts for each condition
+    for alert_code, condition_met in conditions_met.items():
+        # Only auto-clear if condition is NOT met (resolved)
+        if not condition_met:
+            try:
+                cleared = await state_machine.check_and_auto_clear_alerts(
+                    device_id=device.id,
+                    alert_code=alert_code,
+                    condition_met=False,  # Condition no longer met
+                )
+                if cleared:
+                    logger.info(
+                        "alerts_auto_cleared",
+                        device_id=str(device.id),
+                        alert_code=alert_code,
+                        count=len(cleared),
+                    )
+                    # Broadcast auto-cleared alerts via WebSocket
+                    for outcome in cleared:
+                        if outcome.result == TransitionResult.SUCCESS and outcome.alert:
+                            await ws_manager.broadcast_alert(str(device.id), {
+                                "id": str(outcome.alert.id),
+                                "alert_code": outcome.alert.alert_code,
+                                "severity": outcome.alert.severity.value,
+                                "status": outcome.alert.status.value,
+                                "title": outcome.alert.title,
+                                "message": outcome.alert.message,
+                            }, "alert.auto_cleared")
+            except Exception as e:
+                logger.error(
+                    "auto_clear_failed",
+                    device_id=str(device.id),
+                    alert_code=alert_code,
+                    error=str(e),
+                )
     
     return new_alerts
 

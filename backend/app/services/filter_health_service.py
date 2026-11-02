@@ -1,8 +1,9 @@
 """
 Filter Health service - computes Filter Health Index from stress and lifecycle.
+Enhanced with maintenance bands, counterfactual analysis, hydraulic integration.
 """
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from uuid import UUID
 
 from app.domain.filter_intelligence import (
@@ -11,6 +12,9 @@ from app.domain.filter_intelligence import (
     FilterHealthConfig,
     DEFAULT_FILTER_HEALTH_CONFIG,
     FilterStressState,
+    MaintenanceBand,
+    CounterfactualAnalysis,
+    HydraulicIntelligence,
 )
 
 
@@ -28,6 +32,7 @@ class FilterHealthService:
         operating_hours: float = 0.0,
         previous_health: List = None,
         maintenance_events: List = None,
+        hydraulic_intelligence: HydraulicIntelligence = None,
     ) -> "FilterHealthIndex":
         """
         Compute Filter Health Index from stress and lifecycle data.
@@ -39,6 +44,7 @@ class FilterHealthService:
             operating_hours: Total pump operating hours
             previous_health: Historical health indices for trend
             maintenance_events: Maintenance history
+            hydraulic_intelligence: Hydraulic intelligence for pressure/flow analysis
             
         Returns:
             FilterHealthIndex with health score and state
@@ -60,8 +66,8 @@ class FilterHealthService:
         usage_score = self._score_usage(cumulative_volume)
         components['usage'] = usage_score
         
-        # 4. Pressure/Flow behavior component
-        pf_score = self._score_pressure_flow_behavior()
+        # 4. Pressure/Flow behavior component (enhanced with hydraulic intelligence)
+        pf_score = self._score_pressure_flow_behavior(hydraulic_intelligence)
         components['pressure_flow'] = pf_score
         
         # 5. Historical behavior component (trend from previous health)
@@ -98,6 +104,9 @@ class FilterHealthService:
         else:
             state = FilterHealthState.CRITICAL
         
+        # Maintenance band determination
+        maintenance_band = self._determine_maintenance_band(overall_score)
+        
         # Confidence based on data availability
         confidence = self._calculate_confidence(
             filter_stress, filter_install_date, previous_health
@@ -105,6 +114,11 @@ class FilterHealthService:
         
         # Contributing factors
         factors = self._build_factors(components)
+        
+        # Counterfactual analysis
+        counterfactual = self._generate_counterfactual(
+            filter_stress, previous_health
+        )
         
         return FilterHealthIndex(
             device_id=UUID(int=0),  # Will be set by caller
@@ -114,13 +128,26 @@ class FilterHealthService:
             confidence=round(confidence, 2),
             contributing_factors=factors,
             evidence=self._build_evidence(filter_stress, components),
-            calculation_version="1.0",
+            calculation_version="2.0",  # Updated for Phase E
             stress_component=components.get('stress'),
             lifecycle_component=components.get('lifecycle'),
             usage_component=components.get('usage'),
             pressure_flow_component=components.get('pressure_flow'),
             historical_behavior_component=components.get('historical'),
+            maintenance_band=maintenance_band.value,
+            counterfactual=previous_health and counterfactual or None,
         )
+    
+    def _determine_maintenance_band(self, health_score: int) -> MaintenanceBand:
+        """Determine maintenance band based on health score."""
+        if health_score >= self.config.excellent_min:
+            return MaintenanceBand.NORMAL
+        elif health_score >= self.config.monitor_min:
+            return MaintenanceBand.MONITOR
+        elif health_score >= self.config.plan_maintenance_min:
+            return MaintenanceBand.PLAN_MAINTENANCE
+        else:
+            return MaintenanceBand.REPLACE_RECOMMENDED
     
     def _score_lifecycle(self, install_date: datetime) -> float:
         """Score based on filter age (0-100, higher = better)."""
@@ -146,11 +173,23 @@ class FilterHealthService:
         else:
             return max(0, 100 - (volume / 10000) * 100)
     
-    def _score_pressure_flow_behavior(self) -> float:
+    def _score_pressure_flow_behavior(self, hydraulic: HydraulicIntelligence = None) -> float:
         """Score based on pressure/flow stability.
-        In production, this would analyze pressure/flow stability over time.
+        Enhanced with hydraulic intelligence for production use.
         """
-        # Simplified - would use hydraulic intelligence in production
+        if hydraulic and hydraulic.pressure_stability is not None:
+            # Lower volatility = better health
+            stability = hydraulic.pressure_stability
+            if stability < 5:
+                return 95.0
+            elif stability < 10:
+                return 80.0
+            elif stability < 20:
+                return 60.0
+            else:
+                return 40.0
+        
+        # Fallback
         return 75.0
     
     def _score_historical_behavior(self, previous_health: List) -> float:
@@ -193,6 +232,111 @@ class FilterHealthService:
             score += 0.2
         
         return min(1.0, score)
+    
+    def _build_factors(self, components: Dict) -> List[str]:
+        """Build human-readable factor list."""
+        factors = []
+        
+        if components.get('stress', 100) < 50:
+            factors.append("high_filter_stress")
+        if components.get('lifecycle', 100) < 50:
+            factors.append("advanced_filter_age")
+        if components.get('usage', 100) < 50:
+            factors.append("high_cumulative_usage")
+        if components.get('pressure_flow', 100) < 70:
+            factors.append("unstable_pressure_flow")
+        if components.get('historical', 75) < 60:
+            factors.append("declining_health_trend")
+        
+        return factors
+    
+    def _build_evidence(self, filter_stress, components) -> Dict:
+        return {
+            "filter_stress_score": filter_stress.score if filter_stress else None,
+            "filter_stress_state": filter_stress.state.value if filter_stress else None,
+            "component_scores": components,
+            "weights": {
+                "stress": 0.30,
+                "lifecycle": 0.25,
+                "usage": 0.20,
+                "pressure_flow": 0.15,
+                "historical": 0.10,
+            },
+        }
+    
+    def _generate_counterfactual(
+        self, 
+        filter_stress, 
+        previous_health: List
+    ) -> CounterfactualAnalysis:
+        """Generate what-changed analysis if we have previous health."""
+        if not previous_health or len(previous_health) < 2:
+            return CounterfactualAnalysis(
+                device_id=UUID(int=0),
+                timestamp=datetime.utcnow(),
+                narrative="Insufficient history for counterfactual analysis",
+            )
+        
+        current_health = previous_health[-1].health_score if previous_health else 0
+        previous_health_score = previous_health[-2].health_score if len(previous_health) >= 2 else current_health
+        
+        current_fsi = filter_stress.score if filter_stress else 0
+        previous_fsi = previous_health[-2].fsi if len(previous_health) >= 2 else filter_stress.score if filter_stress else 0
+        
+        health_change = current_health - previous_health_score
+        fsi_change = current_fsi - previous_fsi
+        
+        changes = []
+        if abs(fsi_change) > 5:
+            direction = "increased" if fsi_change > 0 else "decreased"
+            changes.append({
+                "feature": "fsi",
+                "previous": previous_fsi,
+                "current": current_fsi,
+                "change": fsi_change,
+                "direction": direction,
+            })
+        
+        # Build narrative
+        factors = []
+        if fsi_change > 5:
+            factors.append("FSI increased significantly")
+        elif fsi_change < -5:
+            factors.append("FSI decreased significantly")
+        
+        if current_health < previous_health_score:
+            factors.append("Health score declining")
+        elif current_health > previous_health_score:
+            factors.append("Health score improving")
+        
+        narrative = "RUL changed from {} to {} days. ".format(
+            previous_health_score, current_health
+        ) + "; ".join(factors) if factors else "No significant changes detected."
+        
+        return CounterfactualAnalysis(
+            device_id=UUID(int=0),
+            timestamp=datetime.utcnow(),
+            previous_rul_days=previous_health_score,
+            current_rul_days=current_health,
+            rul_change_days=current_health - previous_health_score,
+            rul_change_pct=((current_health - previous_health_score) / max(previous_health_score, 1)) * 100 if previous_health_score else None,
+            contributing_changes=changes,
+            narrative=narrative,
+        )
+    
+    def _build_evidence(self, filter_stress, components) -> Dict:
+        return {
+            "filter_stress_score": filter_stress.score if filter_stress else None,
+            "filter_stress_state": filter_stress.state.value if filter_stress else None,
+            "component_scores": components,
+            "weights": {
+                "stress": 0.30,
+                "lifecycle": 0.25,
+                "usage": 0.20,
+                "pressure_flow": 0.15,
+                "historical": 0.10,
+            },
+        }
     
     def _build_factors(self, components: Dict) -> List[str]:
         """Build human-readable factor list."""

@@ -104,7 +104,7 @@ export function LandingPage() {
             </span>
             <span className="flex items-center gap-1">
               <CheckCircle className="w-4 h-4 text-success" />
-              Test Coverage > 80%
+              Test Coverage {'>'} 80%
             </span>
           </div>
         </div>
@@ -176,9 +176,9 @@ export function LandingPage() {
             AquaNexis — Predictive Water Intelligence
           </p>
           <div className="flex items-center gap-6 text-caption text-text-muted">
-            <Link href="#" className="hover:text-text-primary transition-colors">Documentation</Link>
-            <Link href="#" className="hover:text-text-primary transition-colors">GitHub</Link>
-            <Link href="#" className="hover:text-text-primary transition-colors">Privacy</Link>
+            <Link to="/documentation" className="hover:text-text-primary transition-colors">Documentation</Link>
+            <Link to="/documentation" className="hover:text-text-primary transition-colors">GitHub</Link>
+            <Link to="/documentation" className="hover:text-text-primary transition-colors">Privacy</Link>
           </div>
         </div>
       </footer>

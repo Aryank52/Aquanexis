@@ -1,7 +1,7 @@
 """
 Alert API endpoints.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from uuid import UUID
 
@@ -25,6 +25,7 @@ from app.schemas.telemetry import (
     AlertStatus as AlertStatusSchema,
 )
 from app.domain.alerts import Alert, ALERT_TRANSITIONS
+from app.services.alert_state_machine import AlertStateMachine, TransitionResult, get_alert_state_machine
 
 logger = get_logger(__name__)
 
@@ -124,64 +125,33 @@ async def acknowledge_alert(
     request: AlertAcknowledgeRequest,
     db: AsyncSession = Depends(get_db),
     device_claims = Depends(get_device_claims),
+    state_machine: AlertStateMachine = Depends(get_alert_state_machine),
 ):
-    """Acknowledge an alert."""
-    alert = await db.get(AlertModel, alert_id)
-    if not alert:
+    """Acknowledge an alert using the state machine."""
+    user = request.user or (str(device_claims.device_id) if device_claims else "system")
+    
+    outcome = await state_machine.transition(
+        alert_id=alert_id,
+        new_status=AlertStatus.ACKNOWLEDGED,
+        user=user,
+    )
+    
+    if outcome.result == TransitionResult.NOT_FOUND:
         raise HTTPException(status_code=404, detail="Alert not found")
-    
-    # Check authorization
-    if device_claims and alert.device_id != device_claims.device_id:
+    elif outcome.result == TransitionResult.UNAUTHORIZED:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
-    # Check if already acknowledged or resolved
-    if alert.status in (AlertStatus.RESOLVED, AlertStatus.AUTO_CLEARED):
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Cannot acknowledge alert in {alert.status.value} state"
-        )
-    
-    if alert.status == AlertStatus.ACKNOWLEDGED:
+    elif outcome.result in (TransitionResult.INVALID_TRANSITION, TransitionResult.ALREADY_IN_STATE, TransitionResult.TERMINAL_STATE):
+        # Return the current alert state with error message
         return AlertTransitionResponse(
             success=False,
-            alert=_alert_model_to_response(alert),
-            message="Alert already acknowledged"
+            alert=_alert_model_to_response(outcome.alert),
+            message=outcome.message,
         )
-    
-    # Validate transition using domain logic
-    domain_alert = Alert(
-        id=alert.id,
-        device_id=alert.device_id,
-        alert_code=alert.alert_code,
-        severity=alert.severity,
-        status=alert.status,
-    )
-    
-    if not domain_alert.can_transition_to(AlertStatus.ACKNOWLEDGED):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid transition from {alert.status.value} to acknowledged"
-        )
-    
-    # Perform transition
-    user = request.user or (str(device_claims.device_id) if device_claims else "system")
-    alert.status = AlertStatus.ACKNOWLEDGED
-    alert.acknowledged_at = datetime.utcnow()
-    alert.acknowledged_by = user
-    
-    await db.commit()
-    await db.refresh(alert)
-    
-    logger.info(
-        "alert_acknowledged",
-        alert_id=str(alert_id),
-        user=user
-    )
     
     return AlertTransitionResponse(
         success=True,
-        alert=_alert_model_to_response(alert),
-        message="Alert acknowledged"
+        alert=_alert_model_to_response(outcome.alert),
+        message=outcome.message,
     )
 
 
@@ -191,59 +161,34 @@ async def snooze_alert(
     request: AlertSnoozeRequest,
     db: AsyncSession = Depends(get_db),
     device_claims = Depends(get_device_claims),
+    state_machine: AlertStateMachine = Depends(get_alert_state_machine),
 ):
-    """Snooze an alert for a specified duration."""
-    alert = await db.get(AlertModel, alert_id)
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    
-    # Check authorization
-    if device_claims and alert.device_id != device_claims.device_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    if alert.status in (AlertStatus.RESOLVED, AlertStatus.AUTO_CLEARED):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cannot snooze alert in {alert.status.value} state"
-        )
-    
-    # Validate transition
-    domain_alert = Alert(
-        id=alert.id,
-        device_id=alert.device_id,
-        alert_code=alert.alert_code,
-        severity=alert.severity,
-        status=alert.status,
-    )
-    
-    if not domain_alert.can_transition_to(AlertStatus.SNOOZED):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid transition from {alert.status.value} to snoozed"
-        )
-    
-    # Perform transition
+    """Snooze an alert for a specified duration using the state machine."""
     user = request.user or (str(device_claims.device_id) if device_claims else "system")
-    snoozed_until = datetime.utcnow() + timedelta(minutes=request.duration_minutes)
+    snoozed_until = datetime.now(timezone.utc) + timedelta(minutes=request.duration_minutes)
     
-    alert.status = AlertStatus.SNOOZED
-    alert.snoozed_until = snoozed_until
-    alert.acknowledged_by = user
-    
-    await db.commit()
-    await db.refresh(alert)
-    
-    logger.info(
-        "alert_snoozed",
-        alert_id=str(alert_id),
-        duration_minutes=request.duration_minutes,
-        user=user
+    outcome = await state_machine.transition(
+        alert_id=alert_id,
+        new_status=AlertStatus.SNOOZED,
+        user=user,
+        snoozed_until=snoozed_until,
     )
+    
+    if outcome.result == TransitionResult.NOT_FOUND:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    elif outcome.result == TransitionResult.UNAUTHORIZED:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    elif outcome.result in (TransitionResult.INVALID_TRANSITION, TransitionResult.ALREADY_IN_STATE, TransitionResult.TERMINAL_STATE):
+        return AlertTransitionResponse(
+            success=False,
+            alert=_alert_model_to_response(outcome.alert),
+            message=outcome.message,
+        )
     
     return AlertTransitionResponse(
         success=True,
-        alert=_alert_model_to_response(alert),
-        message=f"Alert snoozed for {request.duration_minutes} minutes"
+        alert=_alert_model_to_response(outcome.alert),
+        message=f"Alert snoozed for {request.duration_minutes} minutes",
     )
 
 
@@ -253,58 +198,32 @@ async def resolve_alert(
     request: AlertResolveRequest,
     db: AsyncSession = Depends(get_db),
     device_claims = Depends(get_device_claims),
+    state_machine: AlertStateMachine = Depends(get_alert_state_machine),
 ):
-    """Resolve an alert."""
-    alert = await db.get(AlertModel, alert_id)
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    
-    # Check authorization
-    if device_claims and alert.device_id != device_claims.device_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    if alert.status in (AlertStatus.RESOLVED, AlertStatus.AUTO_CLEARED):
-        return AlertTransitionResponse(
-            success=False,
-            alert=_alert_model_to_response(alert),
-            message=f"Alert already {alert.status.value}"
-        )
-    
-    # Validate transition
-    domain_alert = Alert(
-        id=alert.id,
-        device_id=alert.device_id,
-        alert_code=alert.alert_code,
-        severity=alert.severity,
-        status=alert.status,
-    )
-    
-    if not domain_alert.can_transition_to(AlertStatus.RESOLVED):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid transition from {alert.status.value} to resolved"
-        )
-    
-    # Perform transition
+    """Resolve an alert using the state machine."""
     user = request.user or (str(device_claims.device_id) if device_claims else "system")
     
-    alert.status = AlertStatus.RESOLVED
-    alert.resolved_at = datetime.utcnow()
-    alert.resolved_by = user
-    
-    await db.commit()
-    await db.refresh(alert)
-    
-    logger.info(
-        "alert_resolved",
-        alert_id=str(alert_id),
-        user=user
+    outcome = await state_machine.transition(
+        alert_id=alert_id,
+        new_status=AlertStatus.RESOLVED,
+        user=user,
     )
+    
+    if outcome.result == TransitionResult.NOT_FOUND:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    elif outcome.result == TransitionResult.UNAUTHORIZED:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    elif outcome.result in (TransitionResult.INVALID_TRANSITION, TransitionResult.ALREADY_IN_STATE, TransitionResult.TERMINAL_STATE):
+        return AlertTransitionResponse(
+            success=False,
+            alert=_alert_model_to_response(outcome.alert),
+            message=outcome.message,
+        )
     
     return AlertTransitionResponse(
         success=True,
-        alert=_alert_model_to_response(alert),
-        message="Alert resolved"
+        alert=_alert_model_to_response(outcome.alert),
+        message=outcome.message,
     )
 
 
@@ -341,3 +260,92 @@ async def get_alert_counts(
         counts["by_severity"][severity_key] = counts["by_severity"].get(severity_key, 0) + 1
     
     return counts
+
+
+@router.get("/{alert_id}/valid-transitions")
+async def get_valid_transitions(
+    alert_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    device_claims = Depends(get_device_claims),
+):
+    """Get valid state transitions for an alert based on current state."""
+    alert = await db.get(AlertModel, alert_id)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    # Check authorization
+    if device_claims and alert.device_id != device_claims.device_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get valid transitions from domain logic
+    domain_status = AlertStatus(alert.status.value)
+    # Map to domain enum
+    from app.domain.alerts import AlertStatus as DomainAlertStatus, ALERT_TRANSITIONS
+    domain_enum = DomainAlertStatus(alert.status.value)
+    valid_targets = ALERT_TRANSITIONS.get(domain_enum, [])
+    
+    return {
+        "alert_id": str(alert_id),
+        "current_status": alert.status.value,
+        "valid_transitions": [s.value for s in valid_targets],
+        "is_terminal": alert.status in (AlertStatus.RESOLVED, AlertStatus.AUTO_CLEARED),
+    }
+
+
+@router.post("/bulk-transition", response_model=dict)
+async def bulk_transition_alerts(
+    alert_ids: List[UUID],
+    new_status: AlertStatusSchema,
+    user: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    state_machine: AlertStateMachine = Depends(get_alert_state_machine),
+):
+    """Perform bulk transition on multiple alerts (admin only)."""
+    # In a real implementation, add admin check here
+    # if not device_claims.is_admin: raise HTTPException(403)
+    
+    outcome = await state_machine.bulk_transition(
+        alert_ids=alert_ids,
+        new_status=AlertStatus(new_status.value),
+        user=user or "bulk_operation",
+    )
+    
+    return {
+        "success_count": len(outcome["success"]),
+        "failed_count": len(outcome["failed"]),
+        "total": outcome["total"],
+        "success": outcome["success"],
+        "failed": outcome["failed"],
+    }
+
+
+@router.post("/auto-clear-check")
+async def check_auto_clear(
+    device_id: UUID,
+    alert_code: str,
+    condition_met: bool,
+    db: AsyncSession = Depends(get_db),
+    state_machine: AlertStateMachine = Depends(get_alert_state_machine),
+    device_claims = Depends(get_device_claims),
+):
+    """
+    Check and auto-clear alerts for a device/alert_code if condition is no longer met.
+    This endpoint is called by the evaluation engine when a condition resolves.
+    """
+    # Verify device access
+    if device_claims and device_claims.device_id != device_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this device")
+    
+    outcomes = await state_machine.check_and_auto_clear_alerts(
+        device_id=device_id,
+        alert_code=alert_code,
+        condition_met=condition_met,
+    )
+    
+    return {
+        "device_id": str(device_id),
+        "alert_code": alert_code,
+        "condition_met": condition_met,
+        "auto_cleared_count": len(outcomes),
+        "cleared_alerts": [str(o.alert.id) for o in outcomes if o.result == TransitionResult.SUCCESS],
+    }
