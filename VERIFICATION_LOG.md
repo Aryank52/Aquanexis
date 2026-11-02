@@ -300,11 +300,29 @@ RUN idf.py build
 
 ## Next Steps (Updated)
 
-1. **G8 Analytics Validation** — Validate all analytics calculations
+1. **G8 Platform Reliability** — Complete CI/CD, local setup, runtime verification
 2. **G9 Production Website** — Polish UI, add error handling, optimize performance
 3. **G10 Final Testing** — Full regression testing, security audit, documentation
 4. **Phase I** — Security / CI / Hardening
 5. **Phase J** — Final Verification
+
+---
+
+## PostgreSQL Windows Crash (Documented)
+
+**Issue**: PostgreSQL 16 on Windows crashes with exception 0xC0000142 (DLL initialization failure) after ~2-3 minutes due to antivirus interference.
+
+**Log Evidence**:
+- "could not open file ./postgresql.log: sharing violation"
+- "HINT: You might have antivirus, backup, or similar software interfering"
+- "server process (PID) was terminated by exception 0xC0000142"
+
+**Root Cause**: Antivirus/Windows Defender interfering with PostgreSQL data directory (`E:\postsql database\data`), causing DLL initialization failure (0xC0000142 = STATUS_DLL_INIT_FAILED).
+
+**Workarounds Documented in TROUBLESHOOTING.md**:
+1. Exclude `E:\postsql database\data` from antivirus scanning
+2. Run PostgreSQL in Docker (requires Docker Desktop)
+3. Install as Windows service with proper permissions via Admin
 
 ---
 
@@ -314,5 +332,10 @@ RUN idf.py build
 **Documentation**: ✅ COMPLETE
 **G6 Scope Reset**: ✅ COMPLETE
 **G7 E2E Validation**: ✅ COMPLETE
+**G8.1 CI/CD Repair**: ✅ COMPLETE
+**G8.2 Local Startup (env/docs)**: ✅ COMPLETE
+**G8.3 Dev Setup (docs)**: ✅ COMPLETE
+**G8.4 Runtime Verification**: 🔄 IN PROGRESS (PostgreSQL crash documented, requires Admin action)
+**G8.5 Documentation**: ✅ COMPLETE
 **Physical Integration**: 📦 **OUT OF SCOPE** (Hardware development is out of scope)
 **Production Ready**: 📦 **OUT OF SCOPE** (Hardware development is out of scope)

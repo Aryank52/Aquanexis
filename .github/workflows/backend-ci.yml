@@ -1,0 +1,186 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+
+jobs:
+  lint:
+    name: Lint & TypeCheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Ruff linting
+        run: ruff check .
+
+      - name: Run Ruff format check
+        run: ruff format --check .
+
+      - name: Run MyPy type checking
+        run: mypy app/
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_DB: aquanexis_test
+          POSTGRES_USER: aquanexis
+          POSTGRES_PASSWORD: aquanexis
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aquanexis -d aquanexis_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U aquanexis -d aquanexis_test; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run database migrations
+        run: alembic upgrade head
+        env:
+          APP_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: aquanexis
+          DB_PASSWORD: aquanexis
+          DB_NAME: aquanexis_test
+          DEVICE_JWT_SECRET: test-secret-minimum-32-characters-long-for-testing
+          API_KEY_SALT: test-salt
+
+      - name: Run unit tests
+        run: pytest -v --tb=short
+        env:
+          APP_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: aquanexis
+          DB_PASSWORD: aquanexis
+          DB_NAME: aquanexis_test
+          DEVICE_JWT_SECRET: test-secret-minimum-32-characters-long-for-testing
+          API_KEY_SALT: test-salt
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    needs: test
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_DB: aquanexis_test
+          POSTGRES_USER: aquanexis
+          POSTGRES_PASSWORD: aquanexis
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aquanexis -d aquanexis_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U aquanexis -d aquanexis_test; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run database migrations
+        run: alembic upgrade head
+        env:
+          APP_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: aquanexis
+          DB_PASSWORD: aquanexis
+          DB_NAME: aquanexis_test
+          DEVICE_JWT_SECRET: test-secret-minimum-32-characters-long-for-testing
+          API_KEY_SALT: test-salt
+
+      - name: Run integration tests
+        run: pytest tests/integration -v --tb=short
+        env:
+          APP_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: aquanexis
+          DB_PASSWORD: aquanexis
+          DB_NAME: aquanexis_test
+          DEVICE_JWT_SECRET: test-secret-minimum-32-characters-long-for-testing
+          API_KEY_SALT: test-salt

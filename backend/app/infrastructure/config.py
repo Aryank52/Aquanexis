@@ -3,8 +3,8 @@ Application configuration using Pydantic Settings v2.
 All settings loaded from environment variables with validation.
 """
 from functools import lru_cache
-from typing import List, Optional
-from pydantic import Field, PostgresDsn, computed_field
+from typing import List, Optional, Union
+from pydantic import Field, PostgresDsn, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,7 +32,7 @@ class DatabaseSettings(BaseSettings):
             password=self.password,
             host=self.host,
             port=self.port,
-            path=f"/{self.name}",
+            path=self.name,
         )
 
     @computed_field
@@ -122,9 +122,15 @@ class AppSettings(BaseSettings):
     env: str = Field(default="development", pattern="^(development|staging|production)$")
     host: str = "0.0.0.0"
     port: int = 8000
-    allowed_origins: List[str] = Field(
+    allowed_origins: Union[List[str], str] = Field(
         default_factory=lambda: ["http://localhost:3000", "http://localhost:5173"]
     )
+
+    @model_validator(mode="after")
+    def parse_allowed_origins(self):
+        if isinstance(self.allowed_origins, str):
+            self.allowed_origins = [origin.strip() for origin in self.allowed_origins.split(",")]
+        return self
 
     # Nested settings
     database: DatabaseSettings = DatabaseSettings()

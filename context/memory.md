@@ -22,6 +22,7 @@
 | 2026-11-02 | Phase G: Maintenance & Lifecycle | Alert state machine, auto-resolution, maintenance workflows |
 | **2026-11-03** | **Scope Correction: Software-Only** | **AquaNexis is a software-only web application; hardware development is out of scope** |
 | **2026-11-03** | **G7 E2E Validation Complete** | **All 6 G7 tasks complete: simulator E2E, user workflows, WebSocket reliability, offline handling, analytics audit, final demo** |
+| **2026-11-03** | **G8 Platform Reliability Started** | **CI/CD workflows created, development documentation complete, PostgreSQL setup documented** |
 
 ### Implementation Status
 - **Slice A (Runtime Stability)**: ✅ COMPLETE
@@ -33,7 +34,7 @@
 - **Phase G (Maintenance & Lifecycle)**: ✅ COMPLETE (G1-G5 complete)
 - **Phase G6 (Scope Reset)**: ✅ COMPLETE
 - **Phase G7 (E2E Validation)**: ✅ COMPLETE
-- **Phase G8 (Analytics Validation)**: ⏳ PENDING
+- **Phase G8 (Platform Reliability)**: 🔄 IN PROGRESS (50% - CI/CD, docs done; PostgreSQL startup pending)
 - **Phase G9 (Production Website)**: ⏳ PENDING
 - **Phase G10 (Final Testing)**: ⏳ PENDING
 - **Phase H (Hardware / ESP32)**: 📦 **OUT OF SCOPE** (preserved as reference in `firmware/esp32/`)

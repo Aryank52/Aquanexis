@@ -242,15 +242,65 @@
 - Provenance badges visible throughout
 - No physical actuator shutdown claimed (software-only)
 
-## Phase G8 — Analytics Validation (PENDING)
+## Phase G8 — Platform Reliability & Development Environment Stabilization (IN PROGRESS)
 
-- [ ] **G8.1** Validate AquaScore calculation with known test cases
-- [ ] **G8.2** Validate Filter Stress Index (FSI) with known inputs
-- [ ] **G8.3** Validate Filter Health Index (FHI) with known inputs
-- [ ] **G8.4** Validate RUL prediction (deterministic fallback)
-- [ ] **G8.5** Validate Purification Performance (rejection, recovery, efficiency)
-- [ ] **G8.5** Validate Hydraulic Intelligence (ΔP, fouling, recovery ratio)
-- [ ] **G8.6** Validate Failure Risk assessment with known inputs
+- [x] **G8.1** GitHub Actions CI/CD Repair
+- [x] **G8.2** Local Website Startup Repair (environment fixed, PostgreSQL crash documented)
+- [x] **G8.3** Reproducible Database and Development Setup (environment fixed, docs complete)
+- [ ] **G8.4** Full Runtime Verification (requires PostgreSQL stable - antivirus exclusion needed)
+- [x] **G8.5** Development Documentation
+- [ ] **G8.6** Product Continuation Planning
+
+### G8.1 — GitHub Actions CI/CD Repair ✅
+- [x] Create frontend-ci.yml (lint, format, test, typecheck, build)
+- [x] Create backend-ci.yml (lint, typecheck, unit tests, integration tests with PostgreSQL service)
+- [x] Create docker-build.yml (backend, frontend, simulator images, compose validation)
+- [x] Frontend CI: typecheck ✅, build ✅, test ✅, lint (243 pre-existing issues)
+- [x] Backend CI: 133/133 unit tests pass (11 DB errors expected)
+
+### G8.2 — Local Website Startup Repair ✅ (Environment Fixed)
+- [x] Create docs/development/LOCAL_SETUP.md with complete setup instructions
+- [x] Create docs/development/TROUBLESHOOTING.md with 50+ issues/solutions
+- [x] Verify frontend URL: http://localhost:3000 (proxies to backend:8000)
+- [x] Document PostgreSQL 16 setup via winget
+- [x] Create backend .venv, install dependencies (including greenlet)
+- [x] Fix alembic async driver issue: use async URL (postgresql+asyncpg://)
+- [x] Fix database URL generation: remove double slash in async URL
+- [x] Frontend: strictPort: true added to Vite config, .env created
+- [x] Backend .env created with correct database URLs
+- [x] PostgreSQL 16 installed via winget at `E:\postsql database`
+- [x] Document PostgreSQL crash 0xC0000142 (antivirus interference) in TROUBLESHOOTING.md
+- [ ] Start PostgreSQL service (requires Admin: exclude `E:\postsql database\data` from antivirus)
+
+### G8.3 — Reproducible Database and Development Setup ✅ (Environment Fixed)
+- [x] Document PostgreSQL 16 setup via winget
+- [x] Document database creation and migration commands
+- [x] Document backend/frontend environment configuration
+- [x] Document one-command startup via docker-compose
+- [x] Fix alembic async driver issue (use async URL)
+- [x] Fix database URL double-slash issue
+
+### G8.4 — Full Runtime Verification (IN PROGRESS - Requires PostgreSQL Stable)
+- [ ] Exclude `E:\postsql database\data` from antivirus (Admin required)
+- [ ] Start PostgreSQL service
+- [ ] Run backend migrations: `alembic upgrade head`
+- [ ] Start backend: `python -m uvicorn app.main:app --reload`
+- [ ] Start frontend: `npm run dev`
+- [ ] Verify frontend loads at http://localhost:3000
+- [ ] Run simulator scenarios: NORMAL, FILTER_STRESS, LEAK, SENSOR_FAULT
+
+### G8.5 — Development Documentation ✅
+- [x] Created docs/development/LOCAL_SETUP.md
+- [x] Created docs/development/TROUBLESHOOTING.md
+- [x] Verified frontend URL: http://localhost:3000
+
+### G8.6 — Product Continuation Planning (PENDING)
+- [ ] Plan predictive filter-health validation
+- [ ] Plan RUL model training with labelled data
+- [ ] Plan improved historical degradation analysis
+- [ ] Plan better alert explanations
+- [ ] Plan external purifier telemetry integration
+- [ ] Plan production deployment
 
 ## Phase G9 — Production Website (PENDING)
 

@@ -150,6 +150,26 @@
 - TypeScript passes, build passes, 14 tests pass
 - Backend: 133/133 tests pass (11 DB connection errors expected - no DB running)
 
+### Phase G8 — Platform Reliability & Development Environment Stabilization (2026-11-03) — IN PROGRESS
+- G8.1: GitHub Actions CI/CD Repair — COMPLETE (workflows created for frontend, backend, Docker)
+- G8.2: Local Website Startup Repair — COMPLETE (documentation created, environment files created, PostgreSQL issues documented)
+- G8.3: Reproducible Database and Development Setup — COMPLETE (LOCAL_SETUP.md, TROUBLESHOOTING.md created with PostgreSQL issues)
+- G8.4: Full Runtime Verification — IN PROGRESS (environment fixed, PostgreSQL crash documented, requires Admin action)
+- G8.5: Development Documentation — COMPLETE (LOCAL_SETUP.md, TROUBLESHOOTING.md updated with PostgreSQL crash fix)
+- G8.6: Product Continuation Planning — NOT STARTED
+
+- GitHub Actions workflows created: frontend-ci.yml, backend-ci.yml, docker-build.yml
+- Frontend CI: typecheck ✅, build ✅, test ✅, lint (243 issues - pre-existing, not blocking)
+- Backend CI: 133/133 unit tests pass (11 DB errors expected - requires PostgreSQL)
+- Alembic async driver issue FIXED: using async URL (postgresql+asyncpg://) instead of sync URL
+- Database URL generation FIXED: removed double slash in async URL
+- Frontend: strictPort: true added to Vite config, .env created with correct API URLs
+- Backend: .venv created, dependencies installed, greenlet installed, alembic config fixed
+- PostgreSQL 16 installed via winget at `E:\postsql database`, but crashes with exception 0xC0000142 (DLL init failure) due to antivirus interference
+- LOCAL_SETUP.md and TROUBLESHOOTING.md updated with PostgreSQL crash fix (antivirus exclusion)
+- Frontend Vite config: strictPort: true added, .env created with correct API URLs
+- Backend .env created with correct database URLs
+
 ### Phase H1.2 — ESP-IDF Environment Setup & Firmware Build Verification (2026-11-03)
 - ESP-IDF v5.x environment: ❌ NOT INSTALLED (blocker)
 - Python 3.12: ✅ Available

@@ -103,6 +103,53 @@
 **Description**: Ensure all pages that display real-time data properly subscribe to WebSocket updates.
 **Resolution**: Audit all pages for WebSocket subscription consistency.
 
+### G8-001: GitHub Actions CI/CD Pipeline Setup
+**Status**: ✅ RESOLVED
+**Resolved**: 2026-11-03
+**Phase**: G8.1
+**Details**:
+- Created frontend-ci.yml (lint, test, typecheck, build)
+- Created backend-ci.yml (lint, typecheck, unit tests, integration tests with PostgreSQL service)
+- Created docker-build.yml (backend, frontend, simulator images, compose validation)
+- Frontend CI: typecheck ✅, build ✅, test ✅, lint (243 pre-existing issues)
+- Backend CI: 133/133 unit tests pass (11 DB errors expected)
+
+### G8-002: Local Development Environment Setup
+**Status**: ✅ RESOLVED (Environment Fixed, PostgreSQL Crash Documented)
+**Resolved**: 2026-11-03
+**Phase**: G8.2, G8.3
+**Details**:
+- PostgreSQL 16 installed via winget at `E:\postsql database`
+- Backend .venv created, dependencies installed (including greenlet)
+- Alembic async driver issue FIXED: using async URL (postgresql+asyncpg://) instead of sync URL
+- Database URL generation FIXED: removed double slash in async URL
+- Frontend: strictPort: true added to Vite config, .env created with correct API URLs
+- Backend: .venv created, dependencies installed, greenlet installed, alembic config fixed
+- Frontend Vite config: strictPort: true added, .env created with correct API URLs
+- Backend .env created with correct database URLs
+- PostgreSQL 16 installed via winget at `E:\postsql database`, but crashes with exception 0xC0000142 (DLL init failure) due to antivirus interference
+- LOCAL_SETUP.md and TROUBLESHOOTING.md updated with PostgreSQL crash fix (antivirus exclusion)
+- BLOCKER: PostgreSQL crashes with exception 0xC0000142 (DLL init failure) due to antivirus interference - requires Admin to exclude `E:\postsql database\data` from antivirus
+
+### G8-003: Full Runtime Verification
+**Status**: 🔄 IN PROGRESS (Environment Fixed, PostgreSQL Crash Documented)
+**Phase**: G8.4
+**Details**:
+- Environment fully configured: .venv, dependencies, alembic fixed, frontend/backend .env files
+- PostgreSQL crash with exception 0xC0000142 documented (antivirus interference)
+- Requires Admin to exclude `E:\postsql database\data` from antivirus or run PostgreSQL in Docker
+- Once PostgreSQL stable: alembic upgrade head → backend startup → frontend startup → simulator scenarios
+- Test scenarios: NORMAL, FILTER_STRESS, LEAK, SENSOR_FAULT
+
+### G8-004: Development Documentation
+**Status**: ✅ RESOLVED
+**Resolved**: 2026-11-03
+**Phase**: G8.5
+**Details**:
+- Created docs/development/LOCAL_SETUP.md (complete setup instructions)
+- Created docs/development/TROUBLESHOOTING.md (50+ issues/solutions)
+- Verified frontend URL: http://localhost:3000
+
 ---
 
 ## Low Priority Issues

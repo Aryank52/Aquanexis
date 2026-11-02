@@ -23,7 +23,8 @@ config = context.config
 
 # Override sqlalchemy.url from settings
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database.sync_url)
+# Use async URL for async migrations (postgresql+asyncpg://)
+config.set_main_option("sqlalchemy.url", str(settings.database.url))
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:

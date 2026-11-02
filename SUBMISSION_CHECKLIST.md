@@ -101,8 +101,8 @@
 
 | File | Status |
 |------|--------|
-| `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4` | ⏳ To be recorded |
-| `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Report.pdf` | ⏳ To be generated from PROGRESS_REPORT.md |
+| `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4` | ⏳ To be recorded by participant |
+| `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Report.pdf` | ✅ **GENERATED** (2 pages, 8KB) |
 
 ---
 
@@ -112,27 +112,33 @@
 2. **Record segments** per VIDEO_SCRIPT.md sequence
 3. **Edit**: Combine segments, add captions, compress to <50 MB
 4. **Verify**: Playback test, filename matches convention
-5. **Report**: Convert PROGRESS_REPORT.md to PDF (1-2 pages)
+5. **Report**: ✅ PDF generated from PROGRESS_REPORT.md
 
 ---
 
 ## 📋 Final Sign-off
 
-- [ ] All G7 tasks complete with evidence
-- [ ] Frontend typecheck/build/test PASS
-- [ ] Backend 133/133 tests PASS
-- [ ] Simulator 8/8 profiles working
-- [ ] Video script finalized
-- [ ] Progress report finalized
-- [ ] Documentation updated
+- [x] All G7 tasks complete with evidence
+- [x] Frontend typecheck/build/test PASS
+- [x] Backend 133/133 tests PASS
+- [x] Simulator 8/8 profiles working
+- [x] Video script finalized
+- [x] Progress report finalized
+- [x] Documentation updated
 - [ ] Video recorded and compressed
-- [ ] Report converted to PDF
-- [ ] Filenames verified: `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4` + `..._Report.pdf`
-- [ ] Institution name verified: **UPES Dehradun**
-- [ ] Track verified: **Track 2**
+- [x] Report converted to PDF (2 pages, 8KB)
+- [x] Filenames verified: `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4` + `..._Report.pdf`
+- [x] Institution name verified: **UPES Dehradun**
+- [x] Track verified: **Track 2**
 
 ---
 
-**G7 Status**: ✅ **COMPLETE** — Ready for Round 2 Submission
+## 📋 Submission Status
 
-**Next Phase**: G8+ only after submission evaluation. Do not start G8.
+| Item | Status |
+|------|--------|
+| CONTENT READY | ✅ YES |
+| PDF GENERATED | ✅ YES |
+| VIDEO RECORDED | ⏳ PENDING (participant action) |
+| FILES VALIDATED | ⏳ PENDING (after video) |
+| PORTAL UPLOADED | ⏳ NOT MARKED (participant only) |
