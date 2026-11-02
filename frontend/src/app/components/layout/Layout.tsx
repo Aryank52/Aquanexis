@@ -7,7 +7,7 @@ import {
   Menu, X, ChevronLeft, Droplet, Filter, Gauge, Waves,
   Mountain, Database, Shield, AlertTriangle, Wrench, Cpu,
   ClipboardCheck, Sun, Moon, LogOut, Bell, User, Wifi, WifiOff,
-  ChevronDown,
+  ChevronDown, Send, Settings, Package,
 } from 'lucide-react';
 import { useTheme } from '@/state/theme';
 import { useAuth } from '@/state/auth';
@@ -22,6 +22,10 @@ const navigation = [
   { name: 'Diagnostics', href: '/diagnostics', icon: Waves },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Maintenance', href: '/maintenance', icon: Wrench },
+  { name: 'Notifications', href: '/notifications', icon: Send },
+  { name: 'Calibration', href: '/calibration', icon: Settings },
+  { name: 'Verification', href: '/verification', icon: ClipboardCheck },
+  { name: 'Filter Catalog', href: '/filters', icon: Package },
   { name: 'Device Health', href: '/device-health', icon: Cpu },
   { name: 'Readiness', href: '/readiness', icon: ClipboardCheck },
 ];

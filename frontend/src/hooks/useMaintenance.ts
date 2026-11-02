@@ -21,6 +21,7 @@ import type {
   VerificationRunResponse,
   BaselineVersionResponse,
   MaintenanceRecommendationResponse,
+  MaintenanceEvent,
 } from '@/types/api';
 
 // ===== Filter Catalog =====
@@ -242,5 +243,31 @@ export function useMaintenanceRecommendations(deviceId: string) {
     queryKey: ['maintenance', 'recommendations', deviceId],
     queryFn: () => maintenanceApi.getRecommendations(deviceId),
     enabled: !!deviceId,
+  });
+}
+
+// ===== Legacy hooks for backward compatibility =====
+
+export function useMaintenanceHistory(deviceId: string) {
+  return useQuery<MaintenanceEvent[]>({
+    queryKey: ['maintenance', deviceId],
+    queryFn: () => maintenanceApi.history(deviceId),
+    enabled: !!deviceId,
+  });
+}
+
+export function useFilterReplacement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      device_id: string;
+      performed_by: string;
+      notes?: string;
+    }) => maintenanceApi.filterReplacement(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+      queryClient.invalidateQueries({ queryKey: ['filter-health'] });
+    },
   });
 }

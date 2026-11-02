@@ -3,7 +3,7 @@ import { Lock, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/state/auth';
 import { getErrorMessage } from '@/api/client';
-import { cn } from '@/utils/cn';
+import { cn } from '@utils/cn';
 
 export function LockedSessionPage() {
   const { user, login, logout } = useAuth();
@@ -19,7 +19,7 @@ export function LockedSessionPage() {
     setError('');
     setLoading(true);
     try {
-      await login(user.username, password);
+      await login({ username: user.username!, password });
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));

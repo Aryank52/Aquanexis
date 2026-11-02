@@ -3,12 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Droplet, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/state/auth';
+import { useAuth } from '@/context/AuthContext';
 import { getErrorMessage } from '@/api/client';
-import { cn } from '@/utils/cn';
+import { cn } from '@utils/cn';
 
 // Import zodResolver dynamically to avoid TypeScript type issues with @hookform/resolvers@3.x
-// The module exports { zodResolver } as a named export
 let zodResolver: any = null;
 async function getZodResolver() {
   if (!zodResolver) {
@@ -47,7 +46,7 @@ export function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setServerError('');
     try {
-      await login(data.username, data.password);
+      await login(data);
       navigate(from, { replace: true });
     } catch (err) {
       setServerError(getErrorMessage(err));
@@ -116,7 +115,7 @@ export function LoginPage() {
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 w-4" />}
                 </button>
               </div>
               {errors.password && (

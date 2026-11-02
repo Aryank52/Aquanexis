@@ -12,6 +12,7 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then(m => ({ defau
 const SessionExpiredPage = lazy(() => import('@/pages/auth/SessionExpiredPage').then(m => ({ default: m.SessionExpiredPage })));
 const LockedSessionPage = lazy(() => import('@/pages/auth/LockedSessionPage').then(m => ({ default: m.LockedSessionPage })));
 const AccessDeniedPage = lazy(() => import('@/pages/auth/AccessDeniedPage').then(m => ({ default: m.AccessDeniedPage })));
+const UnauthorizedPage = lazy(() => import('@/pages/auth/UnauthorizedPage').then(m => ({ default: m.UnauthorizedPage })));
 const DeviceOnboardingPage = lazy(() => import('@/pages/onboarding/DeviceOnboardingPage').then(m => ({ default: m.DeviceOnboardingPage })));
 
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
@@ -24,7 +25,13 @@ const MaintenancePage = lazy(() => import('@/pages/maintenance/MaintenancePage')
 const DeviceHealthPage = lazy(() => import('@/pages/device-health/DeviceHealthPage').then(m => ({ default: m.DeviceHealthPage })));
 const ReadinessPage = lazy(() => import('@/pages/readiness/ReadinessPage').then(m => ({ default: m.ReadinessPage })));
 
-// Protected route wrapper — imported lazily since auth pages exist
+// New pages
+const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
+const CalibrationPage = lazy(() => import('@/pages/calibration/CalibrationPage').then(m => ({ default: m.CalibrationPage })));
+const VerificationPage = lazy(() => import('@/pages/verification/VerificationPage').then(m => ({ default: m.VerificationPage })));
+const FilterCatalogPage = lazy(() => import('@/pages/filters/FilterCatalogPage').then(m => ({ default: m.FilterCatalogPage })));
+
+// Protected route wrapper
 const ProtectedRoute = lazy(() => import('@/components/auth/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
@@ -41,6 +48,7 @@ export function AppRoutes() {
         <Route path="/session-expired" element={<SessionExpiredPage />} />
         <Route path="/locked" element={<LockedSessionPage />} />
         <Route path="/access-denied" element={<AccessDeniedPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* Protected routes with layout */}
         <Route element={<ProtectedRoute />}>
@@ -52,6 +60,10 @@ export function AppRoutes() {
             <Route path="/diagnostics" element={<DiagnosticsPage />} />
             <Route path="/alerts" element={<AlertsPage />} />
             <Route path="/maintenance" element={<MaintenancePage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/calibration" element={<CalibrationPage />} />
+            <Route path="/verification" element={<VerificationPage />} />
+            <Route path="/filters" element={<FilterCatalogPage />} />
             <Route path="/device-health" element={<DeviceHealthPage />} />
             <Route path="/readiness" element={<ReadinessPage />} />
             <Route path="/onboarding" element={<DeviceOnboardingPage />} />
