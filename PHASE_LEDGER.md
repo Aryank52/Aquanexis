@@ -150,11 +150,11 @@
 - TypeScript passes, build passes, 14 tests pass
 - Backend: 133/133 tests pass (11 DB connection errors expected - no DB running)
 
-### Phase G8 — Platform Reliability & Development Environment Stabilization (2026-11-03) — IN PROGRESS
+### Phase G8 — Platform Reliability & Development Environment Stabilization (2026-11-03) — BLOCKED
 - G8.1: GitHub Actions CI/CD Repair — COMPLETE (workflows created for frontend, backend, Docker)
 - G8.2: Local Website Startup Repair — COMPLETE (documentation created, environment files created, PostgreSQL issues documented)
 - G8.3: Reproducible Database and Development Setup — COMPLETE (LOCAL_SETUP.md, TROUBLESHOOTING.md created with PostgreSQL issues)
-- G8.4: Full Runtime Verification — IN PROGRESS (environment fixed, PostgreSQL crash documented, requires Admin action)
+- G8.4: Full Runtime Verification — BLOCKED (TimescaleDB extension unavailable)
 - G8.5: Development Documentation — COMPLETE (LOCAL_SETUP.md, TROUBLESHOOTING.md updated with PostgreSQL crash fix)
 - G8.6: Product Continuation Planning — NOT STARTED
 
@@ -169,6 +169,17 @@
 - LOCAL_SETUP.md and TROUBLESHOOTING.md updated with PostgreSQL crash fix (antivirus exclusion)
 - Frontend Vite config: strictPort: true added, .env created with correct API URLs
 - Backend .env created with correct database URLs
+- PostgreSQL superuser password unknown, preventing database initialization
+- PostgreSQL service running but postgres superuser password unknown
+- pg_hba.conf requires scram-sha-256 for all connections
+- Requires Admin to exclude `E:\postsql database\data` from antivirus or run PostgreSQL in Docker
+- PostgreSQL admin access recovered via temporary trust authentication
+- Application role `aquanexis` and database `aquanexis` created successfully
+- Application authentication verified: `psql -U aquanexis -d aquanexis` succeeds
+- **BLOCKER**: TimescaleDB extension not available — Required by migration 0002 but not installed
+- TimescaleDB not installed in this PostgreSQL instance (only PostGIS bundle installed)
+- Migration 0002 fails: `extension "timescaledb" is not available`
+- Requires Admin to install TimescaleDB (Windows installer from timescale.com) or run PostgreSQL in Docker with TimescaleDB image
 
 ### Phase H1.2 — ESP-IDF Environment Setup & Firmware Build Verification (2026-11-03)
 - ESP-IDF v5.x environment: ❌ NOT INSTALLED (blocker)

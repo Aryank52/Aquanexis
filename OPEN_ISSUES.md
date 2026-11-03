@@ -129,16 +129,23 @@
 - Backend .env created with correct database URLs
 - PostgreSQL 16 installed via winget at `E:\postsql database`, but crashes with exception 0xC0000142 (DLL init failure) due to antivirus interference
 - LOCAL_SETUP.md and TROUBLESHOOTING.md updated with PostgreSQL crash fix (antivirus exclusion)
-- BLOCKER: PostgreSQL crashes with exception 0xC0000142 (DLL init failure) due to antivirus interference - requires Admin to exclude `E:\postsql database\data` from antivirus
+- **BLOCKER**: TimescaleDB extension not available — Required by migration 0002
+- PostgreSQL admin access recovered via temporary trust authentication
+- Application role `aquanexis` and database `aquanexis` created successfully
+- Application authentication verified: `psql -U aquanexis -d aquanexis` succeeds
 
 ### G8-003: Full Runtime Verification
-**Status**: 🔄 IN PROGRESS (Environment Fixed, PostgreSQL Crash Documented)
+**Status**: 🔴 **BLOCKED** — TimescaleDB extension not available
 **Phase**: G8.4
 **Details**:
 - Environment fully configured: .venv, dependencies, alembic fixed, frontend/backend .env files
 - PostgreSQL crash with exception 0xC0000142 documented (antivirus interference)
 - Requires Admin to exclude `E:\postsql database\data` from antivirus or run PostgreSQL in Docker
-- Once PostgreSQL stable: alembic upgrade head → backend startup → frontend startup → simulator scenarios
+- **BLOCKER**: TimescaleDB extension not available — Required by migration 0002
+- PostgreSQL admin access recovered via temporary trust authentication
+- Application role `aquanexis` and database `aquanexis` created successfully
+- Application authentication verified: `psql -U aquanexis -d aquanexis` succeeds
+- Once PostgreSQL stable and TimescaleDB installed: alembic upgrade head → backend startup → frontend startup → simulator scenarios
 - Test scenarios: NORMAL, FILTER_STRESS, LEAK, SENSOR_FAULT
 
 ### G8-004: Development Documentation

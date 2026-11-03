@@ -34,7 +34,7 @@
 | G5.2 | Frontend API Integration | ✅ | 100% |
 | **G6** | **Scope Reset** | ✅ | **100%** |
 | **G7** | **E2E Validation** | ✅ | **100%** |
-| **G8** | **Platform Reliability** | 🔄 **IN PROGRESS** | **70%** |
+| **G8** | **Platform Reliability** | 🔴 **BLOCKED** | **80%** |
 | G9 | Production Website | ⏳ | 0% |
 | G10 | Final Testing | ⏳ | 0% |
 | **H (Hardware/ESP32)** | **OUT OF SCOPE** | 📦 **ARCHIVED** | **N/A** |

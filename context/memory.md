@@ -23,6 +23,8 @@
 | **2026-11-03** | **Scope Correction: Software-Only** | **AquaNexis is a software-only web application; hardware development is out of scope** |
 | **2026-11-03** | **G7 E2E Validation Complete** | **All 6 G7 tasks complete: simulator E2E, user workflows, WebSocket reliability, offline handling, analytics audit, final demo** |
 | **2026-11-03** | **G8 Platform Reliability Started** | **CI/CD workflows created, development documentation complete, PostgreSQL setup documented** |
+| **2026-11-03** | **G8.4.3 PostgreSQL Root Cause Identified** | **PostgreSQL 16 crashes with 0xC0000142 (DLL init failure) due to antivirus interference; superuser password unknown** |
+| **2026-11-03** | **G8.4.4 PostgreSQL Auth Blocked** | **PostgreSQL superuser password unknown; requires Admin to exclude data dir from antivirus or use Docker** |
 
 ### Implementation Status
 - **Slice A (Runtime Stability)**: ✅ COMPLETE
@@ -34,7 +36,7 @@
 - **Phase G (Maintenance & Lifecycle)**: ✅ COMPLETE (G1-G5 complete)
 - **Phase G6 (Scope Reset)**: ✅ COMPLETE
 - **Phase G7 (E2E Validation)**: ✅ COMPLETE
-- **Phase G8 (Platform Reliability)**: 🔄 IN PROGRESS (50% - CI/CD, docs done; PostgreSQL startup pending)
+- **Phase G8 (Platform Reliability)**: 🔴 **BLOCKED** (PostgreSQL superuser password unknown)
 - **Phase G9 (Production Website)**: ⏳ PENDING
 - **Phase G10 (Final Testing)**: ⏳ PENDING
 - **Phase H (Hardware / ESP32)**: 📦 **OUT OF SCOPE** (preserved as reference in `firmware/esp32/`)

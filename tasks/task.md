@@ -242,12 +242,12 @@
 - Provenance badges visible throughout
 - No physical actuator shutdown claimed (software-only)
 
-## Phase G8 — Platform Reliability & Development Environment Stabilization (IN PROGRESS)
+## Phase G8 — Platform Reliability & Development Environment Stabilization (BLOCKED)
 
 - [x] **G8.1** GitHub Actions CI/CD Repair
 - [x] **G8.2** Local Website Startup Repair (environment fixed, PostgreSQL crash documented)
 - [x] **G8.3** Reproducible Database and Development Setup (environment fixed, docs complete)
-- [ ] **G8.4** Full Runtime Verification (requires PostgreSQL stable - antivirus exclusion needed)
+- [ ] **G8.4** Full Runtime Verification (BLOCKED - TimescaleDB extension not available)
 - [x] **G8.5** Development Documentation
 - [ ] **G8.6** Product Continuation Planning
 
@@ -261,7 +261,7 @@
 ### G8.2 — Local Website Startup Repair ✅ (Environment Fixed)
 - [x] Create docs/development/LOCAL_SETUP.md with complete setup instructions
 - [x] Create docs/development/TROUBLESHOOTING.md with 50+ issues/solutions
-- [x] Verify frontend URL: http://localhost:3000 (proxies to backend:8000)
+- [x] Verify frontend URL: http://localhost:3001 (proxies to backend:8000)
 - [x] Document PostgreSQL 16 setup via winget
 - [x] Create backend .venv, install dependencies (including greenlet)
 - [x] Fix alembic async driver issue: use async URL (postgresql+asyncpg://)
@@ -279,20 +279,24 @@
 - [x] Document one-command startup via docker-compose
 - [x] Fix alembic async driver issue (use async URL)
 - [x] Fix database URL double-slash issue
+- [x] PostgreSQL admin access recovered via temporary trust authentication
+- [x] Application role `aquanexis` and database `aquanexis` created
+- [x] Application authentication verified: `psql -U aquanexis -d aquanexis` succeeds
 
-### G8.4 — Full Runtime Verification (IN PROGRESS - Requires PostgreSQL Stable)
+### G8.4 — Full Runtime Verification (BLOCKED - TimescaleDB extension not available)
 - [ ] Exclude `E:\postsql database\data` from antivirus (Admin required)
 - [ ] Start PostgreSQL service
+- [ ] Install TimescaleDB extension (Admin required)
 - [ ] Run backend migrations: `alembic upgrade head`
 - [ ] Start backend: `python -m uvicorn app.main:app --reload`
 - [ ] Start frontend: `npm run dev`
-- [ ] Verify frontend loads at http://localhost:3000
+- [ ] Verify frontend loads at http://localhost:3001
 - [ ] Run simulator scenarios: NORMAL, FILTER_STRESS, LEAK, SENSOR_FAULT
 
 ### G8.5 — Development Documentation ✅
 - [x] Created docs/development/LOCAL_SETUP.md
 - [x] Created docs/development/TROUBLESHOOTING.md
-- [x] Verified frontend URL: http://localhost:3000
+- [x] Verified frontend URL: http://localhost:3001
 
 ### G8.6 — Product Continuation Planning (PENDING)
 - [ ] Plan predictive filter-health validation

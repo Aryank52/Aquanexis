@@ -326,6 +326,32 @@ RUN idf.py build
 
 ---
 
+## PostgreSQL Authentication & Database Initialization (G8.4.4)
+
+**Current State**: PostgreSQL 16.15 is running on port 5432. Administrative access recovered via temporary trust authentication. Application role `aquanexis` and database `aquanexis` created successfully.
+
+**Evidence**:
+- `pg_isready` reports "accepting connections" on 127.0.0.1:5432
+- `postgres` superuser password reset to known value
+- `aquanexis` role created with login password 'aquanexis'
+- Database `aquanexis` created with owner `aquanexis`
+- Application authentication verified: `psql -U aquanexis -d aquanexis` succeeds
+
+**Blocker**: **TimescaleDB extension not available** - Required by migration 0002_timescale_hypertables but not installed in this PostgreSQL instance.
+
+**Evidence**:
+- Migration 0002 attempts `CREATE EXTENSION IF NOT EXISTS timescaledb;`
+- Error: `extension "timescaledb" is not available`
+- DETAIL: `Could not open extension control file "E:/postsql database/share/extension/timescaledb.control": No such file or directory`
+- TimescaleDB not installed in this PostgreSQL instance (only PostGIS bundle installed)
+
+**Workarounds Documented**:
+1. Install TimescaleDB extension (requires Admin, Windows installer from timescale.com)
+2. Run PostgreSQL in Docker with TimescaleDB image: `docker run -d --name postgres -e POSTGRES_DB=aquanexis -e POSTGRES_USER=aquanexis -e POSTGRES_PASSWORD=aquanexis -p 5432:5432 -v pgdata:/var/lib/postgresql/data timescale/timescaledb:latest-pg16`
+3. Modify migration to skip TimescaleDB (not recommended - schema depends on hypertables)
+
+---
+
 ## Sign-off
 
 **Firmware Development**: ✅ COMPLETE (Archived as reference in `firmware/esp32/`)
@@ -335,7 +361,7 @@ RUN idf.py build
 **G8.1 CI/CD Repair**: ✅ COMPLETE
 **G8.2 Local Startup (env/docs)**: ✅ COMPLETE
 **G8.3 Dev Setup (docs)**: ✅ COMPLETE
-**G8.4 Runtime Verification**: 🔄 IN PROGRESS (PostgreSQL crash documented, requires Admin action)
+**G8.4 Runtime Verification**: 🔴 **BLOCKED** — TimescaleDB extension unavailable, requires Admin to install
 **G8.5 Documentation**: ✅ COMPLETE
 **Physical Integration**: 📦 **OUT OF SCOPE** (Hardware development is out of scope)
 **Production Ready**: 📦 **OUT OF SCOPE** (Hardware development is out of scope)
