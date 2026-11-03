@@ -101,7 +101,7 @@ class QualityValidator:
         
         # Validate each sensor
         self._validate_range(device, readings, flags)
-        self._validate_rate(device, readings, previous_reading, flags)
+        self._validate_rate(device, readings, previous_reading, flags, getattr(payload, "timestamp", None))
         self._validate_cross_sensor(readings, flags)
         self._check_stuck_sensor(readings, previous_reading, flags)
         
@@ -164,7 +164,8 @@ class QualityValidator:
         device: Device,
         readings: SensorReadingInput,
         previous: Optional[SensorReading],
-        flags: QualityFlags
+        flags: QualityFlags,
+        current_timestamp: Optional[datetime] = None,
     ) -> None:
         """Validate rate of change against limits."""
         if previous is None:
@@ -172,7 +173,11 @@ class QualityValidator:
         
         sensor_config = device.sensor_config
         rate_limits = self.config.rate_limits
-        time_diff = (payload.timestamp - previous.timestamp).total_seconds() / 60.0  # minutes
+        now_ts = current_timestamp or datetime.utcnow()
+        prev_ts = getattr(previous, "timestamp", None)
+        if prev_ts is None:
+            return
+        time_diff = (now_ts - prev_ts).total_seconds() / 60.0  # minutes
         
         if time_diff <= 0:
             return

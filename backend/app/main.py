@@ -13,8 +13,9 @@ from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_
 
 from app.infrastructure.config import get_settings
 from app.infrastructure.database import init_db, close_db, db_manager
+from app.infrastructure.demo_mode import demo_engine
 from app.infrastructure.logging import configure_logging, get_logger, set_request_id, get_request_id
-from app.infrastructure.security import rate_limit
+from app.infrastructure.security import rate_limit, verify_device_token
 from app.infrastructure.websocket import ws_manager
 from app.api.v1.router import api_router
 from app.api.v1.endpoints.health import router as health_router
@@ -41,22 +42,42 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler."""
     # Startup
     configure_logging()
-    logger.info("application_starting", environment=settings.env)
+    logger.info("application_starting", environment=settings.env, demo_mode=settings.demo_mode)
 
+    if settings.demo_mode:
+        await demo_engine.initialize()
+        demo_engine.start_background_loop()
+        logger.info("demo_mode_initialized_and_running")
+    else:
+        try:
+            await init_db()
+            logger.info("database_initialized")
+        except Exception as e:
+            logger.error("database_initialization_failed", error=str(e))
+            if settings.is_development:
+                logger.warning("falling_back_to_demo_mode_due_to_db_unavailable")
+                settings.demo_mode = True
+                await demo_engine.initialize()
+                demo_engine.start_background_loop()
+            else:
+                raise
+
+    # Warm OpenAPI schema / router candidate table immediately on startup
     try:
-        await init_db()
-        logger.info("database_initialized")
-    except Exception as e:
-        logger.error("database_initialization_failed", error=str(e))
-        raise
+        app.openapi()
+    except Exception:
+        pass
 
-    logger.info("application_started")
+    logger.info("application_started", mode="demo" if settings.demo_mode else "database")
 
     yield
 
     # Shutdown
     logger.info("application_shutting_down")
-    await close_db()
+    if settings.demo_mode:
+        await demo_engine.stop_background_loop()
+    else:
+        await close_db()
     logger.info("application_stopped")
 
 
@@ -143,8 +164,9 @@ app.include_router(health_router, tags=["health"])
 app.include_router(api_router, prefix="/api/v1")
 
 
-# WebSocket endpoint
+# WebSocket endpoints (/ws/devices/{device_id} and /ws/realtime/{device_id})
 @app.websocket("/ws/devices/{device_id}")
+@app.websocket("/ws/realtime/{device_id}")
 async def websocket_endpoint(websocket: WebSocket, device_id: str):
     """WebSocket endpoint for real-time device updates."""
     try:
@@ -153,13 +175,19 @@ async def websocket_endpoint(websocket: WebSocket, device_id: str):
         await websocket.close(code=4000, reason="Invalid device ID")
         return
 
+    token = websocket.query_params.get("token")
+    if token:
+        try:
+            verify_device_token(token)
+        except Exception:
+            await websocket.close(code=4001, reason="Invalid authentication token")
+            return
+
     await ws_manager.connect(websocket, device_uuid)
     
     try:
         while True:
-            # Keep connection alive, handle incoming messages if needed
             data = await websocket.receive_text()
-            # Echo back for now, could handle commands later
             try:
                 msg = json.loads(data)
                 if msg.get("type") == "ping":

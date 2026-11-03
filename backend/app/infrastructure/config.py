@@ -4,13 +4,13 @@ All settings loaded from environment variables with validation.
 """
 from functools import lru_cache
 from typing import List, Optional, Union
-from pydantic import Field, PostgresDsn, computed_field, model_validator
+from pydantic import AliasChoices, Field, PostgresDsn, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
     """Database connection settings."""
-    model_config = SettingsConfigDict(env_prefix="DB_")
+    model_config = SettingsConfigDict(env_prefix="DB_", extra="ignore")
 
     host: str = "localhost"
     port: int = 5432
@@ -44,18 +44,23 @@ class DatabaseSettings(BaseSettings):
 
 class AuthSettings(BaseSettings):
     """Authentication and authorization settings."""
-    model_config = SettingsConfigDict(env_prefix="AUTH_")
+    model_config = SettingsConfigDict(env_prefix="AUTH_", extra="ignore")
 
     device_jwt_secret: str = Field(
         default="test-secret-minimum-32-characters-long-for-testing-only",
-        min_length=32
+        min_length=32,
+        validation_alias=AliasChoices("device_jwt_secret", "AUTH_DEVICE_JWT_SECRET", "DEVICE_JWT_SECRET"),
     )
     device_jwt_algorithm: str = "HS256"
     device_jwt_expiry_hours: int = 24
     device_jwt_issuer: str = "aquanexis"
     device_jwt_audience: str = "aquanexis-devices"
 
-    api_key_salt: str = Field(default="test-salt-for-testing-only", min_length=16)
+    api_key_salt: str = Field(
+        default="test-salt-for-testing-only",
+        min_length=16,
+        validation_alias=AliasChoices("api_key_salt", "AUTH_API_KEY_SALT", "API_KEY_SALT"),
+    )
     api_key_prefix: str = "ak_"
     rate_limit_requests: int = 1000
     rate_limit_window_seconds: int = 60
@@ -119,7 +124,15 @@ class AppSettings(BaseSettings):
     )
 
     # App
-    env: str = Field(default="development", pattern="^(development|staging|production)$")
+    env: str = Field(
+        default="development",
+        pattern="^(development|staging|production|test)$",
+        validation_alias=AliasChoices("env", "ENV", "APP_ENV"),
+    )
+    demo_mode: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("demo_mode", "DEMO_MODE"),
+    )
     host: str = "0.0.0.0"
     port: int = 8000
     allowed_origins: Union[List[str], str] = Field(
@@ -143,7 +156,7 @@ class AppSettings(BaseSettings):
     @computed_field
     @property
     def is_development(self) -> bool:
-        return self.env == "development"
+        return self.env in ("development", "test")
 
     @computed_field
     @property

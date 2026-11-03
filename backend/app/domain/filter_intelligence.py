@@ -227,10 +227,10 @@ class FilterStressConfig:
     # Operating hours
     op_hours_low: float = 500.0
     op_hours_high: float = 2000.0
-    op_hours_weight: float = 0.10
+    op_hours_weight: float = 0.08
     
     # TDS trend
-    tds_trend_weight: float = 0.10
+    tds_trend_weight: float = 0.07
 
 
 @dataclass
@@ -348,8 +348,8 @@ FSI_CONFIG_VERSIONS = [
             "turbidity_exposure": 0.15,
             "cumulative_volume": 0.15,
             "filter_age": 0.10,
-            "operating_hours": 0.10,
-            "tds_trend": 0.10,
+            "operating_hours": 0.08,
+            "tds_trend": 0.07,
         },
         thresholds={
             "dp_low_threshold": 50.0,

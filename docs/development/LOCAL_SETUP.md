@@ -8,7 +8,38 @@
 - **PostgreSQL 16+** with TimescaleDB extension
 - **Git**
 
-## Quick Start with Docker Compose (Recommended)
+## Quick Start — Round 2 Software Demo Mode (No Docker or TimescaleDB Required)
+
+Because migration `0002_create_hypertables.py` requires the `timescaledb` PostgreSQL extension, AquaNexis includes a first-class, isolated **`DEMO_MODE=true`** runtime backed by the deterministic simulator and the real domain analytics/alert services.
+
+### 1. Start Backend (`http://localhost:8000`)
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+# DEMO_MODE=true is pre-configured in backend/.env
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+### 2. Start Frontend (`http://localhost:3000`)
+```powershell
+cd frontend
+npm run dev
+```
+
+### 3. Switch Demo Scenarios (`NORMAL`, `FILTER_STRESS`, `LEAK`, `SENSOR_FAULT`)
+Either use the **`DEMO_MODE (SIMULATED)`** scenario buttons in the top navigation bar at `http://localhost:3000` (login: `admin` / `password123`) or run the simulator CLI in `backend/`:
+```powershell
+cd backend
+.\.venv\Scripts\python.exe simulator.py --profile normal --interval 2
+.\.venv\Scripts\python.exe simulator.py --profile filter_stress --interval 2
+.\.venv\Scripts\python.exe simulator.py --profile leak --interval 2
+.\.venv\Scripts\python.exe simulator.py --profile sensor_fault --interval 2
+```
+See [`DEMO_RUN.md`](../../DEMO_RUN.md) for the complete 12-step Round 2 walkthrough.
+
+---
+
+## Quick Start with Docker Compose (Full TimescaleDB Stack)
 
 ```bash
 # 1. Clone and navigate

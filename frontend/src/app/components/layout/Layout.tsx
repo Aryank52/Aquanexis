@@ -3,6 +3,7 @@
 // ============================================================================
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Menu, X, ChevronLeft, Droplet, Filter, Gauge, Waves,
   Mountain, Database, Shield, AlertTriangle, Wrench, Cpu,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/state/theme';
 import { useAuth } from '@/state/auth';
+import { apiClient } from '@/api/client';
 import { cn } from '@/utils/cn';
 import type { DeviceStatus } from '@/types/api';
 
@@ -44,11 +46,30 @@ export function Layout() {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
-  // Device status — will be wired via context or query; placeholder for now
-  const deviceStatus: DeviceStatus = 'online';
-  const statusConfig = deviceStatusConfig[deviceStatus];
+  const demoStatus = useQuery({
+    queryKey: ['demoStatus'],
+    queryFn: () =>
+      apiClient
+        .get<{ demo_mode: boolean; active_scenario: string; device_status?: DeviceStatus }>('/demo/status')
+        .then((r) => r.data),
+    refetchInterval: 5000,
+    retry: false,
+  });
+
+  const switchScenario = useMutation({
+    mutationFn: (scenario: string) =>
+      apiClient.post('/demo/scenario', { scenario }).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    },
+  });
+
+  const deviceStatus: DeviceStatus = demoStatus.data?.device_status ?? 'online';
+  const statusConfig = deviceStatusConfig[deviceStatus] ?? deviceStatusConfig.online;
   const StatusIcon = statusConfig.icon;
+  const activeScenario = demoStatus.data?.active_scenario ?? 'NORMAL';
 
   return (
     <div className="min-h-screen bg-base flex">
@@ -185,6 +206,35 @@ export function Layout() {
                 {statusConfig.label}
               </span>
             </div>
+
+            {/* Demo Mode Scenario Switcher */}
+            {demoStatus.data?.demo_mode && (
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-surface rounded-button border border-subtle">
+                <span className="text-caption font-semibold text-warning px-1.5 py-0.5 rounded bg-warning/15">
+                  DEMO_MODE (SIMULATED)
+                </span>
+                {(['NORMAL', 'FILTER_STRESS', 'LEAK', 'SENSOR_FAULT'] as const).map((scen) => (
+                  <button
+                    key={scen}
+                    type="button"
+                    disabled={switchScenario.isPending}
+                    onClick={() => switchScenario.mutate(scen)}
+                    className={cn(
+                      'px-2 py-0.5 rounded text-caption font-mono transition-colors',
+                      activeScenario === scen
+                        ? scen === 'LEAK'
+                          ? 'bg-critical text-white font-semibold'
+                          : scen === 'FILTER_STRESS' || scen === 'SENSOR_FAULT'
+                          ? 'bg-warning text-black font-semibold'
+                          : 'bg-info text-white font-semibold'
+                        : 'text-text-secondary hover:bg-hover'
+                    )}
+                  >
+                    {scen}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

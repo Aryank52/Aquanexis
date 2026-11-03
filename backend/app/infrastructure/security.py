@@ -128,23 +128,29 @@ if settings.is_development:
 
 async def verify_api_key(
     api_key: Annotated[Optional[str], Header(alias="X-API-Key")] = None,
+    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(bearer_scheme)] = None,
 ) -> bool:
-    """FastAPI dependency to verify API key for admin endpoints."""
-    if settings.is_production and api_key is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key required",
-        )
-
+    """FastAPI dependency to verify API key or valid operator/device Bearer JWT for admin endpoints."""
     if api_key and api_key_manager.verify_key(api_key):
         return True
 
     if settings.is_development and api_key == "dev-api-key-change-in-production":
         return True
 
+    if credentials is not None:
+        token_payload = verify_device_token(credentials.credentials)
+        if token_payload.sub:
+            return True
+
+    if settings.is_production and api_key is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key required",
+        )
+
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid API key",
+        detail="Invalid API key or missing authorization",
     )
 
 

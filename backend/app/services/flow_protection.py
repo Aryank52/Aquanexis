@@ -134,34 +134,6 @@ class FlowProtectionService:
             "permeate_flow": permeate_flow,
             "reject_flow": reject_flow,
             "baseline_lpm": 1.5,
-            "deviation_pct": 0.0,
-            "status": "normal",
+            "deviation_pct": round(deviation_pct, 1),
+            "status": status,
         }
-
-
-class FlowProtectionService:
-    """Legacy service for flow monitoring and protection."""
-
-    def __init__(self, config=None):
-        self.config = config or SafetyConfig()
-        self._service = FlowProtectionService()
-
-    def validate_flow(
-        self,
-        device_id: str,
-        current_reading: dict,
-        previous_readings: list,
-        device_config: dict,
-        safety_config: dict,
-    ) -> Tuple[bool, dict]:
-        """Validate flow conditions."""
-        return self._service.validate_flow(
-            device_id="",
-            current_reading=current_reading,
-            previous_readings=previous_readings,
-            device_config=device_config,
-            safety_config=safety_config,
-        )
-
-    def diagnose_flow(self, current_reading: dict, previous_readings: list, safety_config: dict) -> dict:
-        return self._service.diagnose_flow(current_reading, previous_readings, safety_config)

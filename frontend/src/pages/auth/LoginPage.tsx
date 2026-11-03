@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Droplet, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/state/auth';
 import { getErrorMessage } from '@/api/client';
 import { cn } from '@utils/cn';
 
@@ -41,6 +41,10 @@ export function LoginPage() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: resolver ? resolver(schema) : undefined,
+    defaultValues: {
+      username: 'admin',
+      password: 'password123',
+    },
   });
 
   const onSubmit = async (data: FormData) => {

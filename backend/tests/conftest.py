@@ -16,7 +16,7 @@ os.environ.setdefault("DB_USER", "aquanexis")
 os.environ.setdefault("DB_PASSWORD", "aquanexis")
 os.environ.setdefault("DB_NAME", "aquanexis_test")
 os.environ.setdefault("DEVICE_JWT_SECRET", "test-secret-minimum-32-characters-long-for-testing")
-os.environ.setdefault("API_KEY_SALT", "test-salt")
+os.environ.setdefault("API_KEY_SALT", "test-salt-minimum-16-chars")
 os.environ.setdefault("LOG_FORMAT", "console")
 os.environ.setdefault("LOG_LEVEL", "DEBUG")
 

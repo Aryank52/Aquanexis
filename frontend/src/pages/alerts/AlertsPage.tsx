@@ -49,7 +49,9 @@ export function AlertsPage() {
   }
 
   const allAlerts = data?.items ?? [];
-  const activeAlerts = allAlerts.filter(a => a.status === 'DETECTED' || a.status === 'ACKNOWLEDGED' || a.status === 'SNOOZED');
+  const activeAlerts = allAlerts.filter(
+    a => a.status === 'OPEN' || a.status === 'DETECTED' || a.status === 'ACKNOWLEDGED' || a.status === 'SNOOZED'
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -66,6 +68,7 @@ export function AlertsPage() {
             aria-label="Filter by state"
           >
             <option value="all">All States</option>
+            <option value="OPEN">Open</option>
             <option value="DETECTED">Detected</option>
             <option value="ACKNOWLEDGED">Acknowledged</option>
             <option value="SNOOZED">Snoozed</option>
@@ -118,7 +121,7 @@ export function AlertsPage() {
                       </span>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
-                      {alert.status === 'DETECTED' && (
+                      {(alert.status === 'OPEN' || alert.status === 'DETECTED') && (
                         <Button
                           variant="secondary"
                           onClick={() => acknowledge.mutate({ alertId: alert.id, data: { acknowledged_by: 'operator' } })}

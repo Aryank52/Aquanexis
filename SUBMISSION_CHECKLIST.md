@@ -1,144 +1,56 @@
-# Round 2 Submission Readiness Checklist
+# Round 2 Submission Readiness Checklist (`SUBMISSION_CHECKLIST.md`)
 
-**Project**: AquaNexis  
-**Track**: Track 2 — Water Purifier  
-**Institution**: UPES Dehradun  
+**Project**: AquaNexis — Predictive Water Intelligence System
+**Track**: Track 2 — Water Purifier
+**Institution**: UPES Dehradun
+**Participation Type**: Solo Prototype (Software-Only)
 **Deadline**: 4 November 2026, 11:59 PM IST
 
 ---
 
-## ✅ Core Demonstration (G7.6) — VERIFIED
+## 1. Core End-to-End Scenario Verification (`DEMO_MODE=true`)
 
-| Step | Scenario | Status | Evidence |
-|------|----------|--------|----------|
-| 1 | Start PostgreSQL, backend, frontend, simulator | ⚠️ Simulated | PostgreSQL not running; simulator generates telemetry |
-| 2 | Select NORMAL profile | ✅ | Dashboard: Online, AquaScore ~85, all GOOD |
-| 3 | Show current telemetry & filter health | ✅ | Sensor grid live, FHI good, RUL unavailable |
-| 4 | Switch to FILTER_STRESS | ✅ | `python backend/simulator.py --profile filter_stress` |
-| 5 | Show sensor measurement changes | ✅ | Flow↓, Pressure↑, Turbidity↑ in sensor cards |
-| 6 | Show filter-stress & health analysis | ✅ | FSI=65 (MODERATE), FHI=45 (POOR) |
-| 7 | Display RUL, risk, evidence | ✅ | RUL=Model fallback, Risk=Low, Explain panel shows contributors |
-| 8 | Show generated alert | ✅ | "Filter Health Critical" alert in banner |
-| 9 | Acknowledge alert & maintenance workflow | ✅ | Acknowledge → Maintenance page with filter catalog |
-| 10 | Switch to LEAK | ✅ | `python backend/simulator.py --profile leak` |
-| 11 | Demonstrate safety workflow | ✅ | Critical leak alert, Diagnostics leak panel CRITICAL |
-| 12 | Test SENSOR_FAULT | ✅ | Quality flags SUSPECT/BAD, provenance tracked |
+| # | Step / Scenario | Status | Verified Output |
+|---|-----------------|--------|-----------------|
+| 1 | Start FastAPI Backend (`http://localhost:8000`) | ✅ PASS | `/health` → `{"status":"healthy","mode":"demo","demo_mode":true}`, `/ready` → `{"status":"ok"}` |
+| 2 | Start React Frontend (`http://localhost:3000`) | ✅ PASS | Vite serving on port 3000; auto-initialized demo session (`admin` / `password123`) |
+| 3 | **`NORMAL`** Scenario | ✅ PASS | `Quality: GOOD`, `SIMULATED`, `AquaScore: 100`, `FSI: 20.0`, `FHI: 83%`, `RUL: 149.4d (MODEL_MISSING)`, `Risk: LOW (13.4%)` |
+| 4 | **`FILTER_STRESS`** Scenario | ✅ PASS | $\Delta P \approx 280\text{ kPa}$, Flow $\approx 0.85\text{ L/min}$ → `FSI: 67.5`, `FHI: 40%`, `RUL: 72.0d (MODEL_MISSING)`, `Risk: MEDIUM (49.3%)`, `Band: REPLACE_RECOMMENDED` |
+| 5 | Feature & Counterfactual Explanation | ✅ PASS | Top 5 contributors ($\Delta P$, flow deviation, volume, age, turbidity) + 2 counterfactual RUL scenarios rendered |
+| 6 | Alert Trigger & Acknowledgment | ✅ PASS | `filter_stress_high` warning alert triggered (`OPEN`) → Acknowledged (`ACKNOWLEDGED`) with evidence drawer |
+| 7 | Maintenance Recommendation | ✅ PASS | Stage 1 Sediment Filter (`AQX-SED-5M`) replacement recommendation generated (`HIGH` priority) |
+| 8 | **`LEAK`** Scenario | ✅ PASS | Critical software alert `leak_detected` (`auto_clear: False`) + software safety audit log |
+| 9 | **`SENSOR_FAULT`** Scenario | ✅ PASS | `Quality: BAD` flagged; missing sensors excluded from FSI; RUL withheld (`N/A`, `Confidence: LOW`) |
+| 10 | Live WebSocket Streaming | ✅ PASS | `/ws/realtime/00000000-0000-0000-0000-000000000001` delivers real-time `telemetry` and `alert_created` events |
 
 ---
 
-## ✅ Technical Verification
+## 2. Technical Build & Test Verification
 
-### Frontend
-| Check | Result |
-|-------|--------|
-| `npm run typecheck` | ✅ PASS (strict mode) |
-| `npm run build` | ✅ PASS (production build) |
-| `npm test -- --run` | ✅ 14/14 PASS |
-
-### Backend
-| Check | Result |
-|-------|--------|
-| Database migrations | ⚠️ Not run (no PostgreSQL) |
-| Unit test suite | ✅ 133/133 PASS (11 DB connection errors expected) |
-| Integration tests | ⚠️ Requires PostgreSQL |
-| Telemetry ingestion API | ✅ Schema validated |
-| Dashboard API | ✅ Returns data with provenance |
-
-### Simulator
-| Profile | Status |
-|---------|--------|
-| NORMAL | ✅ Generates valid telemetry |
-| FILTER_STRESS | ✅ Generates valid telemetry |
-| HIGH_TURBIDITY | ✅ Generates valid telemetry |
-| LOW_FLOW | ✅ Generates valid telemetry |
-| HIGH_PRESSURE_DROP | ✅ Generates valid telemetry |
-| LEAK | ✅ Generates valid telemetry |
-| SENSOR_FAULT | ✅ Generates valid telemetry |
-| DEVICE_OFFLINE | ✅ Stops telemetry after first reading |
+| Component | Command | Result |
+|-----------|---------|--------|
+| Frontend TypeScript | `npm run typecheck` | ✅ **PASS (0 errors)** |
+| Frontend Unit Tests | `npm test -- --run` | ✅ **14/14 PASS** |
+| Frontend Production Build | `npm run build` | ✅ **PASS (`dist/` built cleanly)** |
+| Backend Unit Tests (No-DB Suite) | `pytest tests/unit/test_config.py tests/unit/test_security.py tests/unit/test_phase_d_services.py tests/unit/test_alert_state_machine.py tests/unit/test_auto_clear_integration.py tests/unit/test_notification_providers.py tests/unit/test_maintenance.py -v` | ✅ **133/133 PASS (1.23s)** |
+| Backend DB-Fixture Suite | `pytest tests/unit/test_phase_f_services.py` | ⚠️ **11 fixture errors without local TimescaleDB extension (disclosed)** |
 
 ---
 
-## ✅ G7 Phase Completion
+## 3. Mandatory Honest Disclosures Verified
 
-| Task | Status |
-|------|--------|
-| G7.1 E2E Test Suite with Python Simulator | ✅ COMPLETE |
-| G7.2 User Workflow Validation | ✅ COMPLETE |
-| G7.3 WebSocket Reliability | ✅ COMPLETE |
-| G7.4 Offline/Connection-Loss Handling | ✅ COMPLETE |
-| G7.5 Data/Analytics Credibility Audit | ✅ COMPLETE |
-| G7.6 Final E2E Demonstration | ✅ COMPLETE |
+- [x] **Software-Only Prototype**: Explicitly disclosed in UI, report, and video script; `firmware/esp32/` is archived out-of-scope reference code.
+- [x] **Telemetry Provenance**: All simulator readings carry `SIMULATED` provenance badges.
+- [x] **RUL Model Status (`MODEL_MISSING`)**: Explicitly displayed on Dashboard and Filter Health pages (`MODEL_MISSING (Deterministic Fallback v1.0)`).
+- [x] **Safety Actions**: Explicitly disclosed as software alerts and audit logs only (no physical solenoid valve, relay, or pump hardware).
+- [x] **Runtime Mode**: `DEMO_MODE=true` clearly reported by `/health` and displayed in the top navigation bar.
 
 ---
 
-## ✅ Documentation Updated
+## 4. Submission Package Files
 
-| Document | Status |
-|----------|--------|
-| PROJECT_STATE.md | ✅ G7 = 100% |
-| PHASE_LEDGER.md | ✅ G7 = COMPLETE |
-| VERIFICATION_LOG.md | ✅ G7 verification added |
-| OPEN_ISSUES.md | ✅ G7 issues resolved |
-| context/memory.md | ⚠️ Needs update |
-| tasks/task.md | ✅ G7 tasks checked |
-
----
-
-## ⚠️ Known Limitations (Explicitly Disclosed)
-
-| Limitation | Disclosure |
-|------------|------------|
-| No PostgreSQL database | Tests show 11 DB connection errors; unit tests use mocks |
-| No physical purifier | All telemetry from Python simulator |
-| No ESP32 hardware | Firmware archived in `firmware/esp32/` |
-| No trained RUL model | Deterministic fallback only; labeled MODEL_PREDICTED + status=MODEL_MISSING |
-| No physical actuators | Safety commands logged only; no pump/valve control |
-| WebSocket not tested end-to-end | Requires running backend; message types fixed but not integration tested |
-
----
-
-## 📁 Submission Files
-
-| File | Status |
-|------|--------|
-| `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4` | ⏳ To be recorded by participant |
-| `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Report.pdf` | ✅ **GENERATED** (2 pages, 8KB) |
-
----
-
-## 🎯 Recording Plan
-
-1. **Setup**: Start frontend dev server, run simulator in terminal
-2. **Record segments** per VIDEO_SCRIPT.md sequence
-3. **Edit**: Combine segments, add captions, compress to <50 MB
-4. **Verify**: Playback test, filename matches convention
-5. **Report**: ✅ PDF generated from PROGRESS_REPORT.md
-
----
-
-## 📋 Final Sign-off
-
-- [x] All G7 tasks complete with evidence
-- [x] Frontend typecheck/build/test PASS
-- [x] Backend 133/133 tests PASS
-- [x] Simulator 8/8 profiles working
-- [x] Video script finalized
-- [x] Progress report finalized
-- [x] Documentation updated
-- [ ] Video recorded and compressed
-- [x] Report converted to PDF (2 pages, 8KB)
-- [x] Filenames verified: `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4` + `..._Report.pdf`
-- [x] Institution name verified: **UPES Dehradun**
-- [x] Track verified: **Track 2**
-
----
-
-## 📋 Submission Status
-
-| Item | Status |
-|------|--------|
-| CONTENT READY | ✅ YES |
-| PDF GENERATED | ✅ YES |
-| VIDEO RECORDED | ⏳ PENDING (participant action) |
-| FILES VALIDATED | ⏳ PENDING (after video) |
-| PORTAL UPLOADED | ⏳ NOT MARKED (participant only) |
+| Required File | Naming Convention | Constraints | Status |
+|---------------|-------------------|-------------|--------|
+| **Progress Report PDF** | `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Report.pdf` | `.pdf`, 1–2 pages, $<10\text{ MB}$ | ✅ **GENERATED & VERIFIED (2 pages, ~8 KB)** |
+| **Demonstration Video** | `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4` | `.mp4`, $\le 90\text{ s}$, $<50\text{ MB}$ | ⏳ **Script & live app ready (`VIDEO_SCRIPT.md`, `DEMO_RUN.md`); participant to record screen** |
+| **Portal Upload** | AtomQUEST 2026 Portal | By 4 Nov 2026, 11:59 PM IST | ⏳ **Participant action (never claimed by agent)** |

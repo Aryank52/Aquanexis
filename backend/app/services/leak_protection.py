@@ -87,7 +87,7 @@ class LeakProtectionService:
 
         return True, evidence
 
-    def _calculate_flow_delta(self, current: dict, previous: list) -> Optional[float]:
+    def _calculate_flow_delta(self, current: dict, previous_readings: list) -> Optional[float]:
         """Calculate flow rate change from previous readings."""
         if not previous_readings:
             return None
@@ -101,31 +101,31 @@ class LeakProtectionService:
             
         return current_flow - prev_flow
 
-    def _calculate_pressure_drop(self, current: dict, previous: list) -> Optional[float]:
+    def _calculate_pressure_drop(self, current: dict, previous_readings: list) -> Optional[float]:
         """Calculate pressure drop from previous readings."""
         if not previous_readings:
             return None
             
-        current_pressure = current.get('pressure')
+        current_pressure = current.get('inlet_pressure') or current.get('pressure')
         if current_pressure is None:
             return None
             
-        prev_pressure = previous_readings[0].get('pressure')
+        prev_pressure = previous_readings[0].get('inlet_pressure') or previous_readings[0].get('pressure')
         if prev_pressure is None:
             return None
             
-        return previous_pressure - current_pressure
+        return prev_pressure - current_pressure
 
     def diagnose_leak(self, current_reading: dict, previous_readings: list) -> dict:
         """Generate leak diagnostics."""
-        leak_detected = current_reading.get('leak_detected', False)
+        leak_detected = current_reading.get('leak_detected') or current_reading.get('leak', False)
         flow_delta = self._calculate_flow_delta(current_reading, previous_readings)
         pressure_drop = self._calculate_pressure_drop(current_reading, previous_readings)
         
         # Count persistence
         persistence_readings = 0
         for reading in [current_reading] + previous_readings:
-            if reading.get('leak_detected'):
+            if reading.get('leak_detected') or reading.get('leak'):
                 persistence_readings += 1
 
         if leak_detected and persistence_readings >= 2:
@@ -139,40 +139,11 @@ class LeakProtectionService:
             probability = 0.01
 
         return {
-            "leak_detected": leak_detected,
-            "leak_probability": 0.95 if leak_detected else 0.01,
+            "leak_detected": bool(leak_detected),
+            "leak_probability": probability,
             "flow_delta_lpm": flow_delta,
             "pressure_drop_kpa": pressure_drop,
-            "sensor_state": True,
+            "sensor_state": bool(leak_detected),
             "persistence_readings": persistence_readings,
-            "status": "leak_confirmed" if leak_detected and persistence_readings >= 2 else ("suspect" if leak_detected else "dry")
+            "status": status,
         }
-
-
-# Backwards compatibility
-class LeakProtectionService:
-    """Legacy service for leak detection and protection."""
-
-    def __init__(self, config: SafetyConfig = None):
-        self.config = config or SafetyConfig()
-        self._service = LeakProtectionService(self.config)
-
-    def validate_leak(
-        self,
-        device_id: str,
-        current_reading: dict,
-        previous_readings: list,
-        device_config: dict,
-        safety_config: dict,
-    ) -> Tuple[bool, dict]:
-        """Validate leak condition."""
-        return self._service.validate_leak(
-            device_id="",
-            current_reading=current_reading,
-            previous_readings=previous_readings,
-            device_config=device_config,
-            safety_config=safety_config,
-        )
-
-    def diagnose_leak(self, current_reading: dict, previous_readings: list) -> dict:
-        return self._service.diagnose_leak(current_reading, previous_readings)

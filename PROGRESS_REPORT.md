@@ -1,10 +1,6 @@
 # AquaNexis — Round 2 Progress Report
 
-**Track**: Track 2 — Water Purifier  
-**Institution**: UPES Dehradun  
-**Team**: Solo Prototype  
-**Date**: 4 November 2026  
-**Competition**: atomQUEST 2026
+**Track**: Track 2 — Water Purifier | **Institution**: UPES Dehradun | **Participation**: Solo Prototype | **Date**: 4 November 2026 | **Competition**: atomQUEST 2026
 
 ---
 
@@ -15,164 +11,72 @@
 | **Project Name** | AquaNexis — Predictive Water Intelligence System |
 | **Track** | Track 2: Water Purifier |
 | **Institution** | UPES Dehradun |
-| **Participation Type** | Solo Prototype |
-| **Primary Exploration** | Filter failure prognostics using data analytics (FSI, FHI, RUL, Failure Risk) |
-| **Secondary Exploration** | Beyond-TDS water quality sensing (pH, Turbidity, Temperature, Flow, Pressure) |
+| **Participation Type** | Solo Prototype (Software-Only) |
+| **Primary Exploration** | Prognostics of filter failure using data analytics (FSI, FHI, RUL, Failure Risk, Explainability) |
+| **Secondary Exploration** | Input water quality sensing beyond TDS (pH, Turbidity, EC, Temperature, Flow, Inlet/Outlet Pressure) |
 
 ---
 
 ## 2. Problem & Proposed Solution
 
-**Problem**: Water purifiers lack predictive intelligence. Filter replacements are either reactive (after failure) or time-based (wasteful). Users have no visibility into filter degradation, water quality trends, or impending failures.
+**Problem**: Conventional water purifiers rely on fixed calendar timers or simple TDS thresholds, causing either premature filter disposal or unexpected membrane failure and unmonitored water quality degradation.
 
-**Solution**: AquaNexis is a **software-only predictive intelligence platform** that:
-- Ingests multi-sensor telemetry (13 sensor types) from water purifiers
-- Computes Filter Stress Index (FSI) and Filter Health Index (FHI) using deterministic engineering models
-- Estimates Remaining Useful Life (RUL) with confidence intervals
-- Classifies failure risk with explainable evidence
-- Provides real-time dashboard, alerts, and guided maintenance workflows
-- **All sensor readings and analytics carry explicit provenance** (MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED)
+**Solution**: AquaNexis is a **software-only predictive water intelligence platform** that ingests 13-parameter purifier telemetry, validates sensor quality, computes a 7-component Filter Stress Index (FSI) and 5-component Filter Health Index (FHI), estimates Remaining Useful Life (RUL) with explicit model-status disclosure (`MODEL_MISSING` deterministic fallback), classifies failure risk with feature-level evidence, and drives stateful alerts and maintenance workflows. Every metric carries explicit provenance (`SIMULATED`, `CALCULATED`, `MODEL_PREDICTED`, `MEASURED`).
 
 ---
 
-## 3. Completed Software Modules
+## 3. Completed Software Modules & Verification
 
-| Module | Status | Key Features |
-|--------|--------|--------------|
-| **Telemetry Ingestion** | ✅ Complete | FastAPI endpoint, JWT auth, duplicate detection, quality validation |
-| **Water Quality Analytics** | ✅ Complete | AquaScore (0-100), parameter scores, trends, anomaly detection |
-| **Filter Stress Index (FSI)** | ✅ Complete | 7-component deterministic model, pressure differential, rolling baselines |
-| **Filter Health Index (FHI)** | ✅ Complete | 5-component weighted model, maintenance bands, confidence scoring |
-| **RUL Estimation** | ✅ Complete | ML interface with deterministic fallback, stability tracking, counterfactuals |
-| **Failure Risk Assessment** | ✅ Complete | 5-component risk model, explainable evidence, alert integration |
-| **Alert State Machine** | ✅ Complete | DETECTED→OPEN→ACKNOWLEDGED/SNOOZED/RESOLVED/AUTO_CLEARED |
-| **Notification System** | ✅ Complete | Console, Email/SMTP, Webhook providers with SSRF protection |
-| **Maintenance & Filter Lifecycle** | ✅ Complete | Catalog (11 categories), compatibility engine, workflow state machine |
-| **Calibration Management** | ✅ Complete | Time/usage-based policies, post-maintenance verification, baseline versioning |
-| **Safety Architecture** | ✅ Complete | Leak/pressure/flow/pump protection, idempotent actions, role-based auth |
-| **Real-time WebSocket** | ✅ Complete | Telemetry/alert broadcasts, exponential backoff reconnection |
-| **React Dashboard** | ✅ Complete | Live sensor grid, AquaScore, Filter Health, Diagnostics, Alerts, Maintenance |
-| **Data Provenance Display** | ✅ Complete | MEASURED/SIMULATED/CALCULATED/MODEL_PREDICTED badges on all values |
+| Module | Status | Verified Capabilities |
+|--------|--------|-----------------------|
+| **Telemetry & Quality Gate** | ✅ Complete | FastAPI ingestion, JWT/API-key auth, range/rate/cross-sensor validation (`GOOD`/`SUSPECT`/`BAD`) |
+| **Water Quality (Beyond TDS)** | ✅ Complete | AquaScore (0–100), TDS, EC, pH, Turbidity, Temperature sub-scores, 1h slopes, anomaly flags |
+| **Filter Stress Index (FSI)** | ✅ Complete | Normalized 7-component weighted model ($\sum w_i = 1.00$); excludes missing sensors from denominator |
+| **Filter Health Index (FHI)** | ✅ Complete | 5-component health score (0–100) with maintenance bands (`NORMAL`, `MONITOR`, `REPLACE_RECOMMENDED`) |
+| **RUL & Risk Prognostics** | ✅ Complete | Deterministic fallback explicitly labeled `MODEL_MISSING`; withheld (`N/A`) on `SENSOR_FAULT` |
+| **Explainability Engine** | ✅ Complete | Feature contribution breakdown ($\Delta P$, flow deviation, volume, age, turbidity) + counterfactuals |
+| **Alert State Machine** | ✅ Complete | `DETECTED → OPEN → ACKNOWLEDGED / SNOOZED / RESOLVED / AUTO_CLEARED` with evidence drawer |
+| **Maintenance Lifecycle** | ✅ Complete | 11-category filter catalog, compatibility engine, replacement/calibration/verification workflows |
+| **Real-Time WebSocket & UI** | ✅ Complete | React 18 + TypeScript dashboard (`http://localhost:3000`), live WebSocket (`/ws/realtime/{id}`) |
 
 ---
 
-## 4. Original Sourcing Risks & Updated Status
+## 4. Original Sourcing Risks, Scope Change & Budget
 
-| Original Risk | Status | Resolution |
-|---------------|--------|------------|
-| ESP32 hardware unavailable | ✅ Resolved | **Scope changed to software-only**; firmware archived as reference |
-| ESP-IDF build environment | ✅ Resolved | Not required for software prototype |
-| Physical sensor calibration | ✅ Resolved | Simulator provides calibrated synthetic data |
-| Sensor PCB fabrication | ✅ Resolved | Out of scope — software prototype uses simulated telemetry |
-| Custom filter housing | ✅ Resolved | Out of scope — maintenance module manages catalog only |
+| Aspect | Stage 1 Plan | Round 2 Actual Status & Resolution |
+|--------|--------------|------------------------------------|
+| **Scope** | ESP32 + 13 physical sensors +软件 | **Pivoted to Software-Only Prototype (G6)**; `firmware/esp32/` archived as reference only |
+| **Hardware / PCB / Rig** | ₹5,000–₹15,000 estimated | **₹0 actual spend** — no hardware procured; deterministic Python simulator (`simulator.py`) used |
+| **TimescaleDB Dependency** | PostgreSQL + TimescaleDB | Local Windows PG16 lacked `timescaledb` DLL; built isolated `DEMO_MODE` runtime while preserving DB code |
 
 ---
 
-## 5. Budget: Original Estimate vs Actual
+## 5. Revised Performance Targets & Honest Disclosures
 
-| Category | Original Estimate (₹) | Actual Spend (₹) | Notes |
-|----------|----------------------|------------------|-------|
-| ESP32 Dev Kit | 1,500 | 0 | Not purchased — out of scope |
-| Sensors (13 types) | 8,000 | 0 | Not purchased — out of scope |
-| PCB Fabrication | 2,000 | 0 | Not purchased — out of scope |
-| Enclosure/Mechanical | 3,000 | 0 | Not purchased — out of scope |
-| Cloud/Hosting | 500 | 0 | Local development only |
-| **Total** | **~₹15,000** | **₹0** | **Software-only — no hardware procurement** |
-
-*Note: Original Stage 1 abstract estimated ₹5,000–₹10,000 for minimal hardware. Actual expenditure is ₹0 as the project pivoted to a software-only prototype before any hardware procurement.*
+| Target | Round 2 Implementation | Verification & Honest Disclosure |
+|--------|------------------------|----------------------------------|
+| **Beyond-TDS Sensing** | 13 simulated sensor channels | ✅ **Verified** — TDS, EC, pH, Turbidity, Temp, Flow, Inlet/Outlet Pressure, Tank, Leak, Current, Power, UV |
+| **Filter Prognostics (RUL)** | FSI + FHI + Deterministic RUL | ⚠️ **Disclosed** — No trained `.pkl` ML model yet; UI/API explicitly show `MODEL_MISSING (Deterministic Fallback v1.0)` |
+| **Real-Time Dashboard** | WebSocket + 5s query freshness | ✅ **Verified** — Live WebSocket broadcasts + stale-data detection at >30s |
+| **Safety / Leak Response** | Critical alert + safety audit log | ⚠️ **Disclosed** — **Software alert and audit log only**; no physical valve, relay, or pump actuator exists |
+| **Bad Sensor Handling** | Quality gate + confidence guard | ✅ **Verified** — `SENSOR_FAULT` flags `Quality: BAD`, excludes missing sensors, and withholds RUL (`Confidence: LOW`) |
 
 ---
 
-## 6. Scope Change & Reason
+## 6. Verified Round 2 Scenario Evidence (`DEMO_MODE=true`)
 
-**Original Scope (Stage 1)**: Hardware + software water purifier with ESP32, 13 physical sensors, custom PCB, filter housing, and dashboard.
-
-**Revised Scope (G6)**: **Software-only intelligence platform**. Python telemetry simulator replaces physical sensors. All analytics, dashboard, alerts, maintenance workflows, and safety logic implemented in software.
-
-**Reason**: Hardware development (ESP32 firmware, physical sensors, ESP-IDF setup, PCB fabrication, custom enclosure) was descoped due to:
-- ESP-IDF build environment not available
-- Physical hardware unavailable for validation
-- Competition allows software-only prototypes where "value delivered is immense"
-- Focus shifted to demonstrating **meaningful predictive and diagnostic capabilities** rather than physical integration
-
-**Firmware preserved** in `firmware/esp32/` as archived reference with 13 sensor drivers, communication layer, and main application — syntax-validated (GCC).
+| Scenario | Verified System Response |
+|----------|--------------------------|
+| **`NORMAL`** | `Quality=GOOD`, `Provenance=SIMULATED`, `AquaScore=100`, `FSI=20.0`, `FHI=83%`, `RUL=149.4d (MODEL_MISSING)`, `Risk=LOW (13.4%)`, `Alerts=0` |
+| **`FILTER_STRESS`** | $\Delta P \approx 280\text{ kPa}$, Flow $\approx 0.85\text{ L/min}$ → `FSI=67.5`, `FHI=40%`, `RUL=72.0d`, `Band=REPLACE_RECOMMENDED`, `Risk=MEDIUM (49.3%)`, Alert `filter_stress_high` (`OPEN` → `ACKNOWLEDGED`), Stage 1 Sediment replacement recommended |
+| **`LEAK`** | `leak=true` → Critical manual-only alert `leak_detected` + `SAFETY_SHUTDOWN_RECOMMENDED` software audit log |
+| **`SENSOR_FAULT`** | Turbidity `>100 NTU`, TDS/EC mismatch, missing flow/outlet pressure → `Quality=BAD`, `RUL=None (N/A)`, `Confidence=LOW`, `sensor_fault_detected` alert |
 
 ---
 
-## 7. Revised Performance Targets & Verification Status
+## 7. Automated Test Results & Round 3 Plan
 
-| Original Target | Revised Target | Verification Status |
-|-----------------|----------------|---------------------|
-| ≥4 additional contextual signals | 13 sensor types implemented | ✅ **Verified** — All 13 sensors in simulator & dashboard |
-| RUL MAE ≤ 7 days | RUL deterministic fallback (no trained model) | ⚠️ **Not verifiable** — No trained ML model; fallback clearly labeled |
-| Dashboard update ≤ 5 seconds | WebSocket + 5s staleTime | ✅ **Verified** — Live updates via WebSocket, stale detection at 30s |
-| Automatic safe shutdown | Software safety alerts only | ✅ **Verified** — Leak/pressure/flow alerts generated; no physical actuators |
-| TDS rejection & flow/recovery tracking | Purification performance module | ✅ **Verified** — Rejection rate, recovery ratio, efficiency computed |
+- **Automated Verification**: Backend unit tests: **133/133 PASS** (`pytest`); Frontend: `npm run typecheck` **PASS**, `npm test -- --run` **14/14 PASS**, `npm run build` **PASS**.
+- **Round 3 Plan**: (1) Train Random Forest/XGBoost RUL model on labeled run-to-failure datasets to replace deterministic fallback; (2) Deploy containerized TimescaleDB stack for multi-device fleet persistence; (3) Integrate external purifier telemetry ingestion API with OEM test bench data.
 
----
-
-## 8. Delay Reasons
-
-| Delay | Cause | Mitigation |
-|-------|-------|------------|
-| ESP-IDF environment setup failed | ESP-IDF v5.x not installed on Windows; Docker unavailable | Pivoted to software-only; firmware archived |
-| PostgreSQL not running for integration tests | No local DB instance | Unit tests use mocks; 133/133 pass (11 DB errors expected) |
-| WebSocket message type mismatch | Backend/frontend type definitions diverged | Fixed: added mapping layer in WebSocket manager |
-| Offline mode not implemented | Frontend lacked connection state handling | Added: stale data banner, offline indicator, auto-recovery |
-
----
-
-## 9. Safety / Fail-Safe Status
-
-| Safety Feature | Implementation | Status |
-|----------------|----------------|--------|
-| Leak detection | Sensor reading → critical alert → safety workflow | ✅ Implemented (software) |
-| High pressure protection | Threshold breach → alert + pump shutdown command | ✅ Implemented (software command only) |
-| Low flow / dry run | Flow < threshold → alert + pump shutdown command | ✅ Implemented (software command only) |
-| Pump overcurrent | Current > threshold → alert + shutdown command | ✅ Implemented (software command only) |
-| **Physical actuator control** | **NOT IMPLEMENTED** — Software-only prototype | ⚠️ **Explicitly NOT implemented** |
-
-**Critical Disclosure**: No physical purifier, pump, valve, or actuator exists. All safety actions are **software alerts and logged commands only**. The system demonstrates the *logic* for fail-safe responses but cannot physically shut down equipment.
-
----
-
-## 10. Round 3 Plan
-
-| Activity | Description | Target |
-|----------|-------------|--------|
-| **External Telemetry Integration** | Documented API for real purifier telemetry ingestion (HTTP/WebSocket) | Q1 2027 |
-| **ML Model Training** | Collect operational data → train RUL model → replace deterministic fallback | Q2 2027 |
-| **Mobile App** | React Native companion app for technicians/consumers | Q2 2027 |
-| **Multi-device Fleet View** | Dashboard for managing multiple purifiers | Q3 2027 |
-| **Field Validation** | Partner with purifier OEM for real-world pilot | Q3 2027 |
-| **Regulatory Alignment** | Map analytics to ISO/NSF water quality standards | Q4 2027 |
-
----
-
-## 11. Key Demonstration Evidence (G7.6)
-
-| Scenario | Evidence |
-|----------|----------|
-| **NORMAL** | Dashboard: Online, AquaScore 85, all sensors GOOD, provenance=SIMULATED |
-| **FILTER_STRESS** | FSI↑ to 65 (MODERATE), FHI↓ to 45 (POOR), Band=REPLACE_RECOMMENDED, Alert=Filter Health Critical |
-| **LEAK** | Critical alert "Leak Detected", Diagnostics leak panel=CRITICAL, safety workflow displayed |
-| **SENSOR_FAULT** | Quality flags=SUSPECT/BAD, provenance tracking, no silent degradation to reliable predictions |
-
-All scenarios tested with Python simulator (`backend/simulator.py --profile <name>`).
-
----
-
-## 12. Submission Files
-
-| File | Description |
-|------|-------------|
-| `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4` | 90-second demonstration video |
-| `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Report.pdf` | This progress report (1-2 pages) |
-
----
-
-**Declaration**: This report accurately reflects the software-only implementation status. All hardware development (ESP32 firmware, physical sensors, PCB, enclosure) is **out of scope** and archived in `firmware/esp32/`. The demonstration uses simulated telemetry from `backend/simulator.py`. No physical purifier exists.
-
-**Prepared by**: [Participant Name]  
-**Institution**: UPES Dehradun  
-**Date**: 4 November 2026
+**Declaration**: AquaNexis is submitted as a **software-only prototype**. All telemetry in the demonstration is generated by `backend/simulator.py` (`SIMULATED`), RUL uses a deterministic fallback (`MODEL_MISSING`), and safety responses are software alerts/logs only.

@@ -58,21 +58,21 @@ class SimulatorState:
         self.start_time = datetime.utcnow()
         
         # Base values for NORMAL profile
-        self.base_tds = 350.0
-        self.base_conductivity = 700.0
+        self.base_tds = 185.0
+        self.base_conductivity = 330.0
         self.base_ph = 7.2
-        self.base_turbidity = 0.5
-        self.base_temperature = 25.0
+        self.base_turbidity = 0.35
+        self.base_temperature = 24.5
         self.base_flow = 2.0
-        self.base_inlet_pressure = 300.0
-        self.base_outlet_pressure = 280.0
-        self.base_tank = 75.0
-        self.base_pump_current = 1.0
+        self.base_inlet_pressure = 310.0
+        self.base_outlet_pressure = 285.0
+        self.base_tank = 78.0
+        self.base_pump_current = 1.05
         self.base_pump_power = 240.0
         
         # Drift accumulators
-        self.filter_age_hours = 0.0
-        self.turbidity_exposure = 0.0
+        self.filter_age_hours = 120.0
+        self.turbidity_exposure = 4.0
         self.pressure_drift = 0.0
         self.flow_drift = 0.0
         
@@ -82,21 +82,30 @@ class SimulatorState:
     def _init_profile_state(self):
         """Initialize profile-specific state."""
         if self.profile == SimulationProfile.FILTER_STRESS:
-            self.filter_age_hours = 2000.0  # Start with aged filter
-            self.turbidity_exposure = 50.0
-            self.pressure_drift = 20.0
-            self.flow_drift = -0.2
+            self.filter_age_hours = 1850.0  # Aged filter under fouling stress
+            self.turbidity_exposure = 75.0
+            self.pressure_drift = 95.0      # High inlet pressure buildup
+            self.flow_drift = -1.05         # Flow restricted from 2.0 -> ~0.95 L/min
+            self.base_turbidity = 2.4
+            self.base_tds = 340.0
+            self.base_conductivity = 610.0
+            self.base_pump_current = 1.65
         elif self.profile == SimulationProfile.HIGH_TURBIDITY:
             self.turbidity_exposure = 100.0
+            self.base_turbidity = 12.5
+            self.base_tds = 420.0
+            self.base_conductivity = 740.0
         elif self.profile == SimulationProfile.LOW_FLOW:
-            self.flow_drift = -0.8
+            self.flow_drift = -1.45
         elif self.profile == SimulationProfile.HIGH_PRESSURE_DROP:
-            self.pressure_drift = 50.0
+            self.pressure_drift = 120.0
+            self.flow_drift = -0.6
         elif self.profile == SimulationProfile.LEAK:
-            self.flow_drift = -0.1  # Slight flow loss
-            self.pressure_drift = -10.0
+            self.flow_drift = 0.65          # Uncontrolled flow surge through leak
+            self.pressure_drift = -85.0     # Line pressure drop during leak
+            self.base_tank = 42.0
         elif self.profile == SimulationProfile.SENSOR_FAULT:
-            pass  # Will inject faults randomly
+            pass  # Injects deterministic sensor faults in _apply_profile_effects
     
     def generate_reading(self) -> SensorReadingInput:
         """Generate a single sensor reading based on current state."""
@@ -115,7 +124,13 @@ class SimulatorState:
             temperature=self._clamp(self.base_temperature + self.random.gauss(0, 0.2), -10, 60),
             flow_rate=self._clamp(self.base_flow + self.flow_drift + self.random.gauss(0, 0.02), 0, 50),
             inlet_pressure=self._clamp(self.base_inlet_pressure + self.pressure_drift + self.random.gauss(0, 2), 0, 1000),
-            outlet_pressure=self._clamp(self.base_outlet_pressure + self.pressure_drift * 0.8 + self.random.gauss(0, 2), 0, 1000),
+            outlet_pressure=self._clamp(
+                self.base_outlet_pressure
+                - (self.pressure_drift * 0.65 if self.pressure_drift > 0 else abs(self.pressure_drift) * 0.9)
+                + self.random.gauss(0, 2),
+                0,
+                1000,
+            ),
             tank_level=self._clamp(self.base_tank + self.random.gauss(0, 0.5), 0, 100),
             leak=False,
             pump_current=self._clamp(self.base_pump_current + self.random.gauss(0, 0.01), 0, 10),
@@ -173,30 +188,23 @@ class SimulatorState:
     def _apply_profile_effects(self, reading: SensorReadingInput):
         """Apply profile-specific modifications to reading."""
         if self.profile == SimulationProfile.LEAK:
-            if self.random.random() < 0.01:  # 1% chance of leak detection
-                reading.leak = True
-                reading.flow_rate = max(0, reading.flow_rate - self.random.uniform(0.1, 0.5))
+            reading.leak = True
+            reading.flow_rate = round(self._clamp(self.base_flow + 0.65 + self.random.uniform(0.0, 0.25), 0.1, 50), 2)
+            reading.inlet_pressure = round(self._clamp(215.0 + self.random.gauss(0, 3), 50, 1000), 1)
+            reading.outlet_pressure = round(self._clamp(145.0 + self.random.gauss(0, 3), 20, 1000), 1)
+            self.base_tank = self._clamp(self.base_tank - 0.8, 5, 100)
+            reading.tank_level = round(self.base_tank, 1)
         
         elif self.profile == SimulationProfile.SENSOR_FAULT:
-            # Randomly corrupt one sensor
-            if self.random.random() < 0.02:
-                fault_type = self.random.choice([
-                    "tds_spike", "ph_drift", "turbidity_spike", 
-                    "pressure_drop", "flow_zero", "temp_freeze"
-                ])
-                
-                if fault_type == "tds_spike":
-                    reading.tds = self._clamp(reading.tds + self.random.uniform(500, 1500), 0, 5000)
-                elif fault_type == "ph_drift":
-                    reading.ph = self._clamp(reading.ph + self.random.uniform(-2, 2), 0, 14)
-                elif fault_type == "turbidity_spike":
-                    reading.turbidity = self._clamp(reading.turbidity + self.random.uniform(50, 200), 0, 1000)
-                elif fault_type == "pressure_drop":
-                    reading.inlet_pressure = self._clamp(reading.inlet_pressure - self.random.uniform(100, 300), 0, 1000)
-                elif fault_type == "flow_zero":
-                    reading.flow_rate = 0
-                elif fault_type == "temp_freeze":
-                    reading.temperature = self.random.uniform(-5, 0)
+            # Deterministic multi-sensor fault injection for reliable demonstration:
+            # 1. Out-of-range turbidity spike (>100 NTU max range)
+            reading.turbidity = round(142.5 + self.random.uniform(-5.0, 8.0), 2)
+            # 2. Cross-sensor TDS vs Conductivity ratio violation (ratio > 0.7)
+            reading.tds = 890.0
+            reading.conductivity = 410.0
+            # 3. Missing flow_rate and outlet_pressure readings (sensor dropout)
+            reading.flow_rate = None
+            reading.outlet_pressure = None
         
         elif self.profile == SimulationProfile.DEVICE_OFFLINE:
             # This is handled at the simulator loop level
@@ -243,9 +251,19 @@ async def run_simulator(config: SimulatorConfig):
     """Run the simulator loop."""
     state = SimulatorState(config.profile, config.seed)
     
-    # Create device if needed
+    # Create device if needed and notify demo scenario state if backend is in DEMO_MODE
     api_key = os.getenv("SIMULATOR_API_KEY", "dev-api-key-change-in-production")
     await create_device(config.backend_url, api_key, config.device_id)
+    async with httpx.AsyncClient() as setup_client:
+        try:
+            await setup_client.post(
+                f"{config.backend_url}/api/v1/demo/scenario",
+                json={"profile": config.profile.value, "device_id": str(config.device_id)},
+                headers={"X-API-Key": api_key, "Authorization": f"Bearer {config.device_jwt}"},
+                timeout=5.0,
+            )
+        except Exception:
+            pass
     
     headers = {
         "Authorization": f"Bearer {config.device_jwt}",
@@ -317,7 +335,10 @@ def parse_args():
     
     parser = argparse.ArgumentParser(description="AquaNexis Telemetry Simulator")
     parser.add_argument("--backend-url", default=os.getenv("BACKEND_URL", "http://localhost:8000"))
-    parser.add_argument("--device-id", default=os.getenv("SIMULATOR_DEVICE_ID"))
+    parser.add_argument(
+        "--device-id",
+        default=os.getenv("SIMULATOR_DEVICE_ID", "00000000-0000-0000-0000-000000000001"),
+    )
     parser.add_argument("--device-jwt", default=os.getenv("SIMULATOR_DEVICE_JWT"))
     parser.add_argument("--interval", type=int, default=int(os.getenv("SENSOR_INTERVAL_SECONDS", "10")))
     parser.add_argument("--profile", choices=[p.value for p in SimulationProfile], 

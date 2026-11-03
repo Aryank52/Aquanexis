@@ -1,86 +1,57 @@
 # AquaNexis Round 2 Submission — 90-Second Video Script
 
-**File**: `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4`
-**Duration**: Maximum 90 seconds
-**Size**: Maximum 50 MB
+**Target File**: `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4`
+**Format**: `.mp4` | **Max Duration**: 90 seconds | **Max Size**: 50 MB
+**Track**: Track 2 — Water Purifier | **Institution**: UPES Dehradun | **Team**: Solo Prototype
 
 ---
 
-## Video Sequence (Total: 90 seconds)
+## Video Sequence (Total: 90 Seconds)
 
-### 0:00-0:08 — Title & Problem Statement (8s)
-- **Visual**: AquaNexis logo + "Predictive Water Intelligence System"
-- **Text**: "Track 2: Water Purifier | UPES Dehradun | Solo Prototype"
-- **Narration**: "AquaNexis is a predictive water intelligence platform that transforms raw purifier telemetry into actionable filter health insights and failure predictions."
-
-### 0:08-0:18 — Architecture Overview (10s)
-- **Visual**: Animated diagram — Python Simulator → FastAPI Backend → PostgreSQL → React Dashboard
-- **Text**: "Software-only prototype | 13 sensor types | Real-time WebSocket"
-- **Narration**: "Our software-only architecture ingests telemetry from 13 sensor types through a Python simulator, processes it through FastAPI with PostgreSQL persistence, and delivers real-time insights via WebSocket to a React dashboard."
-
-### 0:18-0:35 — NORMAL Operation (17s)
-- **Visual**: Dashboard page — Green "Online" badge, AquaScore 85, sensor grid with live values
-- **Action**: Hover over AquaScore → shows "CALCULATED" provenance badge
-- **Action**: Hover over sensor cards → shows "SIMULATED" provenance badge
-- **Text**: "Normal operation | AquaScore: 85 | All sensors GOOD"
-- **Narration**: "In normal operation, the dashboard shows live telemetry with full provenance tracking — every value labeled as SIMULATED from our simulator, AquaScore as CALCULATED from measured inputs."
-
-### 0:35-0:55 — FILTER_STRESS Scenario (20s)
-- **Visual**: Terminal — `python simulator.py --profile filter_stress`
-- **Visual**: Dashboard updates — FSI rises to 65 (MODERATE), FHI drops to 45 (POOR)
-- **Action**: Click Filter Health card → shows maintenance band "REPLACE_RECOMMENDED"
-- **Action**: Click "Explain" → shows top contributors: flow deviation, cumulative volume, filter age
-- **Visual**: Alert banner appears — "Filter Health Critical" with "Acknowledge" button
-- **Action**: Click Acknowledge → opens Maintenance workflow with filter catalog
-- **Text**: "FILTER_STRESS | FSI: 65 | FHI: 45 | RUL: Model fallback | Alert: Filter Health Critical"
-- **Narration**: "Switching to FILTER_STRESS profile: Filter Stress Index rises, Filter Health Index drops to poor, maintenance band recommends replacement. The explainability panel shows exactly why — flow deviation, cumulative volume, and filter age. An alert is generated and can be acknowledged, triggering the maintenance workflow with compatible filter recommendations."
-
-### 0:55-1:10 — LEAK Safety Scenario (15s)
-- **Visual**: Terminal — `python simulator.py --profile leak`
-- **Visual**: Dashboard — Critical red alert "Leak Detected", sensor card shows leak=true
-- **Visual**: Diagnostics page — Leak panel shows CRITICAL status
-- **Text**: "LEAK profile | Critical alert | Safety workflow (software-only)"
-- **Narration**: "The LEAK profile triggers a critical safety alert. The system identifies the leak sensor activation and presents the safety workflow — note: this is software-only, no physical actuator shutdown."
-
-### 1:10-1:20 — Analytics Credibility (10s)
-- **Visual**: Filter Health page — RUL shows "Model fallback (deterministic)", provenance = MODEL_PREDICTED
-- **Visual**: Provenance legend — MEASURED, SIMULATED, CALCULATED, MODEL_PREDICTED
-- **Text**: "RUL: Deterministic fallback | No trained ML model | Provenance transparency"
-- **Narration**: "Critical for credibility: RUL uses a deterministic fallback since no trained ML model exists. Every value shows its provenance — measured, simulated, calculated, or model predicted."
-
-### 1:20-1:30 — Closing (10s)
-- **Visual**: Project summary screen
-- **Text**: "AquaNexis | UPES Dehradun | Track 2 | atomQUEST 2026"
-- **Narration**: "AquaNexis — predictive water intelligence for smarter filter management. Thank you."
+### 0:00–0:10 — Title, Scope & Core Problem (10s)
+- **Screen**: Open `http://localhost:3000/dashboard` showing the live AquaNexis interface and the **`DEMO_MODE (SIMULATED)`** header bar.
+- **Narration**: *"Hi, this is AquaNexis from UPES Dehradun for AtomQUEST 2026 Track 2 — Water Purifier. AquaNexis is a software-only Predictive Water Intelligence System focused on filter-failure prognostics and multi-parameter water quality sensing beyond TDS."*
 
 ---
 
-## Recording Checklist
-
-- [ ] Record at 1920x1080, 30fps
-- [ ] Use OBS Studio or similar
-- [ ] Record in segments, edit together
-- [ ] Add captions for key metrics
-- [ ] Compress to <50 MB (H.264, ~2 Mbps)
-- [ ] Verify audio clarity
-- [ ] Test playback on multiple devices
-- [ ] Final filename: `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4`
+### 0:10–0:25 — `NORMAL` Operation & Provenance Transparency (15s)
+- **Screen**: Highlight the `NORMAL` scenario active on the Dashboard (`/dashboard`) and Water Quality (`/water-quality`) pages.
+  - Point to **`SIMULATED`** provenance badge and **`Quality: GOOD`** on the live sensor telemetry grid (`TDS ~150 ppm`, `EC ~300 µS/cm`, `pH ~7.2`, `Turbidity ~0.3 NTU`, `Inlet Pressure ~300 kPa`, `Outlet Pressure ~270 kPa`, `Flow ~2.0 L/min`).
+  - Point to **AquaScore `100/100` (`CALCULATED`)**, **Filter Health `83%` (`FSI 20.0`)**, and **RUL `~149 days`** with the explicit **`MODEL_MISSING (Deterministic Fallback v1.0)`** badge.
+- **Narration**: *"Under normal operating conditions, the simulator streams 13 sensor parameters over WebSocket. Every metric carries explicit provenance — SIMULATED for telemetry, CALCULATED for AquaScore, and MODEL_PREDICTED with an explicit MODEL_MISSING disclosure for our deterministic RUL fallback."*
 
 ---
 
-## Simulator Commands for Recording
+### 0:25–0:55 — `FILTER_STRESS` → Prognostics → Explanation → Alert → Maintenance (30s)
+- **Screen**:
+  1. Click **`FILTER_STRESS`** in the top header bar (or run `python simulator.py --profile filter_stress --interval 2`).
+  2. Navigate to **Filter Health** (`/filter-health`):
+     - Show $\Delta P$ rising to `~280 kPa` and flow dropping to `~0.85 L/min`.
+     - Show **FSI** jumping to **`67.5`**, **FHI** dropping to **`40%`**, **RUL** dropping to **`72.0 days`**, and **Failure Risk** rising to **`MEDIUM (49.3%)`** (`REPLACE_RECOMMENDED`).
+     - Scroll to **Feature Contributions & Counterfactuals**: show `Differential Pressure (ΔP)` and `Flow Rate vs Baseline` as top drivers, and the counterfactual showing **`+85 days`** RUL recovery from replacing the Stage 1 Sediment Cartridge.
+  3. Navigate to **Alerts** (`/alerts`):
+     - Click the active `filter_stress_high` warning alert to show the **Evidence Drawer**, then click **Acknowledge** (`OPEN` → `ACKNOWLEDGED`).
+  4. Navigate to **Maintenance** (`/maintenance`):
+     - Show the automatically generated **Stage 1 Sediment Filter (`AQX-SED-5M`)** replacement recommendation (`HIGH` priority).
+- **Narration**: *"When we switch to FILTER_STRESS, transmembrane pressure differential climbs to 280 kPa and flow drops to 0.85 L/min. Filter Stress Index jumps to 67.5, Filter Health drops to 40%, and RUL falls to 72 days. The explainability engine highlights differential pressure and flow deviation as primary contributors. An explainable alert fires, which we acknowledge, and the maintenance engine recommends replacing the Stage 1 sediment cartridge."*
 
-```bash
-# Terminal 1: Backend (if running with DB)
-# Terminal 2: Frontend dev server
-# Terminal 3: Simulator
+---
 
-# Normal
-python backend/simulator.py --profile normal --interval 5
+### 0:55–1:15 — `LEAK` Safety Alert & `SENSOR_FAULT` Integrity Guard (20s)
+- **Screen**:
+  1. Click **`LEAK`** in the top header bar → show the critical red **`CRITICAL: Water Leak Detected (Software Alert)`** banner on `/alerts` and `/diagnostics`.
+  2. Click **`SENSOR_FAULT`** in the top header bar → show **`Quality: BAD`** on `/dashboard` and `/filter-health`, where missing pressure/flow sensors are excluded from FSI and RUL displays **`N/A` (`Confidence: LOW`, `MODEL_MISSING — Degraded Confidence`)**.
+- **Narration**: *"In the LEAK scenario, AquaNexis raises a manual-only critical software alert and logs a safety shutdown recommendation — disclosed honestly as software-only without physical relay hardware. Finally, under SENSOR_FAULT, bad or missing sensor readings are flagged Quality BAD and RUL is withheld with LOW confidence so corrupt data never becomes a false prediction."*
 
-# Filter Stress
-python backend/simulator.py --profile filter_stress --interval 3
+---
 
-# Leak
-python backend/simulator.py --profile leak --interval 2
-```
+### 1:15–1:30 — Closing & Round 3 Roadmap (15s)
+- **Screen**: Return to `/dashboard` and click **`NORMAL`**.
+- **Narration**: *"With 133 passing backend unit tests, strict TypeScript build verification, and end-to-end prognostic explainability, AquaNexis is ready for Round 2 evaluation and Round 3 field telemetry training. Thank you."*
+
+---
+
+## Recording & Export Checklist
+- [ ] Start backend (`uvicorn app.main:app --port 8000`) and frontend (`npm run dev` on `http://localhost:3000`).
+- [ ] Record at `1920x1080` (30 fps), duration **$\le 90$ seconds**, file size **$< 50\text{ MB}$**.
+- [ ] Save as `atomQUEST2026_AquaNexis_UPESDehradun_Track2_Video.mp4`.

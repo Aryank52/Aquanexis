@@ -16,11 +16,15 @@ export function useWebSocket(deviceId: string) {
             ['telemetry', 'latest', deviceId],
             message.data as TelemetryReading
           );
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['filterHealth'] });
+          queryClient.invalidateQueries({ queryKey: ['waterQuality'] });
           break;
 
         case 'alert_created':
         case 'alert_updated':
           queryClient.invalidateQueries({ queryKey: ['alerts'] });
+          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
           break;
 
         case 'device_status':

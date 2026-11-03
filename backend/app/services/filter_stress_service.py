@@ -99,7 +99,7 @@ class FilterStressService:
         tds_trend_score = self._score_tds_trend(previous_readings, config)
         component_scores['tds_trend'] = tds_trend_score
         
-        # Calculate weighted total
+        # Calculate weighted total (exclude missing primary sensor components from denominator)
         weights = {
             'differential_pressure': config.dp_weight,
             'flow_deviation': config.flow_dev_weight,
@@ -109,13 +109,19 @@ class FilterStressService:
             'operating_hours': config.op_hours_weight,
             'tds_trend': config.tds_trend_weight,
         }
-        
+        missing_components = set()
+        if dp_evidence.get("reason") == "missing_pressure_data":
+            missing_components.add("differential_pressure")
+        if flow_evidence.get("reason") == "missing_flow_data":
+            missing_components.add("flow_deviation")
+
+        active_keys = [k for k in component_scores if k not in missing_components]
         weighted_sum = sum(
-            component_scores.get(k, 0) * weights.get(k, 0) 
-            for k in component_scores
+            component_scores.get(k, 0) * weights.get(k, 0)
+            for k in active_keys
         )
-        total_weight = sum(weights.get(k, 0) for k in component_scores if k in component_scores)
-        
+        total_weight = sum(weights.get(k, 0) for k in active_keys)
+
         overall_score = (weighted_sum / total_weight) if total_weight > 0 else 0
         overall_score = max(0, min(100, overall_score))
         
@@ -134,13 +140,17 @@ class FilterStressService:
         evidence = self._build_evidence(
             reading, previous_readings, component_scores, config
         )
+        if missing_components:
+            evidence["missing_components"] = sorted(missing_components)
         
         # Add pressure differential as first-class feature
-        inlet = getattr(reading, 'pressure', None)
+        inlet = getattr(reading, 'inlet_pressure', None)
+        if inlet is None:
+            inlet = getattr(reading, 'pressure', None)
         outlet = getattr(reading, 'outlet_pressure', None)
         pressure_diff = None
         if inlet is not None and outlet is not None:
-            pressure_diff = inlet - outlet
+            pressure_diff = round(inlet - outlet, 2)
         
         return FilterStressIndex(
             device_id=getattr(reading, 'device_id', UUID(int=0)),
@@ -158,8 +168,8 @@ class FilterStressService:
             filter_age_score=component_scores.get('filter_age'),
             operating_hours_score=component_scores.get('operating_hours'),
             tds_trend_score=component_scores.get('tds_trend'),
-            # Pressure differential as first-class feature
-            pressure_differential_kpa=component_scores.get('differential_pressure'),
+            # Pressure differential as first-class feature (kPa)
+            pressure_differential_kpa=pressure_diff,
             pressure_differential_baseline_kpa=None,  # Would come from baseline service
             pressure_differential_rate_of_change_kpa_per_hour=None,  # Would come from trend analysis
         )
@@ -180,7 +190,9 @@ class FilterStressService:
     
     def _score_differential_pressure(self, reading, previous_readings, config, baseline_metrics=None) -> tuple:
         """Score based on differential pressure (0-100). Returns (score, evidence_dict)."""
-        inlet = getattr(reading, 'pressure', None)
+        inlet = getattr(reading, 'inlet_pressure', None)
+        if inlet is None:
+            inlet = getattr(reading, 'pressure', None)
         outlet = getattr(reading, 'outlet_pressure', None)
         if inlet is None or outlet is None:
             return 0.0, {"reason": "missing_pressure_data"}
@@ -383,8 +395,13 @@ class FilterStressService:
     
     def _build_evidence(self, reading, previous_readings, scores, config) -> Dict:
         """Build evidence dictionary for transparency."""
+        inlet = getattr(reading, 'inlet_pressure', None)
+        if inlet is None:
+            inlet = getattr(reading, 'pressure', None)
+        outlet = getattr(reading, 'outlet_pressure', None)
+        dp = round(inlet - outlet, 2) if (inlet is not None and outlet is not None) else None
         evidence = {
-            "differential_pressure_kpa": (getattr(reading, 'pressure', 0) or 0) - (getattr(reading, 'outlet_pressure', 0) or 0),
+            "differential_pressure_kpa": dp,
             "flow_rate_lpm": getattr(reading, 'flow_rate', None) or getattr(reading, 'flow', None),
             "turbidity_ntu": getattr(reading, 'turbidity', None),
             "tds_ppm": getattr(reading, 'tds', None),

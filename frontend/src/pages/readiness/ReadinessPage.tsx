@@ -58,7 +58,7 @@ export function ReadinessPage() {
   // 2. Backend Healthy
   if (health.isLoading) {
     checks.push({ name: 'Backend Healthy', status: 'loading', detail: 'Checking…' });
-  } else if (health.data?.status === 'ok') {
+  } else if (health.data?.status === 'ok' || (health.data?.status as string) === 'healthy') {
     checks.push({ name: 'Backend Healthy', status: 'pass', detail: 'All backend services operational' });
   } else if (health.data?.status === 'degraded') {
     checks.push({ name: 'Backend Healthy', status: 'warn', detail: 'Backend is in degraded state' });

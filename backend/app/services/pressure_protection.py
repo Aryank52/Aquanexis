@@ -43,7 +43,7 @@ class PressureProtectionService:
         Returns:
             Tuple of (is_valid, evidence_dict)
         """
-        pressure = current_reading.get('pressure')
+        pressure = current_reading.get('inlet_pressure') or current_reading.get('pressure')
         if pressure is None:
             return False, {"reason": "missing_pressure_data"}
 
@@ -57,7 +57,7 @@ class PressureProtectionService:
         }
 
         # Check overpressure
-        if current_pressure > pressure_max:
+        if pressure > pressure_max:
             evidence["reason"] = "overpressure"
             evidence["pressure_excess_kpa"] = pressure - pressure_max
             return True, evidence
@@ -214,31 +214,3 @@ class PressureProtectionService:
             
         deviation = (expected_flow - actual_avg) / expected_flow * 100
         return max(0, deviation)
-
-
-class PressureProtectionService:
-    """Legacy service for pressure monitoring and protection."""
-
-    def __init__(self, config=None):
-        self.config = config or SafetyConfig()
-        self._service = PressureProtectionService()
-
-    def validate_pressure(
-        self,
-        device_id: str,
-        current_reading: dict,
-        previous_readings: list,
-        device_config: dict,
-        safety_config: dict,
-    ) -> Tuple[bool, dict]:
-        """Validate pressure conditions."""
-        return self._service.validate_pressure(
-            device_id="",
-            current_reading=current_reading,
-            previous_readings=previous_readings,
-            device_config=device_config,
-            safety_config=safety_config,
-        )
-
-    def diagnose_pressure(self, current_reading: dict, previous_readings: list, safety_config: dict) -> dict:
-        return self._service.diagnose_pressure(current_reading, previous_readings, safety_config)

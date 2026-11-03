@@ -6,6 +6,7 @@ import { Button } from '@components/ui/Button';
 import { Skeleton, QueryError } from '@components/ui/PageSkeleton';
 import { cn } from '@utils/cn';
 import { useFilterHealth, useFailureRisk } from '@/hooks/useFilterHealth';
+import { ProvenanceBadge, type DataProvenance } from '@components/dashboard/ProvenanceBadge';
 import type { MaintenanceBand, PredictionConfidence } from '@/types/api';
 
 const DEVICE_ID = import.meta.env.VITE_DEVICE_ID ?? '00000000-0000-0000-0000-000000000001';
@@ -45,7 +46,10 @@ export function FilterHealthPage() {
           <CardContent className="p-6">
             {fh.isLoading ? <Skeleton className="h-20 w-full" /> : fh.data ? (
               <div className="text-center">
-                <div className="text-caption text-text-secondary mb-2">Filter Stress Index (FSI)</div>
+                <div className="flex items-center justify-center gap-2 text-caption text-text-secondary mb-2">
+                  <span>Filter Stress Index (FSI)</span>
+                  <ProvenanceBadge provenance="CALCULATED" size="sm" />
+                </div>
                 <div className={cn('text-data-xl', fsiColor(fh.data.fsi))}>{fh.data.fsi.toFixed(1)}</div>
                 <p className="text-caption text-text-muted mt-2">Lower is better — measures membrane fouling stress</p>
               </div>
@@ -58,7 +62,10 @@ export function FilterHealthPage() {
           <CardContent className="p-6">
             {fh.isLoading ? <Skeleton className="h-20 w-full" /> : fh.data ? (
               <div className="text-center">
-                <div className="text-caption text-text-secondary mb-2">Filter Health Index (FHI)</div>
+                <div className="flex items-center justify-center gap-2 text-caption text-text-secondary mb-2">
+                  <span>Filter Health Index (FHI)</span>
+                  <ProvenanceBadge provenance="CALCULATED" size="sm" />
+                </div>
                 <div className={cn('text-data-xl', fhiColor(fh.data.fhi))}>{fh.data.fhi.toFixed(1)}</div>
                 <Badge variant={bandVariant[fh.data.maintenance_band]} className="mt-2">
                   {fh.data.maintenance_band.replace(/_/g, ' ')}
@@ -73,7 +80,10 @@ export function FilterHealthPage() {
           <CardContent className="p-6">
             {fh.isLoading ? <Skeleton className="h-20 w-full" /> : fh.data ? (
               <div className="text-center">
-                <div className="text-caption text-text-secondary mb-2">Remaining Useful Life (RUL)</div>
+                <div className="flex items-center justify-center gap-2 text-caption text-text-secondary mb-2">
+                  <span>Remaining Useful Life (RUL)</span>
+                  <ProvenanceBadge provenance={(fh.data.provenance as DataProvenance) ?? 'MODEL_PREDICTED'} size="sm" />
+                </div>
                 <div className="text-data-xl text-text-primary">
                   {fh.data.rul_days != null ? `${fh.data.rul_days}` : '—'}
                   <span className="text-h3 text-text-muted ml-1">days</span>
@@ -86,8 +96,14 @@ export function FilterHealthPage() {
                 <Badge variant={confVariant[fh.data.confidence_level]} className="mt-2">
                   {fh.data.confidence_level} confidence
                 </Badge>
-                <div className="text-caption text-text-muted mt-2">
-                  {fh.data.model_name} v{fh.data.model_version}
+                <div className="text-caption text-text-muted mt-2 font-mono">
+                  {fh.data.model_name === 'MODEL_MISSING' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-warning/15 text-warning font-semibold">
+                      MODEL_MISSING (Deterministic Fallback v{fh.data.model_version})
+                    </span>
+                  ) : (
+                    `${fh.data.model_name} v${fh.data.model_version}`
+                  )}
                 </div>
               </div>
             ) : null}
@@ -156,7 +172,9 @@ export function FilterHealthPage() {
                 <Badge variant={risk.data.risk_level === 'LOW' ? 'success' : risk.data.risk_level === 'MEDIUM' ? 'warning' : 'critical'}>
                   {risk.data.risk_level} RISK
                 </Badge>
-                <span className="text-data font-medium">{(risk.data.risk_score * 100).toFixed(0)}% risk score</span>
+                <span className="text-data font-medium">
+                  {(risk.data.risk_score > 1 ? risk.data.risk_score : risk.data.risk_score * 100).toFixed(0)}% risk score
+                </span>
               </div>
               {risk.data.evidence.length > 0 && (
                 <div className="space-y-2">

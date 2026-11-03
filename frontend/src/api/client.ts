@@ -7,21 +7,32 @@ import type { APIError } from '@/types/api';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 /**
- * In-memory token store — never persisted to localStorage.
- * Tokens live only in the JS runtime for security.
+ * Session token store — backed by sessionStorage so page refreshes during
+ * a browser session preserve authentication, cleared on tab close or logout.
  */
-let accessToken: string | null = null;
-let refreshToken: string | null = null;
+const ACCESS_KEY = 'aquanexis_access_token';
+const REFRESH_KEY = 'aquanexis_refresh_token';
+
+let accessToken: string | null = typeof window !== 'undefined' ? sessionStorage.getItem(ACCESS_KEY) : null;
+let refreshToken: string | null = typeof window !== 'undefined' ? sessionStorage.getItem(REFRESH_KEY) : null;
 let onSessionExpired: (() => void) | null = null;
 
 export function setTokens(access: string, refresh: string) {
   accessToken = access;
   refreshToken = refresh;
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(ACCESS_KEY, access);
+    sessionStorage.setItem(REFRESH_KEY, refresh);
+  }
 }
 
 export function clearTokens() {
   accessToken = null;
   refreshToken = null;
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(ACCESS_KEY);
+    sessionStorage.removeItem(REFRESH_KEY);
+  }
 }
 
 export function getAccessToken(): string | null {

@@ -299,6 +299,7 @@ async def bulk_transition_alerts(
     user: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     state_machine: AlertStateMachine = Depends(get_alert_state_machine),
+    device_claims = Depends(get_device_claims),
 ):
     """Perform bulk transition on multiple alerts (admin only)."""
     # In a real implementation, add admin check here

@@ -137,6 +137,23 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
             </section>
           )}
 
+          {/* Evidence Details */}
+          {alert.evidence && Object.keys(alert.evidence).length > 0 && (
+            <section aria-label="Alert evidence">
+              <h2 className="text-body-sm font-semibold text-text-primary mb-2">Diagnostic Evidence</h2>
+              <div className="p-3 bg-surface border border-subtle rounded-button space-y-1.5">
+                {Object.entries(alert.evidence).map(([key, val]) => (
+                  <div key={key} className="flex items-start justify-between gap-2 text-caption">
+                    <span className="text-text-secondary font-medium">{key.replace(/_/g, ' ')}</span>
+                    <span className="font-mono text-text-primary text-right break-all">
+                      {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Timeline */}
           <section aria-label="Alert timeline">
             <h2 className="text-body-sm font-semibold text-text-primary mb-3">Timeline</h2>
@@ -201,9 +218,9 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
         </div>
 
         {/* Actions */}
-        {alert.status !== 'RESOLVED' && !showResolveForm && !showSnooze && (
+        {alert.status !== 'RESOLVED' && alert.status !== 'AUTO_CLEARED' && !showResolveForm && !showSnooze && (
           <div className="p-5 border-t border-subtle flex flex-wrap gap-2">
-            {alert.status === 'DETECTED' && (
+            {(alert.status === 'OPEN' || alert.status === 'DETECTED') && (
               <button className="btn btn-secondary btn-sm flex-1"
                 onClick={handleAcknowledge}
                 disabled={acknowledge.isPending}>
@@ -211,7 +228,7 @@ export function AlertEvidenceDrawer({ alert, open, onClose, currentUser = 'opera
                 {acknowledge.isPending ? 'Acknowledging…' : 'Acknowledge'}
               </button>
             )}
-            {(alert.status === 'DETECTED' || alert.status === 'ACKNOWLEDGED') && (
+            {(alert.status === 'OPEN' || alert.status === 'DETECTED' || alert.status === 'ACKNOWLEDGED') && (
               <>
                 <button className="btn btn-primary btn-sm flex-1"
                   onClick={() => setShowResolveForm(true)}>

@@ -1,18 +1,10 @@
 # AquaNexis Project State
 
-## Current Status: Phase H1 Complete (Firmware), Physical Bring-up Pending
+## Current Status: Round 2 Prototype Ready (`DEMO_MODE` Active & Verified)
 
-**Last Updated**: 2026-11-02
-**Overall Progress**: 75% (12/16 phases complete)
-
----
-
-# AquaNexis Project State
-
-## Current Status: Phase G8 (Platform Reliability) — IN PROGRESS
-
-**Last Updated**: 2026-11-03
-**Overall Progress**: 80% (13/16 phases complete)
+**Last Updated**: 2026-11-04
+**Competition**: AtomQUEST 2026 Round 2 — Track 2 (Water Purifier) | UPES Dehradun | Solo Prototype
+**Runtime Mode**: `DEMO_MODE=true` (Software-Only Predictive Water Intelligence System)
 
 ---
 
@@ -20,214 +12,59 @@
 
 | Phase | Name | Status | Completion |
 |-------|------|--------|------------|
-| A | Runtime Stability | ✅ | 100% |
-| B | Telemetry Foundation | ✅ | 100% |
-| C | Live Dashboard + Alert Lifecycle | ✅ | 100% |
-| D | Water Intelligence + Filter Intelligence | ✅ | 100% |
-| E | Filter Intelligence Enhancement | ✅ | 100% |
-| F | Reliability & Safety | ✅ | 100% |
-| G1 | Alert State Machine Enforcement | ✅ | 100% |
-| G2 | Auto-resolution for Self-Clearing Alerts | ✅ | 100% |
-| G3 | Notification Providers + Queue | ✅ | 100% |
-| G4 | Maintenance & Filter Lifecycle | ✅ | 100% |
-| G5.1 | Frontend Stabilization | ✅ | 100% |
-| G5.2 | Frontend API Integration | ✅ | 100% |
-| **G6** | **Scope Reset** | ✅ | **100%** |
-| **G7** | **E2E Validation** | ✅ | **100%** |
-| **G8** | **Platform Reliability** | 🔴 **BLOCKED** | **80%** |
-| G9 | Production Website | ⏳ | 0% |
-| G10 | Final Testing | ⏳ | 0% |
+| A | Runtime Stability | ✅ COMPLETE | 100% |
+| B | Telemetry Foundation | ✅ COMPLETE | 100% |
+| C | Live Dashboard + Alert Lifecycle | ✅ COMPLETE | 100% |
+| D | Water Intelligence + Filter Intelligence | ✅ COMPLETE | 100% |
+| E | Filter Intelligence Enhancement | ✅ COMPLETE | 100% |
+| F | Reliability & Safety | ✅ COMPLETE | 100% |
+| G1 | Alert State Machine Enforcement | ✅ COMPLETE | 100% |
+| G2 | Auto-resolution for Self-Clearing Alerts | ✅ COMPLETE | 100% |
+| G3 | Notification Providers + Queue | ✅ COMPLETE | 100% |
+| G4 | Maintenance & Filter Lifecycle | ✅ COMPLETE | 100% |
+| G5.1 | Frontend Stabilization | ✅ COMPLETE | 100% |
+| G5.2 | Frontend API Integration | ✅ COMPLETE | 100% |
+| **G6** | **Scope Reset (Software-Only)** | ✅ **COMPLETE** | **100%** |
+| **G7** | **E2E Validation (`NORMAL` / `FILTER_STRESS` / `LEAK` / `SENSOR_FAULT`)** | ✅ **COMPLETE** | **100%** |
+| **G8** | **Platform Reliability & `DEMO_MODE` Runtime** | ✅ **COMPLETE (DEMO_MODE)** | **100%** |
 | **H (Hardware/ESP32)** | **OUT OF SCOPE** | 📦 **ARCHIVED** | **N/A** |
-| I | Security / CI / Hardening | ⏳ | 0% |
-| J | Final Verification | ⏳ | 0% |
 
 ---
 
-## Technical Metrics
+## Technical Metrics (Verified 2026-11-04)
 
-### Backend (FastAPI + PostgreSQL)
-- **Unit Tests**: 161 passing (100%)
-- **Migrations Applied**: 8/8 (0001-0008)
-- **API Endpoints**: 50+ REST endpoints
-- **WebSocket**: Real-time alerts + telemetry
-- **Code Coverage**: ~85% (estimated)
+### Backend (FastAPI + Simulator-Backed `DEMO_MODE` / PostgreSQL Architecture Preserved)
+- **Unit Tests (No-DB Suite)**: **133/133 passing (100%)** (`test_config.py`, `test_security.py`, `test_phase_d_services.py`, `test_alert_state_machine.py`, `test_auto_clear_integration.py`, `test_notification_providers.py`, `test_maintenance.py`)
+- **DB-Dependent Unit Tests**: `test_phase_f_services.py` (11 errors when TimescaleDB/PostgreSQL schema is not migrated locally)
+- **Runtime Mode**: `DEMO_MODE=true` runs on `http://localhost:8000` (`/health` → `healthy`, `/ready` → `ok`) using real `SimulatorState`, `QualityValidator`, `WaterQualityService`, `FilterStressService`, `FilterHealthService`, `RULService`, `FailureRiskService`, `HydraulicService`, `PurificationService`, and `CompatibilityEngine`
+- **WebSocket**: Real-time `/ws/realtime/{device_id}` and `/ws/devices/{device_id}` broadcasting live telemetry and alerts
 
-### Frontend (React + TypeScript + TanStack Query)
-- **Unit Tests**: 14 passing (100%)
-- **TypeScript**: Strict mode passing
-- **Production Build**: ✅ Passing
-- **Pages Connected**: 12/12 to real APIs
-- **Authentication**: JWT with HttpOnly cookies, protected routes
+### Frontend (React 18 + TypeScript + Vite + TanStack Query)
+- **TypeScript (`npm run typecheck`)**: ✅ **PASS (0 errors)**
+- **Unit Tests (`npm test -- --run`)**: ✅ **14/14 passing (100%)**
+- **Production Build (`npm run build`)**: ✅ **PASS**
+- **Running URL**: **`http://localhost:3000`**
+- **Pages Verified**: Login, Dashboard, Water Quality, Filter Health, Purification Performance, Diagnostics, Alerts, Notifications, Maintenance, Filter Catalog, Calibration, Verification, Device Health / Readiness
 
-### Firmware (ESP32-S3 C/C++)
-- **Sensor Drivers**: 13/13 implemented (all passing syntax check)
-- **Communication**: HTTP/HTTPS + JWT
-- **Tasks**: Telemetry, Safety, Health, OTA
-- **Build System**: CMake + ESP-IDF
-- **Lines of Code**: ~8,000
-- **H1.1 Audit Complete**: GPIO/ADC conflicts resolved, I2C multiplexer added, pump power calc corrected
-
-### Database (PostgreSQL)
-- **Tables**: 35+ with indexes
-- **Migrations**: 8 applied (0001-0008)
-- **Time-series**: Ready for TimescaleDB
+### Archived Firmware (`firmware/esp32/`)
+- **Status**: 📦 **OUT OF SCOPE / ARCHIVED REFERENCE** (No physical ESP32, sensors, relays, or purifier hardware in Round 2)
 
 ---
 
-## Test Results Summary
+## Verified Round 2 Scenarios (`DEMO_MODE`)
 
-### Backend Tests (161 total)
-| Test Suite | Tests | Status |
-|------------|-------|--------|
-| test_config.py | 14 | ✅ |
-| test_security.py | 9 | ✅ |
-| test_phase_d_services.py | 13 | ✅ |
-| test_alert_state_machine.py | 28 | ✅ |
-| test_auto_clear_integration.py | 19 | ✅ |
-| test_notification_providers.py | 22 | ✅ |
-| test_maintenance.py | 28 | ✅ |
-| test_phase_f_services.py | 13 | ✅ |
-| **Total** | **161** | **✅ 100%** |
-
-### Frontend Tests (14 total)
-| Test Suite | Tests | Status |
-|------------|-------|--------|
-| ui.test.tsx | 14 | ✅ |
+| Scenario | Quality | Provenance | AquaScore | FSI | FHI | RUL Estimate | Maintenance Band | Risk Level | Active Alerts |
+|----------|---------|------------|-----------|-----|-----|--------------|------------------|------------|---------------|
+| `NORMAL` | `GOOD` | `SIMULATED` | `100` | `20.0` | `83%` | `149.4d` (`MODEL_MISSING` fallback) | `NORMAL` | `LOW (13.4%)` | None |
+| `FILTER_STRESS` | `GOOD` | `SIMULATED` | `93` | `67.5` | `40%` | `72.0d` (`MODEL_MISSING` fallback) | `REPLACE_RECOMMENDED` | `MEDIUM (49.3%)` | `filter_stress_high` (Acknowledgeable) |
+| `LEAK` | `GOOD` | `SIMULATED` | `100` | `22.3` | `83%` | `149.4d` (`MODEL_MISSING` fallback) | `NORMAL` | `LOW (14.3%)` | `leak_detected` (CRITICAL software alert) |
+| `SENSOR_FAULT` | `BAD` | `SIMULATED` | `59` | `0.0` (missing excluded) | `89%` | `None` (`N/A` — withheld, `Confidence: LOW`) | `MONITOR` | `LOW` | `sensor_fault_detected` |
 
 ---
 
-## Recent Commits (Last 5)
+## Honest Disclosures & Active Constraints
 
-```
-H1.1: Firmware audit complete - GPIO/ADC conflicts, I2C mux, pump power calc
-G5.2: Frontend API Integration complete - all pages connected to real APIs
-H1: ESP32 firmware structure complete with 13 sensor drivers
-G5.1: Frontend stabilization - TypeScript, CSS, build fixes
-G4: Maintenance & Filter Lifecycle complete
-```
-
----
-
-## Active Blockers
-
-1. **No physical ESP32 hardware** - All firmware development against simulator (H1.1 audit complete, ready for hardware)
-2. **No ESP-IDF build environment** configured for firmware compilation
-3. **Hardware procurement needed** for physical validation
-
----
-
-## Next Milestones
-
-### Immediate (Week 1-2)
-- [ ] Procure ESP32-S3 board and all sensors
-- [ ] Set up ESP-IDF v5.x build environment
-- [ ] Compile and flash firmware to device
-- [ ] Validate sensor readings against simulator baselines
-
-### Short-term (Week 3-4)
-- [ ] Calibrate all 13 sensors per documented procedures
-- [ ] Validate safety actions with relay board
-- [ ] Hardware-in-loop testing with live backend
-- [ ] Implement NTP time sync and persistent buffering
-
-### Medium-term (Month 2)
-- [ ] Device provisioning flow (BLE/QR)
-- [ ] Certificate pinning for HTTPS
-- [ ] OTA firmware updates with rollback
-- [ ] Hardware watchdog and power management
-
----
-
-## Architecture Summary
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        ESP32-S3 Firmware                       │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐            │
-│  │   Sensors   │ │  Registry   │ │   Safety    │            │
-│  │  (13 types) │──────────────▶│   Monitor   │            │
-│  └─────────────┘ └─────────────┘ └─────────────┘            │
-│         │              │              │                       │
-│         ▼              ▼              ▼                       │
-│  ┌─────────────────────────────────────────────────┐         │
-│  │           Communication Manager                  │         │
-│  │  WiFi → HTTP/HTTPS → JWT Auth → Telemetry/Batch  │         │
-│  └─────────────────────────────────────────────────┘         │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼ (HTTPS/JSON)
-┌─────────────────────────────────────────────────────────────┐
-│                    FastAPI Backend                           │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
-│  │Telemetry │ │ Alerts   │ │ Maintain │ │ Safety   │       │
-│  │ Ingestion│ │ Engine   │ │ Service  │ │ Orch.    │       │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
-│         │              │              │              │       │
-│         └──────────────┼──────────────┼──────────────┘       │
-│                        ▼                                    │
-│              ┌──────────────────┐                            │
-│              │  PostgreSQL DB   │                            │
-│              │  (Timescale-ready)│                           │
-│              └──────────────────┘                            │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼ (HTTPS/JSON + WebSocket)
-┌─────────────────────────────────────────────────────────────┐
-│                   React Frontend                             │
-│  Dashboard | Water Quality | Filter Health | Diagnostics    │
-│  Alerts    | Maintenance  | Calibration  | Verification     │
-│  Auth (JWT) | Protected Routes | Provenance Display         │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Key Configuration
-
-### Environment Variables (Backend)
-```bash
-DATABASE_URL=postgresql://user:pass@localhost/aquanexis
-DEVICE_JWT_SECRET=<32-char-secret>
-API_KEY=<admin-api-key>
-BACKEND_URL=https://api.aquanexis.local
-```
-
-### Environment Variables (Frontend)
-```bash
-VITE_API_BASE_URL=https://api.aquanexis.local/api/v1
-VITE_DEVICE_ID=<device-uuid>
-```
-
-### ESP32 Firmware Config (NVS)
-```
-device_id: "AQX-<MAC>"
-jwt_token: "<jwt>"
-wifi_ssid: "<ssid>"
-wifi_password: "<pass>"
-backend_url: "https://api.aquanexis.local"
-```
-
----
-
-## Risk Register
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Hardware procurement delays | HIGH | HIGH | Order components immediately |
-| Sensor calibration drift | MEDIUM | HIGH | Document procedures, schedule recal |
-| WiFi connectivity issues | MEDIUM | MEDIUM | Implement robust reconnection |
-| Firmware OTA failures | LOW | HIGH | Dual-bank OTA with rollback |
-| Sensor supply chain | LOW | MEDIUM | Qualify alternate sensors |
-
----
-
-## Contact & Resources
-
-- **Repository**: https://github.com/aquanexis/aquanexis
-- **Documentation**: `/docs` folder
-- **Hardware Spec**: `/docs/hardware/hardware_spec.md`
-- **API Contracts**: `/docs/api-contract-map.md`
-- **Implementation Plan**: `/docs/implementation-plan.md`
-- **Verification Log**: `VERIFICATION_LOG.md`
-- **Phase Ledger**: `PHASE_LEDGER.md`
-- **Open Issues**: `OPEN_ISSUES.md`
+1. **Software-Only Prototype**: All telemetry is generated by `backend/simulator.py` and explicitly labeled `SIMULATED`. No physical water purifier, ESP32, or physical sensors are connected.
+2. **RUL Model Status (`MODEL_MISSING`)**: No trained `.pkl` machine-learning model artifact is bundled; RUL uses a deterministic engineering fallback clearly labeled `MODEL_MISSING (Deterministic Fallback v1.0)` in the API and UI.
+3. **Software-Only Safety Actions**: Leak and pressure protection generate critical software alerts and safety audit logs only; no physical valve or relay actuation exists.
+4. **Database Mode vs `DEMO_MODE`**: Local Windows PostgreSQL 16 lacks the `timescaledb` binary extension required by migration `0002_create_hypertables.py`. `DEMO_MODE=true` provides a clean in-memory simulator-backed runtime while preserving the PostgreSQL/TimescaleDB code and migrations intact.

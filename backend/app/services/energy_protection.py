@@ -173,31 +173,3 @@ class EnergyProtectionService:
         """Calculate efficiency trend over 7 days."""
         # Simplified - would need historical data
         return -2.1  # Example: -2.1% per week
-
-
-class EnergyProtectionService:
-    """Legacy service for pump current/power monitoring and protection."""
-
-    def __init__(self, config=None):
-        self.config = config or SafetyConfig()
-        self._service = EnergyProtectionService()
-
-    def validate_energy(
-        self,
-        device_id: str,
-        current_reading: dict,
-        previous_readings: list,
-        device_config: dict,
-        safety_config: dict,
-    ) -> Tuple[bool, dict]:
-        """Validate pump energy conditions."""
-        return self._service.validate_energy(
-            device_id="",
-            current_reading=current_reading,
-            previous_readings=previous_readings,
-            device_config=device_config,
-            safety_config=safety_config,
-        )
-
-    def diagnose_energy(self, current_reading: dict, previous_readings: list, safety_config: dict) -> dict:
-        return self._service.diagnose_energy(current_reading, previous_readings, safety_config)

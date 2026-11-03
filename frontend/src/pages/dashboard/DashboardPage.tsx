@@ -180,9 +180,22 @@ export function DashboardPage() {
                   <span className="text-text-secondary">RUL</span>
                   <span className="font-medium">{data.filter_health.rul_days != null ? `${data.filter_health.rul_days} days` : '—'}</span>
                 </div>
-                <Badge variant={bandVariant(data.filter_health.maintenance_band)}>
-                  {data.filter_health.maintenance_band.replace(/_/g, ' ')}
-                </Badge>
+                <div className="flex justify-between text-caption text-text-muted">
+                  <span>Model</span>
+                  <span className="font-mono">
+                    {data.filter_health.model_name === 'MODEL_MISSING'
+                      ? 'MODEL_MISSING (Fallback)'
+                      : `${data.filter_health.model_name} v${data.filter_health.model_version}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <Badge variant={bandVariant(data.filter_health.maintenance_band)}>
+                    {data.filter_health.maintenance_band.replace(/_/g, ' ')}
+                  </Badge>
+                  <Badge variant={data.filter_health.confidence_level === 'HIGH' ? 'success' : data.filter_health.confidence_level === 'MEDIUM' ? 'warning' : 'critical'}>
+                    {data.filter_health.confidence_level} CONFIDENCE
+                  </Badge>
+                </div>
               </div>
             ) : (
               <span className="text-body-sm text-text-muted">No filter data</span>
@@ -222,8 +235,23 @@ export function DashboardPage() {
 
       {/* Sensor Grid */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-h2 font-semibold text-text-primary">Live Sensor Readings</h2>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div className="flex items-center gap-3">
+            <h2 className="text-h2 font-semibold text-text-primary">Live Sensor Readings</h2>
+            {data?.latest_telemetry?.quality?.overall && (
+              <Badge
+                variant={
+                  data.latest_telemetry.quality.overall === 'GOOD'
+                    ? 'success'
+                    : data.latest_telemetry.quality.overall === 'SUSPECT'
+                    ? 'warning'
+                    : 'critical'
+                }
+              >
+                Quality: {data.latest_telemetry.quality.overall}
+              </Badge>
+            )}
+          </div>
           {data?.latest_telemetry?.provenance && (
             <ProvenanceBadge provenance={data.latest_telemetry.provenance as DataProvenance} size="sm" showDescription />
           )}

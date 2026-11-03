@@ -47,6 +47,7 @@ function compatIcon(result: CompatibilityResult) {
 
 export function FilterCatalogPage() {
   const [showForm, setShowForm] = useState<FilterCatalogResponse | null>(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
   const [formData, setFormData] = useState<FilterFormData>({});
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,9 +71,9 @@ export function FilterCatalogPage() {
 
   const handleSubmit = () => {
     if (showForm) {
-      updateFilter.mutate({ filterId: showForm.id, data: formData as FilterCatalogUpdate }, { onSuccess: () => { setShowForm(null); setFormData({}); catalog.refetch(); } });
+      updateFilter.mutate({ filterId: showForm.id, data: formData as FilterCatalogUpdate }, { onSuccess: () => { setShowForm(null); setIsAddingNew(false); setFormData({}); catalog.refetch(); } });
     } else {
-      createFilter.mutate(formData as FilterCatalogCreate, { onSuccess: () => { setShowForm(null); setFormData({}); catalog.refetch(); } });
+      createFilter.mutate(formData as FilterCatalogCreate, { onSuccess: () => { setShowForm(null); setIsAddingNew(false); setFormData({}); catalog.refetch(); } });
     }
   };
 
@@ -86,10 +87,12 @@ export function FilterCatalogPage() {
 
   const openNewForm = () => {
     setShowForm(null);
+    setIsAddingNew(true);
     setFormData({});
   };
 
   const openEditForm = (filter: FilterCatalogResponse) => {
+    setIsAddingNew(false);
     setShowForm(filter);
     setFormData({
       filter_identifier: filter.filter_identifier,
@@ -273,12 +276,12 @@ export function FilterCatalogPage() {
       </Card>
 
       {/* Add/Edit Form Modal */}
-      {showForm !== null && (
+      {(showForm !== null || isAddingNew) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-elevated rounded-card shadow-elevated w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-h2 font-semibold">{showForm ? 'Edit Filter' : 'Add Filter'}</h2>
-              <button onClick={() => { setShowForm(null); setFormData({}); }} className="p-1 hover:bg-hover rounded-button">✕</button>
+              <button onClick={() => { setShowForm(null); setIsAddingNew(false); setFormData({}); }} className="p-1 hover:bg-hover rounded-button">✕</button>
             </div>
 
             <div className="space-y-4">
@@ -387,7 +390,7 @@ export function FilterCatalogPage() {
                 <Button variant="primary" className="flex-1" onClick={handleSubmit} disabled={createFilter.isPending || updateFilter.isPending}>
                   {createFilter.isPending || updateFilter.isPending ? 'Saving…' : showForm ? 'Update' : 'Create'}
                 </Button>
-                <Button variant="ghost" className="flex-1" onClick={() => { setShowForm(null); setFormData({}); }}>Cancel</Button>
+                <Button variant="ghost" className="flex-1" onClick={() => { setShowForm(null); setIsAddingNew(false); setFormData({}); }}>Cancel</Button>
               </div>
             </div>
           </div>

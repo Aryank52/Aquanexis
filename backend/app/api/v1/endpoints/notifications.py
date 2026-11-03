@@ -387,7 +387,9 @@ async def test_notification(
 # ===== Worker Stats =====
 
 @router.get("/worker/stats")
-async def get_worker_stats():
+async def get_worker_stats(
+    _: bool = Depends(verify_api_key),
+):
     """Get notification worker statistics."""
     from app.services.notification_worker import get_notification_worker
     
