@@ -1,15 +1,15 @@
 """
 Health and readiness endpoints for Kubernetes liveness/readiness probes.
 """
+
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.config import get_settings
-from app.infrastructure.database import db_manager, get_db
+from app.infrastructure.database import db_manager
 from app.infrastructure.logging import get_logger
 
 settings = get_settings()
@@ -20,6 +20,7 @@ router = APIRouter(prefix="", tags=["health"])
 
 class HealthCheck:
     """Individual health check result."""
+
     def __init__(
         self,
         name: str,
@@ -84,7 +85,9 @@ async def readiness_check() -> Dict[str, Any]:
             checks.append(HealthCheck("database", True, "Database connection OK").to_dict())
         except Exception as e:
             logger.error("readiness_check_failed", check="database", error=str(e))
-            checks.append(HealthCheck("database", False, f"Database connection failed: {e}").to_dict())
+            checks.append(
+                HealthCheck("database", False, f"Database connection failed: {e}").to_dict()
+            )
             overall_ready = False
 
     # Configuration validation
@@ -100,9 +103,16 @@ async def readiness_check() -> Dict[str, Any]:
     # Model artifacts (if ML enabled)
     if current_settings.ml.enabled:
         import os
-        model_path = os.path.join(current_settings.ml.artifact_dir, current_settings.ml.rul_model_name)
+
+        model_path = os.path.join(
+            current_settings.ml.artifact_dir, current_settings.ml.rul_model_name
+        )
         if os.path.exists(model_path):
-            checks.append(HealthCheck("models", True, f"Model {current_settings.ml.rul_model_name} found").to_dict())
+            checks.append(
+                HealthCheck(
+                    "models", True, f"Model {current_settings.ml.rul_model_name} found"
+                ).to_dict()
+            )
         else:
             checks.append(
                 HealthCheck(
@@ -166,7 +176,9 @@ async def detailed_health() -> Dict[str, Any]:
                 result = await db.execute(text("SELECT version()"))
                 details["database"]["version"] = result.scalar()
 
-                result = await db.execute(text("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'"))
+                result = await db.execute(
+                    text("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'")
+                )
                 ts_version = result.scalar()
                 details["database"]["timescaledb_version"] = ts_version
         except Exception as e:

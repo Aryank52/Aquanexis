@@ -15,7 +15,10 @@ export function LockedSessionPage() {
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) { navigate('/login', { replace: true }); return; }
+    if (!user) {
+      navigate('/login', { replace: true });
+      return;
+    }
     setError('');
     setLoading(true);
     try {
@@ -29,29 +32,32 @@ export function LockedSessionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-6">
+    <div className="flex min-h-screen items-center justify-center bg-base p-6">
       <div className="w-full max-w-sm animate-fade-in">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-info/10 rounded-full flex items-center justify-center mb-4">
-            <Lock className="w-7 h-7 text-info" />
+        <div className="mb-8 flex flex-col items-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-info/10">
+            <Lock className="h-7 w-7 text-info" />
           </div>
-          <h1 className="text-h2 font-semibold text-text-primary">Session Locked</h1>
+          <h1 className="text-text-primary text-h2 font-semibold">Session Locked</h1>
           {user && (
-            <p className="text-body-sm text-text-secondary mt-1">
-              Signed in as <span className="font-medium text-text-primary">{user.display_name}</span>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              Signed in as{' '}
+              <span className="text-text-primary font-medium">{user.display_name}</span>
             </p>
           )}
         </div>
 
-        <div className="bg-surface border border-subtle rounded-card p-6 shadow-card">
+        <div className="border-subtle rounded-card border bg-surface p-6 shadow-card">
           {error && (
-            <div className="p-3 bg-critical/10 border border-critical/20 rounded-button mb-4">
+            <div className="mb-4 rounded-button border border-critical/20 bg-critical/10 p-3">
               <p className="text-body-sm text-critical">{error}</p>
             </div>
           )}
           <form onSubmit={handleUnlock} className="space-y-4">
             <div>
-              <label className="label" htmlFor="lock-password">Password</label>
+              <label className="label" htmlFor="lock-password">
+                Password
+              </label>
               <div className="relative">
                 <input
                   id="lock-password"
@@ -60,17 +66,23 @@ export function LockedSessionPage() {
                   autoFocus
                   className="input pr-10"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                 />
-                <button type="button"
+                <button
+                  type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted"
                   onClick={() => setShowPassword(v => !v)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}>
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-            <button type="submit" disabled={loading || !password} className="btn btn-primary w-full">
+            <button
+              type="submit"
+              disabled={loading || !password}
+              className="btn btn-primary w-full"
+            >
               {loading ? 'Unlocking…' : 'Unlock Session'}
             </button>
           </form>
@@ -78,10 +90,7 @@ export function LockedSessionPage() {
           {/* <MFAReauthSection /> */}
         </div>
 
-        <button
-          className="btn btn-ghost w-full mt-4 text-text-muted"
-          onClick={() => logout()}
-        >
+        <button className="btn btn-ghost mt-4 w-full text-text-muted" onClick={() => logout()}>
           Sign in with a different account
         </button>
       </div>

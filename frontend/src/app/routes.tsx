@@ -7,32 +7,76 @@ import { Layout } from './components/layout/Layout';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 
 // Lazy-load heavy routes for fast first paint
-const LandingPage = lazy(() => import('@/pages/landing/LandingPage').then(m => ({ default: m.LandingPage })));
-const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
-const SessionExpiredPage = lazy(() => import('@/pages/auth/SessionExpiredPage').then(m => ({ default: m.SessionExpiredPage })));
-const LockedSessionPage = lazy(() => import('@/pages/auth/LockedSessionPage').then(m => ({ default: m.LockedSessionPage })));
-const AccessDeniedPage = lazy(() => import('@/pages/auth/AccessDeniedPage').then(m => ({ default: m.AccessDeniedPage })));
-const UnauthorizedPage = lazy(() => import('@/pages/auth/UnauthorizedPage').then(m => ({ default: m.UnauthorizedPage })));
-const DeviceOnboardingPage = lazy(() => import('@/pages/onboarding/DeviceOnboardingPage').then(m => ({ default: m.DeviceOnboardingPage })));
+const LandingPage = lazy(() =>
+  import('@/pages/landing/LandingPage').then(m => ({ default: m.LandingPage }))
+);
+const LoginPage = lazy(() =>
+  import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage }))
+);
+const SessionExpiredPage = lazy(() =>
+  import('@/pages/auth/SessionExpiredPage').then(m => ({ default: m.SessionExpiredPage }))
+);
+const LockedSessionPage = lazy(() =>
+  import('@/pages/auth/LockedSessionPage').then(m => ({ default: m.LockedSessionPage }))
+);
+const AccessDeniedPage = lazy(() =>
+  import('@/pages/auth/AccessDeniedPage').then(m => ({ default: m.AccessDeniedPage }))
+);
+const UnauthorizedPage = lazy(() =>
+  import('@/pages/auth/UnauthorizedPage').then(m => ({ default: m.UnauthorizedPage }))
+);
+const DeviceOnboardingPage = lazy(() =>
+  import('@/pages/onboarding/DeviceOnboardingPage').then(m => ({ default: m.DeviceOnboardingPage }))
+);
 
-const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
-const WaterQualityPage = lazy(() => import('@/pages/water-quality/WaterQualityPage').then(m => ({ default: m.WaterQualityPage })));
-const PurificationPerformancePage = lazy(() => import('@/pages/purification-performance/PurificationPerformancePage').then(m => ({ default: m.PurificationPerformancePage })));
-const FilterHealthPage = lazy(() => import('@/pages/filter-health/FilterHealthPage').then(m => ({ default: m.FilterHealthPage })));
-const DiagnosticsPage = lazy(() => import('@/pages/diagnostics/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
-const AlertsPage = lazy(() => import('@/pages/alerts/AlertsPage').then(m => ({ default: m.AlertsPage })));
-const MaintenancePage = lazy(() => import('@/pages/maintenance/MaintenancePage').then(m => ({ default: m.MaintenancePage })));
-const DeviceHealthPage = lazy(() => import('@/pages/device-health/DeviceHealthPage').then(m => ({ default: m.DeviceHealthPage })));
-const ReadinessPage = lazy(() => import('@/pages/readiness/ReadinessPage').then(m => ({ default: m.ReadinessPage })));
+const DashboardPage = lazy(() =>
+  import('@/pages/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage }))
+);
+const WaterQualityPage = lazy(() =>
+  import('@/pages/water-quality/WaterQualityPage').then(m => ({ default: m.WaterQualityPage }))
+);
+const PurificationPerformancePage = lazy(() =>
+  import('@/pages/purification-performance/PurificationPerformancePage').then(m => ({
+    default: m.PurificationPerformancePage,
+  }))
+);
+const FilterHealthPage = lazy(() =>
+  import('@/pages/filter-health/FilterHealthPage').then(m => ({ default: m.FilterHealthPage }))
+);
+const DiagnosticsPage = lazy(() =>
+  import('@/pages/diagnostics/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage }))
+);
+const AlertsPage = lazy(() =>
+  import('@/pages/alerts/AlertsPage').then(m => ({ default: m.AlertsPage }))
+);
+const MaintenancePage = lazy(() =>
+  import('@/pages/maintenance/MaintenancePage').then(m => ({ default: m.MaintenancePage }))
+);
+const DeviceHealthPage = lazy(() =>
+  import('@/pages/device-health/DeviceHealthPage').then(m => ({ default: m.DeviceHealthPage }))
+);
+const ReadinessPage = lazy(() =>
+  import('@/pages/readiness/ReadinessPage').then(m => ({ default: m.ReadinessPage }))
+);
 
 // New pages
-const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
-const CalibrationPage = lazy(() => import('@/pages/calibration/CalibrationPage').then(m => ({ default: m.CalibrationPage })));
-const VerificationPage = lazy(() => import('@/pages/verification/VerificationPage').then(m => ({ default: m.VerificationPage })));
-const FilterCatalogPage = lazy(() => import('@/pages/filters/FilterCatalogPage').then(m => ({ default: m.FilterCatalogPage })));
+const NotificationsPage = lazy(() =>
+  import('@/pages/notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage }))
+);
+const CalibrationPage = lazy(() =>
+  import('@/pages/calibration/CalibrationPage').then(m => ({ default: m.CalibrationPage }))
+);
+const VerificationPage = lazy(() =>
+  import('@/pages/verification/VerificationPage').then(m => ({ default: m.VerificationPage }))
+);
+const FilterCatalogPage = lazy(() =>
+  import('@/pages/filters/FilterCatalogPage').then(m => ({ default: m.FilterCatalogPage }))
+);
 
 // Protected route wrapper
-const ProtectedRoute = lazy(() => import('@/components/auth/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
+const ProtectedRoute = lazy(() =>
+  import('@/components/auth/ProtectedRoute').then(m => ({ default: m.ProtectedRoute }))
+);
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageSkeleton />}>{children}</Suspense>;

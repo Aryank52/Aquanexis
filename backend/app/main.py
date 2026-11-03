@@ -1,24 +1,25 @@
 """
 AquaNexis Backend - Main FastAPI Application Entry Point
 """
+
+import json
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from uuid import UUID
-import json
 
 from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
-from app.infrastructure.config import get_settings
-from app.infrastructure.database import init_db, close_db, db_manager
-from app.infrastructure.demo_mode import demo_engine
-from app.infrastructure.logging import configure_logging, get_logger, set_request_id, get_request_id
-from app.infrastructure.security import rate_limit, verify_device_token
-from app.infrastructure.websocket import ws_manager
-from app.api.v1.router import api_router
 from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.router import api_router
+from app.infrastructure.config import get_settings
+from app.infrastructure.database import close_db, init_db
+from app.infrastructure.demo_mode import demo_engine
+from app.infrastructure.logging import configure_logging, get_logger, get_request_id, set_request_id
+from app.infrastructure.security import verify_device_token
+from app.infrastructure.websocket import ws_manager
 
 settings = get_settings()
 logger = get_logger(__name__)
@@ -108,6 +109,7 @@ async def add_request_id_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", "")
     if not request_id:
         import uuid
+
         request_id = str(uuid.uuid4())
 
     set_request_id(request_id)
@@ -123,6 +125,7 @@ async def add_request_id_middleware(request: Request, call_next):
 async def metrics_middleware(request: Request, call_next):
     """Collect Prometheus metrics."""
     import time
+
     start_time = time.time()
 
     response = await call_next(request)
@@ -184,7 +187,7 @@ async def websocket_endpoint(websocket: WebSocket, device_id: str):
             return
 
     await ws_manager.connect(websocket, device_uuid)
-    
+
     try:
         while True:
             data = await websocket.receive_text()
@@ -222,6 +225,7 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host=settings.host,

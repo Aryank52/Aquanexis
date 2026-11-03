@@ -1,21 +1,39 @@
-name: Build Docker Images
+name: Docker & Containers
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     tags: ['v*']
-  pull_request:
-    branches: [main]
     paths:
       - 'docker-compose.yml'
       - 'backend/Dockerfile*'
       - 'frontend/Dockerfile*'
       - 'frontend/nginx.conf'
+      - '.github/workflows/docker.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'docker-compose.yml'
+      - 'backend/Dockerfile*'
+      - 'frontend/Dockerfile*'
+      - 'frontend/nginx.conf'
+      - '.github/workflows/docker.yml'
 
 jobs:
+  validate-compose:
+    name: Validate Docker Compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: docker compose config --quiet
+
   build-backend:
     name: Build Backend Image
     runs-on: ubuntu-latest
+    needs: [validate-compose]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,6 +55,7 @@ jobs:
   build-frontend:
     name: Build Frontend Image
     runs-on: ubuntu-latest
+    needs: [validate-compose]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -58,6 +77,7 @@ jobs:
   build-simulator:
     name: Build Simulator Image
     runs-on: ubuntu-latest
+    needs: [validate-compose]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -76,12 +96,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  docker-compose-validation:
-    name: Validate Docker Compose
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Validate docker-compose.yml
-        run: docker compose config --quiet

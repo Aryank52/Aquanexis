@@ -13,8 +13,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 const ACCESS_KEY = 'aquanexis_access_token';
 const REFRESH_KEY = 'aquanexis_refresh_token';
 
-let accessToken: string | null = typeof window !== 'undefined' ? sessionStorage.getItem(ACCESS_KEY) : null;
-let refreshToken: string | null = typeof window !== 'undefined' ? sessionStorage.getItem(REFRESH_KEY) : null;
+let accessToken: string | null =
+  typeof window !== 'undefined' ? sessionStorage.getItem(ACCESS_KEY) : null;
+let refreshToken: string | null =
+  typeof window !== 'undefined' ? sessionStorage.getItem(REFRESH_KEY) : null;
 let onSessionExpired: (() => void) | null = null;
 
 export function setTokens(access: string, refresh: string) {
@@ -64,7 +66,7 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  error => Promise.reject(error)
 );
 
 // Track whether we're already refreshing to avoid concurrent refresh calls
@@ -76,13 +78,13 @@ function subscribeToRefresh(cb: (token: string) => void) {
 }
 
 function onRefreshed(token: string) {
-  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers.forEach(cb => cb(token));
   refreshSubscribers = [];
 }
 
 // Response interceptor — handle 401 with token refresh
 apiClient.interceptors.response.use(
-  (response) => response,
+  response => response,
   async (error: AxiosError<APIError>) => {
     const originalRequest = error.config;
     if (!originalRequest) return Promise.reject(error);
@@ -91,8 +93,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && refreshToken) {
       if (isRefreshing) {
         // Wait for the ongoing refresh
-        return new Promise((resolve) => {
-          subscribeToRefresh((newToken) => {
+        return new Promise(resolve => {
+          subscribeToRefresh(newToken => {
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
             }

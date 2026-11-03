@@ -1,6 +1,7 @@
 """
 Test configuration and fixtures.
 """
+
 import asyncio
 import os
 import sys
@@ -51,14 +52,20 @@ async def test_engine():
     )
 
     # Create tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        pytest.skip(f"Test database not available: {e}")
 
     yield engine
 
     # Cleanup
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+    except Exception:
+        pass
 
     await engine.dispose()
 
@@ -87,6 +94,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Create test client with database override."""
+
     def override_get_db():
         yield db_session
 
@@ -105,6 +113,7 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 def test_device() -> "Device":
     """Create a test device instance."""
     from app.models.device import Device, DeviceStatus
+
     return Device(
         id=uuid4(),
         serial_number="TEST-001",
@@ -123,6 +132,7 @@ def test_device() -> "Device":
 def device_jwt_token(test_device) -> str:
     """Create a valid JWT token for test device."""
     from app.infrastructure.security import create_device_token
+
     return create_device_token(test_device.id)
 
 

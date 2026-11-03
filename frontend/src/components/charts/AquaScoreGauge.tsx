@@ -13,9 +13,9 @@ interface GaugeProps {
 }
 
 const defaultBands = [
-  { min: 0, max: 39, color: '#dc2626' },    // Critical - red
-  { min: 40, max: 69, color: '#d97706' },   // Warning - amber
-  { min: 70, max: 100, color: '#059669' },  // Good - green
+  { min: 0, max: 39, color: '#dc2626' }, // Critical - red
+  { min: 40, max: 69, color: '#d97706' }, // Warning - amber
+  { min: 70, max: 100, color: '#059669' }, // Good - green
 ];
 
 export function AquaScoreGauge({
@@ -40,19 +40,19 @@ export function AquaScoreGauge({
 
   // Calculate band paths
   const bandPaths = useMemo(() => {
-    return bands.map((band) => {
+    return bands.map(band => {
       const startAngle = (band.min / max) * 360 - 90;
       const endAngle = (band.max / max) * 360 - 90;
       const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-      
+
       const startRad = (startAngle * Math.PI) / 180;
       const endRad = (endAngle * Math.PI) / 180;
-      
+
       const x1 = size / 2 + radius * Math.cos(startRad);
       const y1 = size / 2 + radius * Math.sin(startRad);
       const x2 = size / 2 + radius * Math.cos(endRad);
       const y2 = size / 2 + radius * Math.sin(endRad);
-      
+
       return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
     });
   }, [bands, max, radius, size]);
@@ -60,32 +60,32 @@ export function AquaScoreGauge({
   // Animate value change
   useEffect(() => {
     if (!animate || !pathRef.current) return;
-    
+
     const path = pathRef.current;
     const startOffset = circumference * (1 - prevValueRef.current / max);
     const endOffset = offset;
-    
+
     // Use CSS animation for smooth transition
     path.style.transition = 'stroke-dashoffset 600ms ease-out';
     path.style.strokeDashoffset = `${endOffset}`;
-    
+
     prevValueRef.current = value;
   }, [value, max, circumference, animate, offset]);
 
   // Initial animation on mount
   useEffect(() => {
     if (!animate || !pathRef.current) return;
-    
+
     const path = pathRef.current;
     path.style.strokeDashoffset = `${circumference}`;
     path.style.transition = 'none';
-    
+
     // Force reflow
     path.getBoundingClientRect();
-    
+
     path.style.transition = 'stroke-dashoffset 800ms ease-out';
     path.style.strokeDashoffset = `${offset}`;
-    
+
     prevValueRef.current = value;
   }, []); // Only run on mount
 
@@ -112,7 +112,7 @@ export function AquaScoreGauge({
           className="text-border"
           opacity="0.2"
         />
-        
+
         {/* Band segments */}
         <g className="gauge-bands">
           {bandPaths.map((path, i) => (
@@ -127,7 +127,7 @@ export function AquaScoreGauge({
             />
           ))}
         </g>
-        
+
         {/* Progress arc */}
         <circle
           ref={pathRef}
@@ -140,14 +140,14 @@ export function AquaScoreGauge({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={animate ? offset : circumference}
-          style={{ 
+          style={{
             transition: animate ? 'stroke-dashoffset 600ms ease-out' : 'none',
             transform: 'rotate(-90deg)',
             transformOrigin: 'center',
           }}
           className="gauge-path"
         />
-        
+
         {/* Center value */}
         {showValue && (
           <text
@@ -155,17 +155,17 @@ export function AquaScoreGauge({
             y={size / 2 + 8}
             textAnchor="middle"
             dominantBaseline="central"
-            className="text-data-xl font-bold text-text-primary"
+            className="text-text-primary text-data-xl font-bold"
             style={{ pointerEvents: 'none' }}
           >
             {Math.round(clampedValue)}
           </text>
         )}
       </svg>
-      
+
       {label && (
         <div className="mt-3 text-center">
-          <p className="text-h3 font-semibold text-text-primary">{label}</p>
+          <p className="text-text-primary text-h3 font-semibold">{label}</p>
         </div>
       )}
     </div>
@@ -187,19 +187,19 @@ export function MiniGauge({
   const offset = circumference * (1 - progress);
 
   const bandPaths = useMemo(() => {
-    return bands.map((band) => {
+    return bands.map(band => {
       const startAngle = (band.min / max) * 360 - 90;
       const endAngle = (band.max / max) * 360 - 90;
       const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-      
+
       const startRad = (startAngle * Math.PI) / 180;
       const endRad = (endAngle * Math.PI) / 180;
-      
+
       const x1 = size / 2 + radius * Math.cos(startRad);
       const y1 = size / 2 + radius * Math.sin(startRad);
       const x2 = size / 2 + radius * Math.cos(endRad);
       const y2 = size / 2 + radius * Math.sin(endRad);
-      
+
       return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
     });
   }, [bands, max, radius, size]);
@@ -209,7 +209,13 @@ export function MiniGauge({
 
   return (
     <div className="relative inline-flex items-center justify-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Value: ${Math.round(clampedValue)}`}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        role="img"
+        aria-label={`Value: ${Math.round(clampedValue)}`}
+      >
         {/* Background track */}
         <circle
           cx={size / 2}
@@ -222,7 +228,7 @@ export function MiniGauge({
           className="text-border"
           opacity="0.15"
         />
-        
+
         {/* Band segments (subtle) */}
         <g>
           {bandPaths.map((path, i) => (
@@ -237,7 +243,7 @@ export function MiniGauge({
             />
           ))}
         </g>
-        
+
         {/* Progress arc */}
         <circle
           cx={size / 2}
@@ -249,13 +255,13 @@ export function MiniGauge({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          style={{ 
+          style={{
             transform: 'rotate(-90deg)',
             transformOrigin: 'center',
             transition: 'stroke-dashoffset 600ms ease-out',
           }}
         />
-        
+
         {/* Center value */}
         <text
           x={size / 2}

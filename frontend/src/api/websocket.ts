@@ -73,7 +73,7 @@ export class WebSocketManager {
       }, PING_INTERVAL);
     };
 
-    this.ws.onmessage = (event) => {
+    this.ws.onmessage = event => {
       try {
         const message: WSMessage = JSON.parse(event.data);
         if (message.type === 'pong') return;
@@ -83,7 +83,7 @@ export class WebSocketManager {
       }
     };
 
-    this.ws.onclose = (_event) => {
+    this.ws.onclose = _event => {
       this.stopPing();
       if (!this.isDestroyed) {
         this.setStatus('reconnecting');

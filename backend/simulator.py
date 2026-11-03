@@ -17,6 +17,7 @@ import httpx
 from pydantic import BaseModel
 
 from app.schemas.telemetry import (
+    CANONICAL_SENSOR_UNITS,
     TelemetryPayload,
     SensorReadingInput,
     DeviceCreate,
@@ -301,6 +302,9 @@ async def run_simulator(config: SimulatorConfig):
                 sequence=state.sequence,
                 firmware_version="1.0.0-sim",
                 readings=reading,
+                provenance="SIMULATED",
+                units=CANONICAL_SENSOR_UNITS.copy(),
+                device_state="ACTIVE",
             )
             
             # Send to backend

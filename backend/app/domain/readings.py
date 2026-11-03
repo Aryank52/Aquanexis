@@ -1,15 +1,17 @@
 """
 Sensor Reading domain models - pure Python, no framework dependencies.
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any, Literal
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 
 class QualityState(str, Enum):
     """Quality state for individual sensor readings."""
+
     VALID = "valid"
     SUSPECT = "suspect"
     MISSING = "missing"
@@ -19,6 +21,7 @@ class QualityState(str, Enum):
 
 class OverallQuality(str, Enum):
     """Overall reading quality."""
+
     GOOD = "good"
     SUSPECT = "suspect"
     BAD = "bad"
@@ -27,6 +30,7 @@ class OverallQuality(str, Enum):
 @dataclass
 class QualityFlag:
     """Quality flag for a single sensor."""
+
     state: QualityState = QualityState.VALID
     message: Optional[str] = None
     expected_range: Optional[tuple] = None
@@ -36,6 +40,7 @@ class QualityFlag:
 @dataclass
 class QualityFlags:
     """Quality flags for all sensors in a reading."""
+
     tds: QualityFlag = field(default_factory=QualityFlag)
     conductivity: QualityFlag = field(default_factory=QualityFlag)
     ph: QualityFlag = field(default_factory=QualityFlag)
@@ -51,7 +56,12 @@ class QualityFlags:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            k: {"state": v.state.value, "message": v.message, "expected_range": v.expected_range, "actual_value": v.actual_value}
+            k: {
+                "state": v.state.value,
+                "message": v.message,
+                "expected_range": v.expected_range,
+                "actual_value": v.actual_value,
+            }
             for k, v in self.__dict__.items()
         }
 
@@ -64,7 +74,7 @@ class QualityFlags:
                     state=QualityState(v.get("state", "valid")),
                     message=v.get("message"),
                     expected_range=v.get("expected_range"),
-                    actual_value=v.get("actual_value")
+                    actual_value=v.get("actual_value"),
                 )
                 setattr(flags, k, flag)
         return flags
@@ -84,24 +94,26 @@ class QualityFlags:
 @dataclass
 class SensorReadingInput:
     """Input sensor reading from device."""
-    tds: Optional[float] = None              # Total Dissolved Solids (ppm)
-    conductivity: Optional[float] = None     # Electrical Conductivity (µS/cm)
-    ph: Optional[float] = None               # pH (0-14)
-    turbidity: Optional[float] = None        # Turbidity (NTU)
-    temperature: Optional[float] = None      # Temperature (°C)
-    flow_rate: Optional[float] = None        # Flow rate (L/min)
-    inlet_pressure: Optional[float] = None   # Inlet pressure (kPa)
+
+    tds: Optional[float] = None  # Total Dissolved Solids (ppm)
+    conductivity: Optional[float] = None  # Electrical Conductivity (µS/cm)
+    ph: Optional[float] = None  # pH (0-14)
+    turbidity: Optional[float] = None  # Turbidity (NTU)
+    temperature: Optional[float] = None  # Temperature (°C)
+    flow_rate: Optional[float] = None  # Flow rate (L/min)
+    inlet_pressure: Optional[float] = None  # Inlet pressure (kPa)
     outlet_pressure: Optional[float] = None  # Outlet pressure (kPa)
-    tank_level: Optional[float] = None       # Tank level (%)
-    leak: Optional[bool] = None              # Leak detected
-    pump_current: Optional[float] = None     # Pump current (A)
-    pump_power: Optional[float] = None       # Pump power (W)
-    uv_state: Optional[bool] = None          # UV lamp state
+    tank_level: Optional[float] = None  # Tank level (%)
+    leak: Optional[bool] = None  # Leak detected
+    pump_current: Optional[float] = None  # Pump current (A)
+    pump_power: Optional[float] = None  # Pump power (W)
+    uv_state: Optional[bool] = None  # UV lamp state
 
 
 @dataclass
 class TelemetryPayload:
     """Complete telemetry payload from device."""
+
     device_id: UUID
     timestamp: datetime
     sequence: Optional[int] = None
@@ -113,6 +125,7 @@ class TelemetryPayload:
 @dataclass
 class SensorReading:
     """Stored sensor reading with quality assessment."""
+
     id: int
     device_id: UUID
     timestamp: datetime
@@ -138,6 +151,7 @@ class SensorReading:
 @dataclass
 class BatchTelemetryPayload:
     """Batch telemetry payload for buffered readings."""
+
     device_id: UUID
     firmware_version: Optional[str] = None
     readings: list[TelemetryPayload] = field(default_factory=list)
@@ -146,6 +160,7 @@ class BatchTelemetryPayload:
 @dataclass
 class BatchTelemetryResult:
     """Result of batch ingestion."""
+
     accepted: int = 0
     rejected: int = 0
     duplicates: int = 0

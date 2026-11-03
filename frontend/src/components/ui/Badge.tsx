@@ -20,7 +20,7 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
       <span
         ref={ref}
         className={cn(
-          'inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium',
+          'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
           variantStyles[variant],
           className
         )}

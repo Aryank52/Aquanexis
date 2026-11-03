@@ -1,15 +1,17 @@
 """
 Maintenance and Lifecycle domain models - pure Python, no framework dependencies.
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 
 class FilterCategory(str, Enum):
     """Filter component categories."""
+
     SEDIMENT = "sediment"
     PRE_CARBON = "pre_carbon"
     ACTIVATED_CARBON_BLOCK = "activated_carbon_block"
@@ -25,6 +27,7 @@ class FilterCategory(str, Enum):
 
 class CompatibilityResult(str, Enum):
     """Filter compatibility check results."""
+
     COMPATIBLE = "compatible"
     INCOMPATIBLE = "incompatible"
     REQUIRES_REVIEW = "requires_review"
@@ -33,6 +36,7 @@ class CompatibilityResult(str, Enum):
 
 class FilterLifecycleState(str, Enum):
     """Installed filter lifecycle states."""
+
     AVAILABLE = "available"
     INSTALLED = "installed"
     MAINTENANCE_DUE = "maintenance_due"
@@ -44,6 +48,7 @@ class FilterLifecycleState(str, Enum):
 
 class MaintenanceEventType(str, Enum):
     """Types of maintenance events."""
+
     INSTALL = "install"
     REPLACE = "replace"
     INSPECT = "inspect"
@@ -55,6 +60,7 @@ class MaintenanceEventType(str, Enum):
 
 class MaintenanceWorkflowState(str, Enum):
     """Maintenance workflow states."""
+
     REQUESTED = "requested"
     APPROVED = "approved"
     IN_PROGRESS = "in_progress"
@@ -67,6 +73,7 @@ class MaintenanceWorkflowState(str, Enum):
 
 class CalibrationState(str, Enum):
     """Calibration status states."""
+
     VALID = "valid"
     DUE_SOON = "due_soon"
     DUE = "due"
@@ -77,6 +84,7 @@ class CalibrationState(str, Enum):
 
 class VerificationState(str, Enum):
     """Post-maintenance verification states."""
+
     PENDING = "pending"
     RUNNING = "running"
     PASSED = "passed"
@@ -119,6 +127,7 @@ MAINTENANCE_WORKFLOW_TRANSITIONS = {
 @dataclass
 class FilterCatalog:
     """Filter catalog entry."""
+
     id: UUID = field(default_factory=uuid4)
     filter_identifier: str = ""  # Unique filter identifier
     manufacturer: str = ""
@@ -142,6 +151,7 @@ class FilterCatalog:
 @dataclass
 class InstalledFilter:
     """Installed filter instance tracking."""
+
     id: UUID = field(default_factory=uuid4)
     device_id: UUID = field(default_factory=uuid4)
     catalog_id: UUID = field(default_factory=uuid4)
@@ -163,6 +173,7 @@ class InstalledFilter:
 @dataclass
 class MaintenanceEvent:
     """Maintenance event record."""
+
     id: UUID = field(default_factory=uuid4)
     device_id: UUID = field(default_factory=uuid4)
     filter_instance_id: Optional[UUID] = None
@@ -181,6 +192,7 @@ class MaintenanceEvent:
 @dataclass
 class MaintenanceWorkflow:
     """Maintenance workflow with state machine."""
+
     id: UUID = field(default_factory=uuid4)
     device_id: UUID = field(default_factory=uuid4)
     maintenance_event_id: UUID = field(default_factory=uuid4)
@@ -200,17 +212,17 @@ class MaintenanceWorkflow:
         """Attempt to transition to new state. Returns True if successful."""
         if not self.can_transition_to(new_state):
             return False
-        
+
         self.state = new_state
         now = datetime.utcnow()
-        
+
         if new_state == MaintenanceWorkflowState.IN_PROGRESS:
             self.started_at = now
         elif new_state in (MaintenanceWorkflowState.COMPLETED, MaintenanceWorkflowState.VERIFIED):
             self.completed_at = now
         elif new_state == MaintenanceWorkflowState.FAILED:
             self.failed_at = now
-        
+
         self.updated_at = now
         return True
 
@@ -218,6 +230,7 @@ class MaintenanceWorkflow:
 @dataclass
 class CalibrationRecord:
     """Calibration record for sensors."""
+
     id: UUID = field(default_factory=uuid4)
     device_id: UUID = field(default_factory=uuid4)
     sensor_id: str = ""
@@ -241,6 +254,7 @@ class CalibrationRecord:
 @dataclass
 class CalibrationPolicy:
     """Calibration due tracking policy per sensor."""
+
     id: UUID = field(default_factory=uuid4)
     device_id: UUID = field(default_factory=uuid4)
     sensor_id: str = ""
@@ -256,6 +270,7 @@ class CalibrationPolicy:
 @dataclass
 class VerificationRun:
     """Post-maintenance verification run."""
+
     id: UUID = field(default_factory=uuid4)
     maintenance_event_id: UUID = field(default_factory=uuid4)
     device_id: UUID = field(default_factory=uuid4)
@@ -274,6 +289,7 @@ class VerificationRun:
 @dataclass
 class VerificationCheck:
     """Individual verification check."""
+
     name: str
     description: str
     expected_range: Dict[str, float]  # min, max
@@ -286,6 +302,7 @@ class VerificationCheck:
 @dataclass
 class BaselineVersion:
     """Baseline versioning for before/after maintenance comparison."""
+
     id: UUID = field(default_factory=uuid4)
     device_id: UUID = field(default_factory=uuid4)
     version: int = 1
@@ -299,6 +316,7 @@ class BaselineVersion:
 @dataclass
 class MaintenanceRecommendation:
     """Maintenance recommendation with evidence."""
+
     device_id: UUID = field(default_factory=uuid4)
     filter_instance_id: Optional[UUID] = None
     trigger: str = ""  # time_based, usage_based, health_based, calibration_due

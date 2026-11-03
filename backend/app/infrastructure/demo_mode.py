@@ -4,6 +4,7 @@ Uses the real SimulatorState, QualityValidator, WaterQualityService, FilterStres
 FilterHealthService, RULService, FailureRiskService, HydraulicService, PurificationService,
 SafetyService, CompatibilityEngine, and Alert state transition rules without requiring TimescaleDB.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -185,7 +186,9 @@ class DemoModeEngine:
             )
 
         self._initialized = True
-        logger.info("demo_mode_initialized", device_id=dev_id_str, profile=self.current_profile.value)
+        logger.info(
+            "demo_mode_initialized", device_id=dev_id_str, profile=self.current_profile.value
+        )
 
     def start_background_loop(self) -> None:
         if self._bg_task is None or self._bg_task.done():
@@ -222,7 +225,9 @@ class DemoModeEngine:
             except Exception as e:
                 logger.error("demo_background_ticker_error", error=str(e))
 
-    async def set_scenario(self, profile_name: str, device_id: UUID = DEFAULT_DEMO_DEVICE_ID) -> Dict[str, Any]:
+    async def set_scenario(
+        self, profile_name: str, device_id: UUID = DEFAULT_DEMO_DEVICE_ID
+    ) -> Dict[str, Any]:
         """Switch active simulator profile and immediately compute new telemetry, analytics, and alerts."""
         profile = SimulationProfile(profile_name.lower())
         self.current_profile = profile
@@ -250,7 +255,11 @@ class DemoModeEngine:
         # Seed a short burst of profile readings so trend/exposure/persistence rules respond immediately
         burst_count = 6 if profile == SimulationProfile.FILTER_STRESS else 3
         for i in range(burst_count):
-            step_ts = now - timedelta(minutes=(burst_count - 1 - i) * 30) if profile == SimulationProfile.FILTER_STRESS else now - timedelta(minutes=(burst_count - 1 - i) * 2)
+            step_ts = (
+                now - timedelta(minutes=(burst_count - 1 - i) * 30)
+                if profile == SimulationProfile.FILTER_STRESS
+                else now - timedelta(minutes=(burst_count - 1 - i) * 2)
+            )
             r_in = self.simulator_state.generate_reading()
             await self.ingest_reading(
                 device_id=device_id,
@@ -267,15 +276,23 @@ class DemoModeEngine:
             "water_quality": self.latest_water_quality,
             "filter_health": self.latest_filter_health,
             "failure_risk": self.latest_failure_risk,
-            "active_alerts": [a for a in self.alerts.values() if a["status"] in ("OPEN", "ACKNOWLEDGED")],
+            "active_alerts": [
+                a for a in self.alerts.values() if a["status"] in ("OPEN", "ACKNOWLEDGED")
+            ],
             "timestamp": now.isoformat(),
         }
 
-    def _detect_profile_from_reading(self, reading_input: SensorReadingInput) -> Optional[SimulationProfile]:
+    def _detect_profile_from_reading(
+        self, reading_input: SensorReadingInput
+    ) -> Optional[SimulationProfile]:
         """Detect if an external simulator reading clearly matches LEAK, SENSOR_FAULT, or FILTER_STRESS."""
         if reading_input.leak is True:
             return SimulationProfile.LEAK
-        if reading_input.flow_rate is None or reading_input.outlet_pressure is None or (reading_input.turbidity and reading_input.turbidity > 100):
+        if (
+            reading_input.flow_rate is None
+            or reading_input.outlet_pressure is None
+            or (reading_input.turbidity and reading_input.turbidity > 100)
+        ):
             return SimulationProfile.SENSOR_FAULT
         if (
             reading_input.inlet_pressure is not None
@@ -391,18 +408,38 @@ class DemoModeEngine:
             "provenance": "SIMULATED",
             "readings": {
                 "tds": round(reading_input.tds, 1) if reading_input.tds is not None else None,
-                "ec": round(reading_input.conductivity, 1) if reading_input.conductivity is not None else None,
+                "ec": round(reading_input.conductivity, 1)
+                if reading_input.conductivity is not None
+                else None,
                 "ph": round(reading_input.ph, 2) if reading_input.ph is not None else None,
-                "turbidity": round(reading_input.turbidity, 2) if reading_input.turbidity is not None else None,
-                "temperature": round(reading_input.temperature, 1) if reading_input.temperature is not None else None,
-                "flow": round(reading_input.flow_rate, 2) if reading_input.flow_rate is not None else None,
-                "pressure": round(reading_input.inlet_pressure, 1) if reading_input.inlet_pressure is not None else None,
-                "inlet_pressure": round(reading_input.inlet_pressure, 1) if reading_input.inlet_pressure is not None else None,
-                "outlet_pressure": round(reading_input.outlet_pressure, 1) if reading_input.outlet_pressure is not None else None,
-                "tank_level": round(reading_input.tank_level, 1) if reading_input.tank_level is not None else None,
+                "turbidity": round(reading_input.turbidity, 2)
+                if reading_input.turbidity is not None
+                else None,
+                "temperature": round(reading_input.temperature, 1)
+                if reading_input.temperature is not None
+                else None,
+                "flow": round(reading_input.flow_rate, 2)
+                if reading_input.flow_rate is not None
+                else None,
+                "pressure": round(reading_input.inlet_pressure, 1)
+                if reading_input.inlet_pressure is not None
+                else None,
+                "inlet_pressure": round(reading_input.inlet_pressure, 1)
+                if reading_input.inlet_pressure is not None
+                else None,
+                "outlet_pressure": round(reading_input.outlet_pressure, 1)
+                if reading_input.outlet_pressure is not None
+                else None,
+                "tank_level": round(reading_input.tank_level, 1)
+                if reading_input.tank_level is not None
+                else None,
                 "leak_detected": bool(reading_input.leak),
-                "pump_current": round(reading_input.pump_current, 2) if reading_input.pump_current is not None else None,
-                "pump_power": round(reading_input.pump_power, 1) if reading_input.pump_power is not None else None,
+                "pump_current": round(reading_input.pump_current, 2)
+                if reading_input.pump_current is not None
+                else None,
+                "pump_power": round(reading_input.pump_power, 1)
+                if reading_input.pump_power is not None
+                else None,
                 "permeate_flow": adapter.permeate_flow,
                 "reject_flow": adapter.reject_flow,
                 "uv_state": bool(reading_input.uv_state),
@@ -427,7 +464,13 @@ class DemoModeEngine:
 
         # 3. Compute Water Quality (AquaScore, parameter scores, trends, anomalies)
         aquascore_domain = self.water_quality_service.compute_aquascore(adapter)
-        param_units = {"tds": "ppm", "ph": "pH", "turbidity": "NTU", "temperature": "°C", "conductivity": "µS/cm"}
+        param_units = {
+            "tds": "ppm",
+            "ph": "pH",
+            "turbidity": "NTU",
+            "temperature": "°C",
+            "conductivity": "µS/cm",
+        }
         param_scores = [
             {
                 "parameter": ps.parameter,
@@ -441,7 +484,10 @@ class DemoModeEngine:
         trends_dict: Dict[str, Any] = {}
         for param in ["tds", "ph", "turbidity", "temperature", "conductivity"]:
             pts = [
-                {"timestamp": h["timestamp"], "value": h["readings"].get("ec" if param == "conductivity" else param) or 0.0}
+                {
+                    "timestamp": h["timestamp"],
+                    "value": h["readings"].get("ec" if param == "conductivity" else param) or 0.0,
+                }
                 for h in self.telemetry_history[-15:]
                 if h["readings"].get("ec" if param == "conductivity" else param) is not None
             ]
@@ -489,16 +535,32 @@ class DemoModeEngine:
             reading=adapter,
             previous_reading=self.adapter_history[-2] if len(self.adapter_history) >= 2 else None,
         )
-        rej_frac = (purif_domain.rejection_rate / 100.0) if purif_domain and purif_domain.rejection_rate is not None else 0.955
-        rec_frac = (purif_domain.recovery_ratio / 100.0) if purif_domain and purif_domain.recovery_ratio is not None else 0.720
-        eff_frac = (purif_domain.efficiency / 100.0) if purif_domain and purif_domain.efficiency is not None else round(rej_frac * rec_frac, 3)
+        rej_frac = (
+            (purif_domain.rejection_rate / 100.0)
+            if purif_domain and purif_domain.rejection_rate is not None
+            else 0.955
+        )
+        rec_frac = (
+            (purif_domain.recovery_ratio / 100.0)
+            if purif_domain and purif_domain.recovery_ratio is not None
+            else 0.720
+        )
+        eff_frac = (
+            (purif_domain.efficiency / 100.0)
+            if purif_domain and purif_domain.efficiency is not None
+            else round(rej_frac * rec_frac, 3)
+        )
         self.latest_purification = {
             "device_id": dev_str,
             "timestamp": now.isoformat(),
             "rejection_rate": round(rej_frac, 3),
             "recovery_ratio": round(rec_frac, 3),
-            "permeate_quality": round(purif_domain.permeate_quality, 1) if purif_domain and purif_domain.permeate_quality is not None else 12.0,
-            "feed_quality": round(purif_domain.feed_quality, 1) if purif_domain and purif_domain.feed_quality is not None else float(reading_input.tds or 160.0),
+            "permeate_quality": round(purif_domain.permeate_quality, 1)
+            if purif_domain and purif_domain.permeate_quality is not None
+            else 12.0,
+            "feed_quality": round(purif_domain.feed_quality, 1)
+            if purif_domain and purif_domain.feed_quality is not None
+            else float(reading_input.tds or 160.0),
             "efficiency": round(eff_frac, 3),
         }
         self.purification_history.append(self.latest_purification)
@@ -551,14 +613,22 @@ class DemoModeEngine:
             {
                 "feature": "differential_pressure_kpa",
                 "contribution": round((fsi_domain.differential_pressure_score or 0.0) / 100.0, 2),
-                "direction": "decreases" if (fsi_domain.differential_pressure_score or 0) > 25 else "increases",
-                "label": f"Differential Pressure (ΔP: {dp_val:.1f} kPa)" if dp_val is not None else "Differential Pressure (SENSOR MISSING — excluded)",
+                "direction": "decreases"
+                if (fsi_domain.differential_pressure_score or 0) > 25
+                else "increases",
+                "label": f"Differential Pressure (ΔP: {dp_val:.1f} kPa)"
+                if dp_val is not None
+                else "Differential Pressure (SENSOR MISSING — excluded)",
             },
             {
                 "feature": "flow_deviation_pct",
                 "contribution": round((fsi_domain.flow_deviation_score or 0.0) / 100.0, 2),
-                "direction": "decreases" if (fsi_domain.flow_deviation_score or 0) > 25 else "increases",
-                "label": f"Flow Rate vs 2.0 L/min Baseline ({flow_val:.2f} L/min)" if flow_val is not None else "Flow Rate (SENSOR MISSING — excluded)",
+                "direction": "decreases"
+                if (fsi_domain.flow_deviation_score or 0) > 25
+                else "increases",
+                "label": f"Flow Rate vs 2.0 L/min Baseline ({flow_val:.2f} L/min)"
+                if flow_val is not None
+                else "Flow Rate (SENSOR MISSING — excluded)",
             },
             {
                 "feature": "cumulative_volume_liters",
@@ -576,7 +646,9 @@ class DemoModeEngine:
                 "feature": "turbidity_ntu",
                 "contribution": round(min(1.0, (reading_input.turbidity or 0.0) / 10.0), 2),
                 "direction": "decreases" if (reading_input.turbidity or 0) > 1.5 else "increases",
-                "label": f"Feed Turbidity Load ({reading_input.turbidity:.2f} NTU)" if reading_input.turbidity is not None else "Feed Turbidity Load",
+                "label": f"Feed Turbidity Load ({reading_input.turbidity:.2f} NTU)"
+                if reading_input.turbidity is not None
+                else "Feed Turbidity Load",
             },
         ]
 
@@ -592,8 +664,14 @@ class DemoModeEngine:
             pred_confidence = "MEDIUM" if is_stressed else "HIGH"
             # RULService returns status=MODEL_MISSING (no trained .pkl model artifact);
             # We expose both the explicit MODEL_MISSING status in model_name and the deterministic engineering estimate
-            model_display_name = f"MODEL_MISSING (Deterministic Fallback v{rul_domain.model_version})"
-            maint_band = "NORMAL" if fhi_domain.health_score >= 75 else (fhi_domain.maintenance_band or "normal").upper()
+            model_display_name = (
+                f"MODEL_MISSING (Deterministic Fallback v{rul_domain.model_version})"
+            )
+            maint_band = (
+                "NORMAL"
+                if fhi_domain.health_score >= 75
+                else (fhi_domain.maintenance_band or "normal").upper()
+            )
             # Deterministic engineering fallback estimate from FHI & lifecycle
             deterministic_rul_days = round(max(5.0, (fhi_domain.health_score / 100.0) * 180.0), 1)
             rul_lower = round(max(1.0, deterministic_rul_days * 0.75), 1)
@@ -651,22 +729,30 @@ class DemoModeEngine:
                 "factor": "Filter Stress Index (FSI)",
                 "value": round(fsi_domain.score, 1),
                 "threshold": 70.0,
-                "severity": "high" if fsi_domain.score >= 70 else ("medium" if fsi_domain.score >= 40 else "low"),
+                "severity": "high"
+                if fsi_domain.score >= 70
+                else ("medium" if fsi_domain.score >= 40 else "low"),
                 "description": f"7-component weighted stress index ({fsi_domain.state.value.upper()})",
             },
             {
                 "factor": "Filter Health Index (FHI)",
                 "value": float(fhi_domain.health_score),
                 "threshold": 50.0,
-                "severity": "high" if fhi_domain.health_score < 40 else ("medium" if fhi_domain.health_score < 70 else "low"),
+                "severity": "high"
+                if fhi_domain.health_score < 40
+                else ("medium" if fhi_domain.health_score < 70 else "low"),
                 "description": f"Composite health score ({fhi_domain.state.value.upper()})",
             },
             {
                 "factor": "Differential Pressure (ΔP)",
                 "value": round(dp_val, 1) if dp_val is not None else 0.0,
                 "threshold": 150.0,
-                "severity": "high" if (dp_val or 0) >= 150 else ("medium" if (dp_val or 0) >= 80 else "low"),
-                "description": "Trans-filter pressure drop across sediment/RO stages (kPa)" if dp_val is not None else "Missing outlet pressure sensor — ΔP unavailable",
+                "severity": "high"
+                if (dp_val or 0) >= 150
+                else ("medium" if (dp_val or 0) >= 80 else "low"),
+                "description": "Trans-filter pressure drop across sediment/RO stages (kPa)"
+                if dp_val is not None
+                else "Missing outlet pressure sensor — ΔP unavailable",
             },
             {
                 "factor": "Data Quality & Sensor Integrity",
@@ -711,7 +797,9 @@ class DemoModeEngine:
                 "trend_1h": 14.5 if is_stressed else (-42.0 if leak_flag else 0.4),
                 "trend_24h": 68.0 if is_stressed else 1.2,
                 "fouling_indicator": fouling_idx,
-                "status": "critical" if (inlet_p > 550 or (dp_val or 0) > 160 or leak_flag) else ("elevated" if is_stressed else "normal"),
+                "status": "critical"
+                if (inlet_p > 550 or (dp_val or 0) > 160 or leak_flag)
+                else ("elevated" if is_stressed else "normal"),
             },
             "flow": {
                 "current_lpm": round(flow_lpm, 2),
@@ -719,7 +807,9 @@ class DemoModeEngine:
                 "permeate_lpm": adapter.permeate_flow or 0.0,
                 "reject_lpm": adapter.reject_flow or 0.0,
                 "trend_1h": -0.35 if is_stressed else 0.02,
-                "status": "critical" if reading_input.flow_rate is None else ("low" if flow_lpm < 1.2 else "normal"),
+                "status": "critical"
+                if reading_input.flow_rate is None
+                else ("low" if flow_lpm < 1.2 else "normal"),
             },
             "leak": {
                 "detected": leak_flag,
@@ -807,7 +897,11 @@ class DemoModeEngine:
             evidence: Dict[str, Any],
         ) -> None:
             for existing in self.alerts.values():
-                if existing["alert_code"] == code and existing["status"] in ("OPEN", "ACKNOWLEDGED", "SNOOZED"):
+                if existing["alert_code"] == code and existing["status"] in (
+                    "OPEN",
+                    "ACKNOWLEDGED",
+                    "SNOOZED",
+                ):
                     existing["trigger_value"] = trigger_val
                     existing["evidence"] = evidence
                     return
@@ -872,13 +966,21 @@ class DemoModeEngine:
             if code in MANUAL_ONLY_CODES:
                 return
             for existing in self.alerts.values():
-                if existing["alert_code"] == code and existing["status"] in ("OPEN", "ACKNOWLEDGED", "SNOOZED"):
+                if existing["alert_code"] == code and existing["status"] in (
+                    "OPEN",
+                    "ACKNOWLEDGED",
+                    "SNOOZED",
+                ):
                     existing["status"] = "AUTO_CLEARED"
                     existing["auto_cleared_at"] = now.isoformat()
                     existing["resolved_at"] = now.isoformat()
-                    existing["resolved_reason"] = "Condition returned to normal thresholds (auto-cleared)"
+                    existing["resolved_reason"] = (
+                        "Condition returned to normal thresholds (auto-cleared)"
+                    )
                     if broadcast:
-                        await ws_manager.broadcast_alert(device_id, existing, event_type="alert.auto_cleared")
+                        await ws_manager.broadcast_alert(
+                            device_id, existing, event_type="alert.auto_cleared"
+                        )
 
         # Condition 1: LEAK (Critical safety event — manual-only resolution)
         if reading_input.leak:
@@ -947,7 +1049,10 @@ class DemoModeEngine:
                 evidence=stress_ev,
             )
             # Ensure a maintenance recommendation exists
-            if not any(r["trigger"] == "FILTER_STRESS_HIGH" and r["acknowledged_at"] is None for r in self.recommendations):
+            if not any(
+                r["trigger"] == "FILTER_STRESS_HIGH" and r["acknowledged_at"] is None
+                for r in self.recommendations
+            ):
                 self.recommendations.insert(
                     0,
                     {
@@ -1048,7 +1153,12 @@ class DemoModeEngine:
                 "manufacturer": "AquaNexis Filtration",
                 "product_name": "Stage 1 — 5µm Spun Polypropylene Sediment Cartridge",
                 "category": "SEDIMENT",
-                "purifier_compatibility": ["AQUANEXIS_HOME_1", "AQUANEXIS_PRO_2", "AQUANEXIS_UV_3", "AquaNexis-SIM"],
+                "purifier_compatibility": [
+                    "AQUANEXIS_HOME_1",
+                    "AQUANEXIS_PRO_2",
+                    "AQUANEXIS_UV_3",
+                    "AquaNexis-SIM",
+                ],
                 "stage_position": 1,
                 "specifications": {"micron_rating": 5.0, "max_pressure_kpa": 600},
                 "connector_details": "1/4 inch Quick-Connect",
@@ -1068,7 +1178,12 @@ class DemoModeEngine:
                 "manufacturer": "AquaNexis Filtration",
                 "product_name": "Stage 2 — Activated Coconut Shell Carbon Block",
                 "category": "CARBON",
-                "purifier_compatibility": ["AQUANEXIS_HOME_1", "AQUANEXIS_PRO_2", "AQUANEXIS_UV_3", "AquaNexis-SIM"],
+                "purifier_compatibility": [
+                    "AQUANEXIS_HOME_1",
+                    "AQUANEXIS_PRO_2",
+                    "AQUANEXIS_UV_3",
+                    "AquaNexis-SIM",
+                ],
                 "stage_position": 2,
                 "specifications": {"chlorine_reduction_pct": 99.0, "micron_rating": 1.0},
                 "connector_details": "1/4 inch Quick-Connect",
@@ -1181,9 +1296,19 @@ class DemoModeEngine:
             "started_at": (now - timedelta(days=42)).isoformat(),
             "completed_at": (now - timedelta(days=42, minutes=-10)).isoformat(),
             "checks": [
-                {"name": "Differential Pressure Reset", "passed": True, "value": 24.0, "threshold": 50.0},
+                {
+                    "name": "Differential Pressure Reset",
+                    "passed": True,
+                    "value": 24.0,
+                    "threshold": 50.0,
+                },
                 {"name": "Permeate Flow Recovery", "passed": True, "value": 2.0, "threshold": 1.5},
-                {"name": "TDS Rejection Efficiency", "passed": True, "value": 95.8, "threshold": 90.0},
+                {
+                    "name": "TDS Rejection Efficiency",
+                    "passed": True,
+                    "value": 95.8,
+                    "threshold": 90.0,
+                },
                 {"name": "Leak Sensor Dry Check", "passed": True, "value": 0, "threshold": 0},
             ],
             "overall_result": True,

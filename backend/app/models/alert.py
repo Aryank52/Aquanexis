@@ -1,12 +1,13 @@
 """
 Alert database model.
 """
+
 import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, String, Text, JSON
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.infrastructure.database import Base
 
@@ -32,29 +33,31 @@ class Alert(Base):
     __tablename__ = "alerts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
     alert_code = Column(String(64), nullable=False, index=True)
     severity = Column(Enum(AlertSeverity), nullable=False, default=AlertSeverity.INFO)
     status = Column(Enum(AlertStatus), nullable=False, default=AlertStatus.DETECTED, index=True)
-    
+
     title = Column(String(256), nullable=False)
     message = Column(Text, nullable=False)
     trigger_source = Column(String(64), nullable=False)
     trigger_value = Column(JSONB, nullable=True)
     threshold_value = Column(JSONB, nullable=True)
     evidence = Column(JSONB, nullable=False, default=dict)
-    
+
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     acknowledged_at = Column(DateTime(timezone=True), nullable=True)
     snoozed_until = Column(DateTime(timezone=True), nullable=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
     auto_cleared_at = Column(DateTime(timezone=True), nullable=True)
-    
+
     created_by = Column(String(128), nullable=True)
     acknowledged_by = Column(String(128), nullable=True)
     resolved_by = Column(String(128), nullable=True)
-    
+
     # For tracking rule evaluation
     rule_version = Column(String(32), nullable=True)
     last_evaluated_at = Column(DateTime(timezone=True), nullable=True)

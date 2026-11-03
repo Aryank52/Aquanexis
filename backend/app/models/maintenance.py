@@ -1,15 +1,25 @@
 """
 Maintenance and Lifecycle database models.
 """
+
 import enum
 import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    Column, DateTime, Enum, ForeignKey, Index, String, Text, JSON, 
-    Integer, Float, Boolean, UniqueConstraint
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.infrastructure.database import Base
 
@@ -78,6 +88,7 @@ class VerificationState(str, enum.Enum):
 
 class FilterCatalogModel(Base):
     """Filter catalog - centralized filter definitions."""
+
     __tablename__ = "filter_catalog"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -85,7 +96,9 @@ class FilterCatalogModel(Base):
     manufacturer = Column(String(128), nullable=False)
     product_name = Column(String(128), nullable=False)
     category = Column(Enum(FilterCategory), nullable=False)
-    purifier_compatibility = Column(JSONB, nullable=False, default=list)  # List of purifier model IDs
+    purifier_compatibility = Column(
+        JSONB, nullable=False, default=list
+    )  # List of purifier model IDs
     stage_position = Column(Integer, nullable=False, default=0)
     specifications = Column(JSONB, nullable=False, default=dict)
     connector_details = Column(Text, nullable=True)
@@ -97,20 +110,28 @@ class FilterCatalogModel(Base):
     datasheet_reference = Column(String(256), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True, index=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    __table_args__ = (
-        Index("ix_filter_catalog_category_active", "category", "is_active"),
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+    __table_args__ = (Index("ix_filter_catalog_category_active", "category", "is_active"),)
 
 
 class InstalledFilterModel(Base):
     """Installed filter instance tracking."""
+
     __tablename__ = "installed_filters"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
-    catalog_id = Column(UUID(as_uuid=True), ForeignKey("filter_catalog.id", ondelete="SET NULL"), nullable=False, index=True)
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    catalog_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("filter_catalog.id", ondelete="SET NULL"),
+        nullable=False,
+        index=True,
+    )
     stage_position = Column(Integer, nullable=False)
     installation_date = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     installer = Column(String(128), nullable=True)
@@ -118,12 +139,21 @@ class InstalledFilterModel(Base):
     batch_identifier = Column(String(128), nullable=True)
     cumulative_volume_liters = Column(Float, nullable=False, default=0.0)
     operating_hours = Column(Float, nullable=False, default=0.0)
-    lifecycle_state = Column(Enum(FilterLifecycleState), nullable=False, default=FilterLifecycleState.AVAILABLE, index=True)
-    previous_installation_id = Column(UUID(as_uuid=True), ForeignKey("installed_filters.id"), nullable=True)
+    lifecycle_state = Column(
+        Enum(FilterLifecycleState),
+        nullable=False,
+        default=FilterLifecycleState.AVAILABLE,
+        index=True,
+    )
+    previous_installation_id = Column(
+        UUID(as_uuid=True), ForeignKey("installed_filters.id"), nullable=True
+    )
     removal_date = Column(DateTime(timezone=True), nullable=True)
     replacement_reason = Column(String(128), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     __table_args__ = (
         # Note: postgresql_where not supported in UniqueConstraint, using application-level check
@@ -135,11 +165,19 @@ class InstalledFilterModel(Base):
 
 class MaintenanceEventModel(Base):
     """Maintenance event record."""
+
     __tablename__ = "maintenance_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
-    filter_instance_id = Column(UUID(as_uuid=True), ForeignKey("installed_filters.id", ondelete="SET NULL"), nullable=True, index=True)
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    filter_instance_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("installed_filters.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     event_type = Column(Enum(MaintenanceEventType), nullable=False, index=True)
     timestamp = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     initiated_by = Column(String(128), nullable=True)
@@ -159,32 +197,50 @@ class MaintenanceEventModel(Base):
 
 class MaintenanceWorkflowModel(Base):
     """Maintenance workflow with state machine."""
+
     __tablename__ = "maintenance_workflows"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
-    maintenance_event_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_events.id", ondelete="CASCADE"), nullable=False, index=True)
-    state = Column(Enum(MaintenanceWorkflowState), nullable=False, default=MaintenanceWorkflowState.REQUESTED, index=True)
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    maintenance_event_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("maintenance_events.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    state = Column(
+        Enum(MaintenanceWorkflowState),
+        nullable=False,
+        default=MaintenanceWorkflowState.REQUESTED,
+        index=True,
+    )
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     failed_at = Column(DateTime(timezone=True), nullable=True)
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    __table_args__ = (
-        Index("ix_maintenance_workflows_device_state", "device_id", "state"),
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+    __table_args__ = (Index("ix_maintenance_workflows_device_state", "device_id", "state"),)
 
 
 class CalibrationRecordModel(Base):
     """Calibration record for sensors."""
+
     __tablename__ = "calibration_records"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     sensor_id = Column(String(64), nullable=False, index=True)
-    sensor_type = Column(String(32), nullable=False, index=True)  # tds, ph, turbidity, temperature, flow, pressure, level
+    sensor_type = Column(
+        String(32), nullable=False, index=True
+    )  # tds, ph, turbidity, temperature, flow, pressure, level
     calibration_date = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     calibration_method = Column(String(64), nullable=False)
     reference_standard = Column(String(128), nullable=False)
@@ -196,9 +252,13 @@ class CalibrationRecordModel(Base):
     technician = Column(String(128), nullable=True)
     notes = Column(Text, nullable=True)
     next_calibration_due = Column(DateTime(timezone=True), nullable=True)
-    calibration_state = Column(Enum(CalibrationState), nullable=False, default=CalibrationState.UNKNOWN, index=True)
+    calibration_state = Column(
+        Enum(CalibrationState), nullable=False, default=CalibrationState.UNKNOWN, index=True
+    )
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     __table_args__ = (
         Index("ix_calibration_records_device_type", "device_id", "sensor_type"),
@@ -208,10 +268,13 @@ class CalibrationRecordModel(Base):
 
 class CalibrationPolicyModel(Base):
     """Calibration due tracking policy per sensor."""
+
     __tablename__ = "calibration_policies"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     sensor_id = Column(String(64), nullable=False)
     sensor_type = Column(String(32), nullable=False)
     time_interval_days = Column(Integer, nullable=True)
@@ -219,21 +282,31 @@ class CalibrationPolicyModel(Base):
     usage_interval_volume_liters = Column(Float, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True, index=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    __table_args__ = (
-        Index("ix_calibration_policies_device_type", "device_id", "sensor_type"),
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+    __table_args__ = (Index("ix_calibration_policies_device_type", "device_id", "sensor_type"),)
 
 
 class VerificationRunModel(Base):
     """Post-maintenance verification run."""
+
     __tablename__ = "verification_runs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    maintenance_event_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_events.id", ondelete="CASCADE"), nullable=False, index=True)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
-    state = Column(Enum(VerificationState), nullable=False, default=VerificationState.PENDING, index=True)
+    maintenance_event_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("maintenance_events.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    state = Column(
+        Enum(VerificationState), nullable=False, default=VerificationState.PENDING, index=True
+    )
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     checks = Column(JSONB, nullable=False, default=list)  # List of VerificationCheck dicts
@@ -242,21 +315,26 @@ class VerificationRunModel(Base):
     baseline_before = Column(JSONB, nullable=True)
     baseline_after = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    __table_args__ = (
-        Index("ix_verification_runs_device_state", "device_id", "state"),
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+    __table_args__ = (Index("ix_verification_runs_device_state", "device_id", "state"),)
 
 
 class BaselineVersionModel(Base):
     """Baseline versioning for before/after maintenance comparison."""
+
     __tablename__ = "baseline_versions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     version = Column(Integer, nullable=False, default=1)
-    maintenance_event_id = Column(UUID(as_uuid=True), ForeignKey("maintenance_events.id", ondelete="SET NULL"), nullable=True)
+    maintenance_event_id = Column(
+        UUID(as_uuid=True), ForeignKey("maintenance_events.id", ondelete="SET NULL"), nullable=True
+    )
     is_active = Column(Boolean, nullable=False, default=True, index=True)
     metrics = Column(JSONB, nullable=False, default=dict)  # flow, pressure, delta_p, etc.
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
@@ -270,12 +348,19 @@ class BaselineVersionModel(Base):
 
 class MaintenanceRecommendationModel(Base):
     """Maintenance recommendations."""
+
     __tablename__ = "maintenance_recommendations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
-    filter_instance_id = Column(UUID(as_uuid=True), ForeignKey("installed_filters.id", ondelete="SET NULL"), nullable=True)
-    trigger = Column(String(32), nullable=False)  # time_based, usage_based, health_based, calibration_due
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    filter_instance_id = Column(
+        UUID(as_uuid=True), ForeignKey("installed_filters.id", ondelete="SET NULL"), nullable=True
+    )
+    trigger = Column(
+        String(32), nullable=False
+    )  # time_based, usage_based, health_based, calibration_due
     severity = Column(String(16), nullable=False, default="info")  # info, warning, critical
     evidence = Column(JSONB, nullable=False, default=dict)
     urgency_days = Column(Integer, nullable=True)

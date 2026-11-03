@@ -1,23 +1,24 @@
 """
 Notification Pydantic schemas for API requests/responses.
 """
-from datetime import datetime
-from enum import Enum
-from typing import Optional, List, Dict, Any
-from uuid import UUID
-from pydantic import BaseModel, Field, EmailStr, HttpUrl
 
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 # Re-export enums from models
 from app.models.notification import (
     NotificationChannel,
-    NotificationStatus,
     NotificationErrorCategory,
+    NotificationStatus,
 )
 
 
 class NotificationOutboxResponse(BaseModel):
     """Notification outbox response."""
+
     id: UUID
     alert_id: UUID
     device_id: UUID
@@ -45,6 +46,7 @@ class NotificationOutboxResponse(BaseModel):
 
 class NotificationStatsResponse(BaseModel):
     """Notification delivery statistics."""
+
     total_pending: int = 0
     total_processing: int = 0
     total_sent: int = 0
@@ -55,8 +57,10 @@ class NotificationStatsResponse(BaseModel):
 
 # Provider Configuration Schemas
 
+
 class NotificationProviderConfigBase(BaseModel):
     """Base schema for provider config."""
+
     device_id: UUID
     channel: NotificationChannel
     provider: str
@@ -69,11 +73,13 @@ class NotificationProviderConfigBase(BaseModel):
 
 class NotificationProviderConfigCreate(NotificationProviderConfigBase):
     """Create provider config request."""
+
     pass
 
 
 class NotificationProviderConfigUpdate(BaseModel):
     """Update provider config request."""
+
     provider: Optional[str] = None
     enabled: Optional[bool] = None
     config: Optional[Dict[str, Any]] = None
@@ -84,6 +90,7 @@ class NotificationProviderConfigUpdate(BaseModel):
 
 class NotificationProviderConfigResponse(NotificationProviderConfigBase):
     """Provider config response."""
+
     id: UUID
     created_at: datetime
     updated_at: datetime
@@ -94,8 +101,10 @@ class NotificationProviderConfigResponse(NotificationProviderConfigBase):
 
 # Template Schemas
 
+
 class NotificationTemplateCreate(BaseModel):
     """Create template request."""
+
     name: str = Field(..., min_length=1, max_length=64)
     channel: NotificationChannel
     subject_template: Optional[str] = Field(None, max_length=256)
@@ -106,6 +115,7 @@ class NotificationTemplateCreate(BaseModel):
 
 class NotificationTemplateResponse(BaseModel):
     """Template response."""
+
     id: UUID
     name: str
     channel: NotificationChannel
@@ -122,8 +132,10 @@ class NotificationTemplateResponse(BaseModel):
 
 # Test Schemas
 
+
 class NotificationTestRequest(BaseModel):
     """Test notification request."""
+
     device_id: Optional[UUID] = None
     channel: NotificationChannel
     provider: Optional[str] = None
@@ -134,6 +146,7 @@ class NotificationTestRequest(BaseModel):
 
 class NotificationTestResponse(BaseModel):
     """Test notification response."""
+
     success: bool
     channel: NotificationChannel
     recipient: str

@@ -36,13 +36,8 @@ export function useAcknowledgeAlert() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      alertId,
-      data,
-    }: {
-      alertId: string;
-      data: AlertAcknowledgeRequest;
-    }) => alertsApi.acknowledge(alertId, data),
+    mutationFn: ({ alertId, data }: { alertId: string; data: AlertAcknowledgeRequest }) =>
+      alertsApi.acknowledge(alertId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
     },
@@ -53,13 +48,8 @@ export function useResolveAlert() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      alertId,
-      data,
-    }: {
-      alertId: string;
-      data: AlertResolveRequest;
-    }) => alertsApi.resolve(alertId, data),
+    mutationFn: ({ alertId, data }: { alertId: string; data: AlertResolveRequest }) =>
+      alertsApi.resolve(alertId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
     },
@@ -70,13 +60,8 @@ export function useSnoozeAlert() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      alertId,
-      data,
-    }: {
-      alertId: string;
-      data: AlertSnoozeRequest;
-    }) => alertsApi.snooze(alertId, data),
+    mutationFn: ({ alertId, data }: { alertId: string; data: AlertSnoozeRequest }) =>
+      alertsApi.snooze(alertId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
     },

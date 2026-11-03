@@ -1,6 +1,7 @@
 """
 Tests for security infrastructure.
 """
+
 import pytest
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -92,7 +93,9 @@ class TestDeviceJWT:
 
         with pytest.raises(Exception) as exc_info:
             verify_device_token(expired_token)
-        assert "expired" in str(exc_info.value).lower() or "signature" in str(exc_info.value).lower()
+        assert (
+            "expired" in str(exc_info.value).lower() or "signature" in str(exc_info.value).lower()
+        )
 
     def test_verify_invalid_signature(self):
         """Test that tokens with wrong secret are rejected."""

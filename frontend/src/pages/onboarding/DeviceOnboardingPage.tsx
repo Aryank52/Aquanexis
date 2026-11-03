@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Circle, Loader2, ChevronRight, Wifi, Cpu, Sliders, CheckCircle2 } from 'lucide-react';
+import {
+  CheckCircle,
+  Circle,
+  Loader2,
+  ChevronRight,
+  Wifi,
+  Cpu,
+  Sliders,
+  CheckCircle2,
+} from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 const STEPS = [
@@ -11,7 +20,7 @@ const STEPS = [
   { id: 'complete', title: 'Complete', desc: 'Your device is ready' },
 ] as const;
 
-type StepId = typeof STEPS[number]['id'];
+type StepId = (typeof STEPS)[number]['id'];
 
 export function DeviceOnboardingPage() {
   const navigate = useNavigate();
@@ -26,7 +35,11 @@ export function DeviceOnboardingPage() {
     if (!serial.trim()) return;
     setVerifying(true);
     // Simulate verification — will be replaced by real polling
-    setTimeout(() => { setVerifying(false); setVerified(true); setCurrentStep('sensors'); }, 1500);
+    setTimeout(() => {
+      setVerifying(false);
+      setVerified(true);
+      setCurrentStep('sensors');
+    }, 1500);
   };
 
   const MOCK_SENSORS = [
@@ -42,28 +55,36 @@ export function DeviceOnboardingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-6">
+    <div className="flex min-h-screen items-center justify-center bg-base p-6">
       <div className="w-full max-w-lg animate-fade-in">
-        <div className="text-center mb-8">
-          <h1 className="text-h1 font-semibold text-text-primary">Device Onboarding</h1>
-          <p className="text-body-sm text-text-secondary mt-1">Set up your AquaNexis purification monitor</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-text-primary text-h1 font-semibold">Device Onboarding</h1>
+          <p className="mt-1 text-body-sm text-text-secondary">
+            Set up your AquaNexis purification monitor
+          </p>
         </div>
 
         {/* Progress */}
-        <div className="flex items-center mb-8">
+        <div className="mb-8 flex items-center">
           {STEPS.map((step, i) => {
             const done = i < stepIndex;
             const active = i === stepIndex;
             return (
-              <div key={step.id} className="flex items-center flex-1">
-                <div className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center text-caption font-semibold transition-colors',
-                  done ? 'bg-success text-white' : active ? 'bg-info text-white' : 'bg-surface border-2 border-subtle text-text-muted'
-                )}>
-                  {done ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+              <div key={step.id} className="flex flex-1 items-center">
+                <div
+                  className={cn(
+                    'flex h-8 w-8 items-center justify-center rounded-full text-caption font-semibold transition-colors',
+                    done
+                      ? 'bg-success text-white'
+                      : active
+                        ? 'bg-info text-white'
+                        : 'border-subtle border-2 bg-surface text-text-muted'
+                  )}
+                >
+                  {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className={cn('flex-1 h-0.5 mx-1', done ? 'bg-success' : 'bg-subtle')} />
+                  <div className={cn('mx-1 h-0.5 flex-1', done ? 'bg-success' : 'bg-subtle')} />
                 )}
               </div>
             );
@@ -71,14 +92,16 @@ export function DeviceOnboardingPage() {
         </div>
 
         {/* Step content */}
-        <div className="bg-surface border border-subtle rounded-card p-6 shadow-card">
-          <h2 className="text-h3 font-semibold text-text-primary mb-1">{STEPS[stepIndex].title}</h2>
-          <p className="text-body-sm text-text-secondary mb-5">{STEPS[stepIndex].desc}</p>
+        <div className="border-subtle rounded-card border bg-surface p-6 shadow-card">
+          <h2 className="text-text-primary mb-1 text-h3 font-semibold">{STEPS[stepIndex].title}</h2>
+          <p className="mb-5 text-body-sm text-text-secondary">{STEPS[stepIndex].desc}</p>
 
           {currentStep === 'connect' && (
             <div className="space-y-4">
               <div>
-                <label className="label" htmlFor="serial">Device Serial Number</label>
+                <label className="label" htmlFor="serial">
+                  Device Serial Number
+                </label>
                 <input
                   id="serial"
                   className="input font-mono"
@@ -93,22 +116,34 @@ export function DeviceOnboardingPage() {
                 onClick={() => setCurrentStep('verify')}
                 disabled={!serial.trim()}
               >
-                Continue <ChevronRight className="w-4 h-4" />
+                Continue <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           )}
 
           {currentStep === 'verify' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-info/5 border border-info/20 rounded-button">
-                <Wifi className="w-5 h-5 text-info flex-shrink-0" />
+              <div className="flex items-center gap-3 rounded-button border border-info/20 bg-info/5 p-4">
+                <Wifi className="h-5 w-5 flex-shrink-0 text-info" />
                 <div>
-                  <p className="text-body-sm font-medium text-text-primary">Serial: {serial}</p>
-                  <p className="text-caption text-text-secondary">Waiting for first telemetry ping…</p>
+                  <p className="text-text-primary text-body-sm font-medium">Serial: {serial}</p>
+                  <p className="text-caption text-text-secondary">
+                    Waiting for first telemetry ping…
+                  </p>
                 </div>
               </div>
-              <button className="btn btn-primary w-full" onClick={handleVerify} disabled={verifying}>
-                {verifying ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</> : 'Verify Connection'}
+              <button
+                className="btn btn-primary w-full"
+                onClick={handleVerify}
+                disabled={verifying}
+              >
+                {verifying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Verifying…
+                  </>
+                ) : (
+                  'Verify Connection'
+                )}
               </button>
             </div>
           )}
@@ -117,49 +152,57 @@ export function DeviceOnboardingPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 {MOCK_SENSORS.map(s => (
-                  <div key={s.name} className="flex items-center justify-between p-2.5 bg-base border border-subtle rounded-button">
+                  <div
+                    key={s.name}
+                    className="border-subtle flex items-center justify-between rounded-button border bg-base p-2.5"
+                  >
                     <div className="flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-text-muted" />
-                      <span className="text-body-sm text-text-primary">{s.name}</span>
+                      <Cpu className="h-4 w-4 text-text-muted" />
+                      <span className="text-text-primary text-body-sm">{s.name}</span>
                     </div>
                     <span className="inline-flex items-center gap-1 text-caption text-success">
-                      <CheckCircle className="w-3 h-3" /> Detected
+                      <CheckCircle className="h-3 w-3" /> Detected
                     </span>
                   </div>
                 ))}
               </div>
-              <button className="btn btn-primary w-full" onClick={() => setCurrentStep('thresholds')}>
-                Confirm Sensors <ChevronRight className="w-4 h-4" />
+              <button
+                className="btn btn-primary w-full"
+                onClick={() => setCurrentStep('thresholds')}
+              >
+                Confirm Sensors <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           )}
 
           {currentStep === 'thresholds' && (
             <div className="space-y-4">
-              <div className="p-3 bg-info/5 border border-info/20 rounded-button">
-                <div className="flex items-center gap-2 mb-1">
-                  <Sliders className="w-4 h-4 text-info" />
-                  <p className="text-body-sm font-medium text-text-primary">Default thresholds applied</p>
+              <div className="rounded-button border border-info/20 bg-info/5 p-3">
+                <div className="mb-1 flex items-center gap-2">
+                  <Sliders className="h-4 w-4 text-info" />
+                  <p className="text-text-primary text-body-sm font-medium">
+                    Default thresholds applied
+                  </p>
                 </div>
                 <p className="text-caption text-text-secondary">
-                  WHO/EPA guidelines: AquaScore warn &lt;70, FSI warn &gt;70, FHI critical &lt;20, RUL warn &lt;30 days.
-                  Customise these later in Device Settings.
+                  WHO/EPA guidelines: AquaScore warn &lt;70, FSI warn &gt;70, FHI critical &lt;20,
+                  RUL warn &lt;30 days. Customise these later in Device Settings.
                 </p>
               </div>
               <button className="btn btn-primary w-full" onClick={() => setCurrentStep('complete')}>
-                Apply Defaults &amp; Continue <ChevronRight className="w-4 h-4" />
+                Apply Defaults &amp; Continue <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           )}
 
           {currentStep === 'complete' && (
-            <div className="text-center space-y-5">
-              <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle className="w-9 h-9 text-success" />
+            <div className="space-y-5 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+                <CheckCircle className="h-9 w-9 text-success" />
               </div>
               <div>
-                <h3 className="text-h3 font-semibold text-text-primary">Device Ready</h3>
-                <p className="text-body-sm text-text-secondary mt-1">
+                <h3 className="text-text-primary text-h3 font-semibold">Device Ready</h3>
+                <p className="mt-1 text-body-sm text-text-secondary">
                   Your AquaNexis system is configured and monitoring.
                 </p>
               </div>
@@ -171,7 +214,7 @@ export function DeviceOnboardingPage() {
         </div>
 
         {/* Step label */}
-        <p className="text-caption text-text-muted text-center mt-4">
+        <p className="mt-4 text-center text-caption text-text-muted">
           Step {stepIndex + 1} of {STEPS.length} — {STEPS[stepIndex].title}
         </p>
       </div>

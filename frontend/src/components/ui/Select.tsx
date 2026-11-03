@@ -6,9 +6,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
     <select
       ref={ref}
       className={cn(
-        'flex h-9 w-full rounded-button border border-subtle bg-background px-3 py-1.5 text-body-sm',
-        'focus:outline-none focus:ring-2 focus:ring-info focus:border-transparent',
-        'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-surface',
+        'border-subtle bg-background flex h-9 w-full rounded-button border px-3 py-1.5 text-body-sm',
+        'focus:border-transparent focus:outline-none focus:ring-2 focus:ring-info',
+        'disabled:cursor-not-allowed disabled:bg-surface disabled:opacity-50',
         'transition-colors duration-150',
         className
       )}
@@ -29,5 +29,7 @@ export const SelectItem = ({ value, children }: { value: string; children: React
 
 export const SelectTrigger = Select;
 export const SelectValue = ({ placeholder }: { placeholder: string }) => (
-  <option value="" disabled>{placeholder}</option>
+  <option value="" disabled>
+    {placeholder}
+  </option>
 );

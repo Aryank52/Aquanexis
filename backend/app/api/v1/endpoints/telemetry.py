@@ -1,45 +1,61 @@
 """
 Telemetry ingestion and query endpoints.
 """
-from datetime import datetime, timedelta
-from typing import Optional, List
+
+from datetime import datetime, timezone
+from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy import select, func, desc, and_
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.database import get_db
-from app.infrastructure.security import get_device_claims, verify_api_key, rate_limit
-from app.infrastructure.logging import get_logger
-from app.infrastructure.websocket import ws_manager
-from app.domain.devices import Device, DeviceStatus, DeviceSensorConfig, SafetyConfig
+from app.domain.canonical_telemetry import (
+    CANONICAL_SENSOR_UNITS,
+    CanonicalTelemetryPayload,
+    device_security_manager,
+)
+from app.domain.devices import Device, DeviceSensorConfig, DeviceStatus, SafetyConfig
+from app.domain.quality import quality_validator
 from app.domain.readings import (
+    BatchTelemetryResult,
     SensorReading,
     TelemetryPayload,
-    BatchTelemetryPayload,
-    BatchTelemetryResult,
 )
-from app.domain.quality import QualityValidator, quality_validator
-from app.domain.water_quality import compute_aquascore, compute_trends, detect_anomalies
-from app.domain.alerts import Alert, ALERT_TRANSITIONS, ALERT_CODES, AlertSeverity, AlertStatus
-from app.schemas.telemetry import (
-    TelemetryPayload as TelemetryPayloadSchema,
-    BatchTelemetryPayload as BatchTelemetryPayloadSchema,
-    TelemetryIngestResponse,
-    BatchTelemetryResult,
-    SensorReadingResponse,
-    TelemetryHistoryQuery,
-    TelemetryHistoryResponse,
-    DeviceStatusResponse,
-    DeviceCreate,
-    DeviceUpdate,
-    DeviceResponse,
-    QualityFlags,
+from app.infrastructure.database import get_db
+from app.infrastructure.logging import get_logger
+from app.infrastructure.security import (
+    create_device_token,
+    get_device_claims,
+    rate_limit,
+    verify_api_key,
 )
+from app.infrastructure.websocket import ws_manager
+from app.models.alert import Alert as AlertModel
+from app.models.alert import AlertSeverity as AlertSeverityModel
+from app.models.alert import AlertStatus as AlertStatusModel
 from app.models.device import Device as DeviceModel
 from app.models.reading import SensorReading as SensorReadingModel
-from app.models.alert import Alert as AlertModel, AlertSeverity as AlertSeverityModel, AlertStatus as AlertStatusModel
+from app.schemas.telemetry import (
+    BatchTelemetryPayload as BatchTelemetryPayloadSchema,
+)
+from app.schemas.telemetry import (
+    BatchTelemetryResult,
+    DeviceCreate,
+    DeviceProvisionRequest,
+    DeviceProvisionResponse,
+    DeviceResponse,
+    DeviceStatusResponse,
+    DeviceUpdate,
+    QualityFlags,
+    SensorReadingInput,
+    SensorReadingResponse,
+    TelemetryHistoryResponse,
+    TelemetryIngestResponse,
+)
+from app.schemas.telemetry import (
+    TelemetryPayload as TelemetryPayloadSchema,
+)
 from app.services.alert_state_machine import AlertStateMachine, TransitionResult
 
 logger = get_logger(__name__)
@@ -52,11 +68,10 @@ _latest_readings_cache: dict[UUID, SensorReadingModel] = {}
 
 # ===== Device Endpoints =====
 
+
 @router.post("/devices", response_model=DeviceResponse, status_code=status.HTTP_201_CREATED)
 async def create_device(
-    device_data: DeviceCreate,
-    db: AsyncSession = Depends(get_db),
-    _: bool = Depends(verify_api_key)
+    device_data: DeviceCreate, db: AsyncSession = Depends(get_db), _: bool = Depends(verify_api_key)
 ):
     """Register a new device (admin only)."""
     existing = await db.execute(
@@ -65,12 +80,12 @@ async def create_device(
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Device with serial number {device_data.serial_number} already exists"
+            detail=f"Device with serial number {device_data.serial_number} already exists",
         )
-    
+
     sensor_config = device_data.sensor_config.model_dump()
     safety_config = device_data.safety_config.model_dump()
-    
+
     device = DeviceModel(
         serial_number=device_data.serial_number,
         display_name=device_data.display_name,
@@ -82,13 +97,64 @@ async def create_device(
         capabilities=device_data.capabilities,
         status=DeviceStatus.OFFLINE.value,
     )
-    
+
     db.add(device)
     await db.commit()
     await db.refresh(device)
-    
+
     logger.info("device_created", device_id=str(device.id), serial=device.serial_number)
     return device
+
+
+@router.post(
+    "/devices/provision", response_model=DeviceProvisionResponse, status_code=status.HTTP_200_OK
+)
+async def provision_device(
+    req: DeviceProvisionRequest,
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(verify_api_key),
+):
+    """
+    Provision or onboard an edge hardware device (e.g., ESP32).
+    Generates a secure device JWT token and registers the device if not already present.
+    """
+    stmt = select(DeviceModel).where(DeviceModel.serial_number == req.serial_number)
+    res = await db.execute(stmt)
+    device = res.scalar_one_or_none()
+
+    if not device:
+        device = DeviceModel(
+            serial_number=req.serial_number,
+            display_name=req.display_name or f"Edge Purifier {req.serial_number}",
+            model=req.model,
+            firmware_version=req.firmware_version,
+            sensor_config=DeviceSensorConfig().model_dump(),
+            safety_config=SafetyConfig().model_dump(),
+            calibration={},
+            capabilities={"hardware": True, "esp32": True, "measured_provenance": True},
+            status=DeviceStatus.ACTIVE.value,
+        )
+        db.add(device)
+        await db.commit()
+        await db.refresh(device)
+    else:
+        if req.firmware_version and device.firmware_version != req.firmware_version:
+            device.firmware_version = req.firmware_version
+            await db.commit()
+            await db.refresh(device)
+
+    # Initialize sequence tracking
+    device_security_manager.register_device_sequence(device.id, initial_sequence=0)
+
+    token = create_device_token(device.id)
+    return DeviceProvisionResponse(
+        device_id=device.id,
+        serial_number=device.serial_number,
+        token=token,
+        token_type="Bearer",
+        expires_in_days=365,
+        server_time=datetime.now(timezone.utc),
+    )
 
 
 @router.get("/devices", response_model=List[DeviceResponse])
@@ -97,14 +163,14 @@ async def list_devices(
     offset: int = 0,
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    _: bool = Depends(verify_api_key)
+    _: bool = Depends(verify_api_key),
 ):
     """List all devices (admin only)."""
     query = select(DeviceModel).offset(offset).limit(limit)
     if status:
         query = query.where(DeviceModel.status == status)
     query = query.order_by(DeviceModel.created_at.desc())
-    
+
     result = await db.execute(query)
     devices = result.scalars().all()
     return devices
@@ -112,9 +178,7 @@ async def list_devices(
 
 @router.get("/devices/{device_id}", response_model=DeviceResponse)
 async def get_device(
-    device_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    _: bool = Depends(verify_api_key)
+    device_id: UUID, db: AsyncSession = Depends(get_db), _: bool = Depends(verify_api_key)
 ):
     """Get device details (admin only)."""
     device = await db.get(DeviceModel, device_id)
@@ -128,41 +192,39 @@ async def update_device(
     device_id: UUID,
     device_update: DeviceUpdate,
     db: AsyncSession = Depends(get_db),
-    _: bool = Depends(verify_api_key)
+    _: bool = Depends(verify_api_key),
 ):
     """Update device configuration (admin only)."""
     device = await db.get(DeviceModel, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    
+
     update_data = device_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         if field in ("sensor_config", "safety_config") and value is not None:
             setattr(device, field, value.model_dump())
         else:
             setattr(device, field, value)
-    
+
     device.updated_at = datetime.utcnow()
     await db.commit()
     await db.refresh(device)
-    
+
     logger.info("device_updated", device_id=str(device_id))
     return device
 
 
 # ===== Alert Evaluation =====
 
+
 async def evaluate_alerts(
-    device: DeviceModel,
-    reading: SensorReadingModel,
-    quality_flags: dict,
-    db: AsyncSession
+    device: DeviceModel, reading: SensorReadingModel, quality_flags: dict, db: AsyncSession
 ) -> List[AlertModel]:
     """Evaluate alert rules for a new reading and create alerts if needed."""
     new_alerts = []
-    
+
     safety_config = device.safety_config or {}
-    
+
     # Check leak
     if reading.leak_detected:
         existing = await db.execute(
@@ -170,7 +232,14 @@ async def evaluate_alerts(
                 and_(
                     AlertModel.device_id == device.id,
                     AlertModel.alert_code == "leak_detected",
-                    AlertModel.status.in_([AlertStatusModel.DETECTED, AlertStatusModel.OPEN, AlertStatusModel.ACKNOWLEDGED, AlertStatusModel.SNOOZED])
+                    AlertModel.status.in_(
+                        [
+                            AlertStatusModel.DETECTED,
+                            AlertStatusModel.OPEN,
+                            AlertStatusModel.ACKNOWLEDGED,
+                            AlertStatusModel.SNOOZED,
+                        ]
+                    ),
                 )
             )
         )
@@ -190,7 +259,7 @@ async def evaluate_alerts(
             )
             db.add(alert)
             new_alerts.append(alert)
-    
+
     # Check pressure thresholds
     pressure_max = safety_config.get("pressure_max_kpa", 600.0)
     if reading.pressure and reading.pressure > pressure_max:
@@ -199,7 +268,14 @@ async def evaluate_alerts(
                 and_(
                     AlertModel.device_id == device.id,
                     AlertModel.alert_code == "pressure_high",
-                    AlertModel.status.in_([AlertStatusModel.DETECTED, AlertStatusModel.OPEN, AlertStatusModel.ACKNOWLEDGED, AlertStatusModel.SNOOZED])
+                    AlertModel.status.in_(
+                        [
+                            AlertStatusModel.DETECTED,
+                            AlertStatusModel.OPEN,
+                            AlertStatusModel.ACKNOWLEDGED,
+                            AlertStatusModel.SNOOZED,
+                        ]
+                    ),
                 )
             )
         )
@@ -219,7 +295,7 @@ async def evaluate_alerts(
             )
             db.add(alert)
             new_alerts.append(alert)
-    
+
     # Check low pressure
     if reading.pressure and reading.pressure < 50:
         existing = await db.execute(
@@ -227,7 +303,14 @@ async def evaluate_alerts(
                 and_(
                     AlertModel.device_id == device.id,
                     AlertModel.alert_code == "pressure_low",
-                    AlertModel.status.in_([AlertStatusModel.DETECTED, AlertStatusModel.OPEN, AlertStatusModel.ACKNOWLEDGED, AlertStatusModel.SNOOZED])
+                    AlertModel.status.in_(
+                        [
+                            AlertStatusModel.DETECTED,
+                            AlertStatusModel.OPEN,
+                            AlertStatusModel.ACKNOWLEDGED,
+                            AlertStatusModel.SNOOZED,
+                        ]
+                    ),
                 )
             )
         )
@@ -247,7 +330,7 @@ async def evaluate_alerts(
             )
             db.add(alert)
             new_alerts.append(alert)
-    
+
     # Check flow
     flow_min = safety_config.get("flow_min_lpm", 0.1)
     if reading.flow is not None and reading.flow < flow_min:
@@ -256,7 +339,14 @@ async def evaluate_alerts(
                 and_(
                     AlertModel.device_id == device.id,
                     AlertModel.alert_code == "flow_low",
-                    AlertModel.status.in_([AlertStatusModel.DETECTED, AlertStatusModel.OPEN, AlertStatusModel.ACKNOWLEDGED, AlertStatusModel.SNOOZED])
+                    AlertModel.status.in_(
+                        [
+                            AlertStatusModel.DETECTED,
+                            AlertStatusModel.OPEN,
+                            AlertStatusModel.ACKNOWLEDGED,
+                            AlertStatusModel.SNOOZED,
+                        ]
+                    ),
                 )
             )
         )
@@ -276,7 +366,7 @@ async def evaluate_alerts(
             )
             db.add(alert)
             new_alerts.append(alert)
-    
+
     # Check pump current
     pump_max = safety_config.get("pump_current_max_a", 2.5)
     if reading.pump_current and reading.pump_current > pump_max:
@@ -285,7 +375,14 @@ async def evaluate_alerts(
                 and_(
                     AlertModel.device_id == device.id,
                     AlertModel.alert_code == "pump_overcurrent",
-                    AlertModel.status.in_([AlertStatusModel.DETECTED, AlertStatusModel.OPEN, AlertStatusModel.ACKNOWLEDGED, AlertStatusModel.SNOOZED])
+                    AlertModel.status.in_(
+                        [
+                            AlertStatusModel.DETECTED,
+                            AlertStatusModel.OPEN,
+                            AlertStatusModel.ACKNOWLEDGED,
+                            AlertStatusModel.SNOOZED,
+                        ]
+                    ),
                 )
             )
         )
@@ -305,7 +402,7 @@ async def evaluate_alerts(
             )
             db.add(alert)
             new_alerts.append(alert)
-    
+
     # Check water quality (TDS)
     if reading.tds and reading.tds > 500:
         existing = await db.execute(
@@ -313,7 +410,14 @@ async def evaluate_alerts(
                 and_(
                     AlertModel.device_id == device.id,
                     AlertModel.alert_code == "water_quality_degraded",
-                    AlertModel.status.in_([AlertStatusModel.DETECTED, AlertStatusModel.OPEN, AlertStatusModel.ACKNOWLEDGED, AlertStatusModel.SNOOZED])
+                    AlertModel.status.in_(
+                        [
+                            AlertStatusModel.DETECTED,
+                            AlertStatusModel.OPEN,
+                            AlertStatusModel.ACKNOWLEDGED,
+                            AlertStatusModel.SNOOZED,
+                        ]
+                    ),
                 )
             )
         )
@@ -333,7 +437,7 @@ async def evaluate_alerts(
             )
             db.add(alert)
             new_alerts.append(alert)
-    
+
     # Check tank level
     if reading.tank_level is not None and reading.tank_level < 10:
         existing = await db.execute(
@@ -341,7 +445,14 @@ async def evaluate_alerts(
                 and_(
                     AlertModel.device_id == device.id,
                     AlertModel.alert_code == "tank_level_low",
-                    AlertModel.status.in_([AlertStatusModel.DETECTED, AlertStatusModel.OPEN, AlertStatusModel.ACKNOWLEDGED, AlertStatusModel.SNOOZED])
+                    AlertModel.status.in_(
+                        [
+                            AlertStatusModel.DETECTED,
+                            AlertStatusModel.OPEN,
+                            AlertStatusModel.ACKNOWLEDGED,
+                            AlertStatusModel.SNOOZED,
+                        ]
+                    ),
                 )
             )
         )
@@ -361,16 +472,16 @@ async def evaluate_alerts(
             )
             db.add(alert)
             new_alerts.append(alert)
-    
+
     if new_alerts:
         await db.commit()
         for alert in new_alerts:
             await db.refresh(alert)
-    
+
     # ===== Auto-clear self-resolving alerts =====
     # Create AlertStateMachine instance for auto-clear checks
     state_machine = AlertStateMachine(db)
-    
+
     # Track which alert conditions are currently met
     conditions_met = {
         "water_quality_degraded": reading.tds and reading.tds > 500,
@@ -381,7 +492,7 @@ async def evaluate_alerts(
         "tank_level_low": reading.tank_level is not None and reading.tank_level < 10,
         "leak_detected": reading.leak_detected,
     }
-    
+
     # Check and auto-clear alerts for each condition
     for alert_code, condition_met in conditions_met.items():
         # Only auto-clear if condition is NOT met (resolved)
@@ -402,14 +513,18 @@ async def evaluate_alerts(
                     # Broadcast auto-cleared alerts via WebSocket
                     for outcome in cleared:
                         if outcome.result == TransitionResult.SUCCESS and outcome.alert:
-                            await ws_manager.broadcast_alert(str(device.id), {
-                                "id": str(outcome.alert.id),
-                                "alert_code": outcome.alert.alert_code,
-                                "severity": outcome.alert.severity.value,
-                                "status": outcome.alert.status.value,
-                                "title": outcome.alert.title,
-                                "message": outcome.alert.message,
-                            }, "alert.auto_cleared")
+                            await ws_manager.broadcast_alert(
+                                str(device.id),
+                                {
+                                    "id": str(outcome.alert.id),
+                                    "alert_code": outcome.alert.alert_code,
+                                    "severity": outcome.alert.severity.value,
+                                    "status": outcome.alert.status.value,
+                                    "title": outcome.alert.title,
+                                    "message": outcome.alert.message,
+                                },
+                                "alert.auto_cleared",
+                            )
             except Exception as e:
                 logger.error(
                     "auto_clear_failed",
@@ -417,19 +532,20 @@ async def evaluate_alerts(
                     alert_code=alert_code,
                     error=str(e),
                 )
-    
+
     return new_alerts
 
 
 # ===== Telemetry Ingestion =====
+
 
 @router.post("", response_model=TelemetryIngestResponse)
 async def ingest_telemetry(
     payload: TelemetryPayloadSchema,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    device_claims = Depends(get_device_claims),
-    _: None = Depends(rate_limit)
+    device_claims=Depends(get_device_claims),
+    _: None = Depends(rate_limit),
 ):
     """
     Ingest single telemetry reading from device.
@@ -437,24 +553,22 @@ async def ingest_telemetry(
     """
     # Verify device owns the payload
     if device_claims.device_id != payload.device_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Device ID mismatch"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device ID mismatch")
+
     device = await db.get(DeviceModel, payload.device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    
+
     # Check for duplicate sequence
     if payload.sequence is not None:
         if quality_validator.check_duplicate_sequence(payload.device_id, payload.sequence):
-            logger.warning("duplicate_sequence", device_id=str(payload.device_id), sequence=payload.sequence)
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Duplicate sequence number"
+            logger.warning(
+                "duplicate_sequence", device_id=str(payload.device_id), sequence=payload.sequence
             )
-    
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="Duplicate sequence number"
+            )
+
     # Validate readings
     domain_payload = TelemetryPayload(
         device_id=payload.device_id,
@@ -463,7 +577,7 @@ async def ingest_telemetry(
         firmware_version=payload.firmware_version,
         readings=payload.readings,
     )
-    
+
     # Get previous reading for rate validation
     prev_reading = _latest_readings_cache.get(payload.device_id)
     prev_domain = None
@@ -488,7 +602,7 @@ async def ingest_telemetry(
             pump_power=prev_reading.pump_power,
             uv_state=prev_reading.uv_state,
         )
-    
+
     # Convert device model to domain for validation
     domain_device = Device(
         id=device.id,
@@ -496,18 +610,22 @@ async def ingest_telemetry(
         display_name=device.display_name,
         model=device.model,
         firmware_version=device.firmware_version,
-        sensor_config=DeviceSensorConfig(**device.sensor_config) if device.sensor_config else DeviceSensorConfig(),
-        safety_config=SafetyConfig(**device.safety_config) if device.safety_config else SafetyConfig(),
+        sensor_config=DeviceSensorConfig(**device.sensor_config)
+        if device.sensor_config
+        else DeviceSensorConfig(),
+        safety_config=SafetyConfig(**device.safety_config)
+        if device.safety_config
+        else SafetyConfig(),
         calibration=device.calibration or {},
         capabilities=device.capabilities or {},
         status=DeviceStatus(device.status),
         last_seen_at=device.last_seen,
     )
-    
+
     # Validate
     quality_flags = quality_validator.validate(domain_device, domain_payload, prev_domain)
     overall_quality = quality_flags.overall()
-    
+
     # Create reading model
     reading = SensorReadingModel(
         device_id=payload.device_id,
@@ -531,83 +649,306 @@ async def ingest_telemetry(
         vibration=None,
         quality_flags=quality_flags.to_dict(),
         overall_quality=overall_quality,
+        provenance=payload.provenance or "MEASURED",
+        firmware_version=payload.firmware_version or device.firmware_version,
+        calibration_state=payload.calibration_state or device.calibration or {},
+        units=payload.units or CANONICAL_SENSOR_UNITS,
+        device_state=payload.device_state or device.status.upper(),
     )
-    
+
     db.add(reading)
     await db.commit()
     await db.refresh(reading)
-    
+
     # Update cache
     _latest_readings_cache[payload.device_id] = reading
-    
+
     # Update device last_seen and status
     device.last_seen = payload.timestamp
     device.status = DeviceStatus.ACTIVE.value
     await db.commit()
-    
+
     # Update validator cache
-    quality_validator.update_last_reading(SensorReading(
-        id=reading.id,
-        device_id=reading.device_id,
-        timestamp=reading.timestamp,
-        ingestion_timestamp=reading.received_at,
-        sequence=reading.sequence,
-        tds=reading.tds,
-        conductivity=reading.ec,
-        ph=reading.ph,
-        turbidity=reading.turbidity,
-        temperature=reading.temperature,
-        flow_rate=reading.flow,
-        inlet_pressure=reading.pressure,
-        outlet_pressure=reading.outlet_pressure,
-        tank_level=reading.tank_level,
-        leak=reading.leak_detected,
-        pump_current=reading.pump_current,
-        pump_power=reading.pump_power,
-        uv_state=reading.uv_state,
-        quality_flags=quality_flags,
-        overall_quality=overall_quality,
-    ))
-    
+    quality_validator.update_last_reading(
+        SensorReading(
+            id=reading.id,
+            device_id=reading.device_id,
+            timestamp=reading.timestamp,
+            ingestion_timestamp=reading.received_at,
+            sequence=reading.sequence,
+            tds=reading.tds,
+            conductivity=reading.ec,
+            ph=reading.ph,
+            turbidity=reading.turbidity,
+            temperature=reading.temperature,
+            flow_rate=reading.flow,
+            inlet_pressure=reading.pressure,
+            outlet_pressure=reading.outlet_pressure,
+            tank_level=reading.tank_level,
+            leak=reading.leak_detected,
+            pump_current=reading.pump_current,
+            pump_power=reading.pump_power,
+            uv_state=reading.uv_state,
+            quality_flags=quality_flags,
+            overall_quality=overall_quality,
+        )
+    )
+
     # Evaluate alerts
     new_alerts = await evaluate_alerts(device, reading, quality_flags.to_dict(), db)
-    
+
     # Broadcast telemetry update via WebSocket
     if new_alerts:
         for alert in new_alerts:
-            await ws_manager.broadcast_alert(payload.device_id, {
-                "id": str(alert.id),
-                "alert_code": alert.alert_code,
-                "severity": alert.severity.value,
-                "status": alert.status.value,
-                "title": alert.title,
-                "message": alert.message,
-            }, "alert.created")
-    
-    await ws_manager.broadcast_telemetry(payload.device_id, {
-        "timestamp": payload.timestamp.isoformat(),
-        "readings": payload.readings.model_dump(exclude_none=True),
-        "quality": quality_flags.to_dict(),
-        "overall_quality": overall_quality,
-    })
-    
+            await ws_manager.broadcast_alert(
+                payload.device_id,
+                {
+                    "id": str(alert.id),
+                    "alert_code": alert.alert_code,
+                    "severity": alert.severity.value,
+                    "status": alert.status.value,
+                    "title": alert.title,
+                    "message": alert.message,
+                },
+                "alert.created",
+            )
+
+    await ws_manager.broadcast_telemetry(
+        payload.device_id,
+        {
+            "timestamp": payload.timestamp.isoformat(),
+            "readings": payload.readings.model_dump(exclude_none=True),
+            "quality": quality_flags.to_dict(),
+            "overall_quality": overall_quality,
+            "provenance": payload.provenance or "MEASURED",
+        },
+    )
+
     # Background derivation
     background_tasks.add_task(derive_and_persist, payload.device_id, reading.id)
-    
+
     logger.info(
         "telemetry_ingested",
         device_id=str(payload.device_id),
         reading_id=reading.id,
         quality=overall_quality,
         sequence=payload.sequence,
-        alerts_generated=len(new_alerts)
+        alerts_generated=len(new_alerts),
     )
-    
+
     return TelemetryIngestResponse(
         accepted=True,
         reading_id=reading.id,
         quality=quality_flags,
-        derived={"status": "processing"}
+        derived={"status": "processing"},
+    )
+
+
+@router.post("/canonical", response_model=TelemetryIngestResponse)
+async def ingest_canonical_telemetry(
+    payload: CanonicalTelemetryPayload,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    device_claims=Depends(get_device_claims),
+    _: None = Depends(rate_limit),
+):
+    """
+    Ingest canonical telemetry wire payload from physical hardware (ESP32) or simulator.
+    Enforces replay protection, clock-skew checks, device authorization, and provenance labelling.
+    """
+    # Security validation
+    is_valid, reason, err_code = device_security_manager.validate_packet(
+        payload=payload,
+        authenticated_device_id=device_claims.device_id,
+        is_buffered_batch=False,
+    )
+    if not is_valid:
+        raise HTTPException(
+            status_code=err_code or status.HTTP_400_BAD_REQUEST,
+            detail=reason,
+        )
+
+    device = await db.get(DeviceModel, payload.device_id)
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    vals = payload.sensor_values
+    input_reading = SensorReadingInput(
+        tds=float(vals["tds"]) if vals.get("tds") is not None else None,
+        conductivity=float(vals["conductivity"])
+        if vals.get("conductivity") is not None
+        else (float(vals["ec"]) if vals.get("ec") is not None else None),
+        ph=float(vals["ph"]) if vals.get("ph") is not None else None,
+        turbidity=float(vals["turbidity"]) if vals.get("turbidity") is not None else None,
+        temperature=float(vals["temperature"]) if vals.get("temperature") is not None else None,
+        flow_rate=float(vals["flow_rate"])
+        if vals.get("flow_rate") is not None
+        else (float(vals["flow"]) if vals.get("flow") is not None else None),
+        inlet_pressure=float(vals["inlet_pressure"])
+        if vals.get("inlet_pressure") is not None
+        else (float(vals["pressure"]) if vals.get("pressure") is not None else None),
+        outlet_pressure=float(vals["outlet_pressure"])
+        if vals.get("outlet_pressure") is not None
+        else None,
+        tank_level=float(vals["tank_level"]) if vals.get("tank_level") is not None else None,
+        leak=bool(vals["leak"]) if vals.get("leak") is not None else None,
+        pump_current=float(vals["pump_current"]) if vals.get("pump_current") is not None else None,
+        pump_power=float(vals["pump_power"]) if vals.get("pump_power") is not None else None,
+        uv_state=bool(vals["uv_state"]) if vals.get("uv_state") is not None else None,
+    )
+
+    domain_payload = TelemetryPayload(
+        device_id=payload.device_id,
+        timestamp=payload.timestamp,
+        sequence=payload.sequence_number,
+        firmware_version=payload.firmware_version,
+        readings=input_reading,
+    )
+
+    domain_device = Device(
+        id=device.id,
+        serial_number=device.serial_number,
+        display_name=device.display_name,
+        model=device.model,
+        firmware_version=device.firmware_version,
+        sensor_config=DeviceSensorConfig(**device.sensor_config)
+        if device.sensor_config
+        else DeviceSensorConfig(),
+        safety_config=SafetyConfig(**device.safety_config)
+        if device.safety_config
+        else SafetyConfig(),
+        calibration=device.calibration or {},
+        capabilities=device.capabilities or {},
+        status=DeviceStatus(device.status),
+        last_seen_at=device.last_seen,
+    )
+
+    prev_reading = _latest_readings_cache.get(payload.device_id)
+    prev_domain = None
+    if prev_reading:
+        prev_domain = SensorReading(
+            id=prev_reading.id,
+            device_id=prev_reading.device_id,
+            timestamp=prev_reading.timestamp,
+            ingestion_timestamp=prev_reading.received_at,
+            sequence=prev_reading.sequence,
+            tds=prev_reading.tds,
+            conductivity=prev_reading.ec,
+            ph=prev_reading.ph,
+            turbidity=prev_reading.turbidity,
+            temperature=prev_reading.temperature,
+            flow_rate=prev_reading.flow,
+            inlet_pressure=prev_reading.pressure,
+            outlet_pressure=prev_reading.outlet_pressure,
+            tank_level=prev_reading.tank_level,
+            leak=prev_reading.leak_detected,
+            pump_current=prev_reading.pump_current,
+            pump_power=prev_reading.pump_power,
+            uv_state=prev_reading.uv_state,
+        )
+
+    quality_flags = quality_validator.validate(domain_device, domain_payload, prev_domain)
+    overall_quality = quality_flags.overall()
+
+    reading = SensorReadingModel(
+        device_id=payload.device_id,
+        timestamp=payload.timestamp,
+        sequence=payload.sequence_number,
+        tds=input_reading.tds,
+        ec=input_reading.conductivity,
+        ph=input_reading.ph,
+        turbidity=input_reading.turbidity,
+        temperature=input_reading.temperature,
+        flow=input_reading.flow_rate,
+        pressure=input_reading.inlet_pressure,
+        outlet_pressure=input_reading.outlet_pressure,
+        tank_level=input_reading.tank_level,
+        leak_detected=input_reading.leak,
+        pump_current=input_reading.pump_current,
+        pump_power=input_reading.pump_power,
+        permeate_flow=float(vals["permeate_flow"])
+        if vals.get("permeate_flow") is not None
+        else None,
+        reject_flow=float(vals["reject_flow"]) if vals.get("reject_flow") is not None else None,
+        uv_state=input_reading.uv_state,
+        vibration=float(vals["vibration"]) if vals.get("vibration") is not None else None,
+        quality_flags=quality_flags.to_dict(),
+        overall_quality=overall_quality,
+        provenance=payload.provenance,
+        firmware_version=payload.firmware_version,
+        calibration_state=payload.calibration_state or {},
+        units=payload.units or CANONICAL_SENSOR_UNITS,
+        device_state=payload.device_state,
+    )
+
+    db.add(reading)
+    await db.commit()
+    await db.refresh(reading)
+
+    _latest_readings_cache[payload.device_id] = reading
+    device.last_seen = payload.timestamp
+    device.status = DeviceStatus.ACTIVE.value
+    await db.commit()
+
+    quality_validator.update_last_reading(
+        SensorReading(
+            id=reading.id,
+            device_id=reading.device_id,
+            timestamp=reading.timestamp,
+            ingestion_timestamp=reading.received_at,
+            sequence=reading.sequence,
+            tds=reading.tds,
+            conductivity=reading.ec,
+            ph=reading.ph,
+            turbidity=reading.turbidity,
+            temperature=reading.temperature,
+            flow_rate=reading.flow,
+            inlet_pressure=reading.pressure,
+            outlet_pressure=reading.outlet_pressure,
+            tank_level=reading.tank_level,
+            leak=reading.leak_detected,
+            pump_current=reading.pump_current,
+            pump_power=reading.pump_power,
+            uv_state=reading.uv_state,
+            quality_flags=quality_flags,
+            overall_quality=overall_quality,
+        )
+    )
+
+    new_alerts = await evaluate_alerts(device, reading, quality_flags.to_dict(), db)
+    if new_alerts:
+        for alert in new_alerts:
+            await ws_manager.broadcast_alert(
+                payload.device_id,
+                {
+                    "id": str(alert.id),
+                    "alert_code": alert.alert_code,
+                    "severity": alert.severity.value,
+                    "status": alert.status.value,
+                    "title": alert.title,
+                    "message": alert.message,
+                },
+                "alert.created",
+            )
+
+    await ws_manager.broadcast_telemetry(
+        payload.device_id,
+        {
+            "timestamp": payload.timestamp.isoformat(),
+            "readings": input_reading.model_dump(exclude_none=True),
+            "quality": quality_flags.to_dict(),
+            "overall_quality": overall_quality,
+            "provenance": payload.provenance,
+        },
+    )
+
+    background_tasks.add_task(derive_and_persist, payload.device_id, reading.id)
+
+    return TelemetryIngestResponse(
+        accepted=True,
+        reading_id=reading.id,
+        quality=quality_flags,
+        derived={"status": "processing"},
     )
 
 
@@ -616,23 +957,20 @@ async def ingest_telemetry_batch(
     payload: BatchTelemetryPayloadSchema,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    device_claims = Depends(get_device_claims),
-    _: None = Depends(rate_limit)
+    device_claims=Depends(get_device_claims),
+    _: None = Depends(rate_limit),
 ):
     """
     Ingest batch telemetry readings from device.
     Useful for devices with intermittent connectivity.
     """
     if device_claims.device_id != payload.device_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Device ID mismatch"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Device ID mismatch")
+
     device = await db.get(DeviceModel, payload.device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    
+
     result = BatchTelemetryResult()
     domain_device = Device(
         id=device.id,
@@ -640,14 +978,18 @@ async def ingest_telemetry_batch(
         display_name=device.display_name,
         model=device.model,
         firmware_version=device.firmware_version,
-        sensor_config=DeviceSensorConfig(**device.sensor_config) if device.sensor_config else DeviceSensorConfig(),
-        safety_config=SafetyConfig(**device.safety_config) if device.safety_config else SafetyConfig(),
+        sensor_config=DeviceSensorConfig(**device.sensor_config)
+        if device.sensor_config
+        else DeviceSensorConfig(),
+        safety_config=SafetyConfig(**device.safety_config)
+        if device.safety_config
+        else SafetyConfig(),
         calibration=device.calibration or {},
         capabilities=device.capabilities or {},
         status=DeviceStatus(device.status),
         last_seen_at=device.last_seen,
     )
-    
+
     # Get last reading for rate validation
     prev_domain = None
     prev_reading = _latest_readings_cache.get(payload.device_id)
@@ -672,7 +1014,7 @@ async def ingest_telemetry_batch(
             pump_power=prev_reading.pump_power,
             uv_state=prev_reading.uv_state,
         )
-    
+
     for item in payload.readings:
         try:
             # Check duplicate
@@ -681,7 +1023,7 @@ async def ingest_telemetry_batch(
                     result.duplicates += 1
                     result.errors.append({"sequence": item.sequence, "error": "duplicate"})
                     continue
-            
+
             # Validate
             domain_payload = TelemetryPayload(
                 device_id=item.device_id,
@@ -690,10 +1032,10 @@ async def ingest_telemetry_batch(
                 firmware_version=item.firmware_version,
                 readings=item.readings,
             )
-            
+
             quality_flags = quality_validator.validate(domain_device, domain_payload, prev_domain)
             overall_quality = quality_flags.overall()
-            
+
             # Create reading
             reading = SensorReadingModel(
                 device_id=item.device_id,
@@ -717,8 +1059,15 @@ async def ingest_telemetry_batch(
                 vibration=None,
                 quality_flags=quality_flags.to_dict(),
                 overall_quality=overall_quality,
+                provenance=item.provenance or "MEASURED",
+                firmware_version=item.firmware_version
+                or payload.firmware_version
+                or device.firmware_version,
+                calibration_state=item.calibration_state or device.calibration or {},
+                units=item.units or CANONICAL_SENSOR_UNITS,
+                device_state=item.device_state or device.status.upper(),
             )
-            
+
             db.add(reading)
             result.accepted += 1
             prev_domain = SensorReading(
@@ -741,40 +1090,39 @@ async def ingest_telemetry_batch(
                 pump_power=reading.pump_power,
                 uv_state=reading.uv_state,
             )
-            
+
         except Exception as e:
             result.invalid += 1
             result.errors.append({"sequence": item.sequence, "error": str(e)})
             logger.warning("batch_item_failed", sequence=item.sequence, error=str(e))
-    
+
     await db.commit()
-    
+
     # Update device last_seen
     if payload.readings:
         latest_ts = max(r.timestamp for r in payload.readings)
         device.last_seen = latest_ts
         device.status = DeviceStatus.ACTIVE.value
         await db.commit()
-    
+
     logger.info(
         "telemetry_batch_ingested",
         device_id=str(payload.device_id),
         accepted=result.accepted,
         rejected=result.rejected,
         duplicates=result.duplicates,
-        invalid=result.invalid
+        invalid=result.invalid,
     )
-    
+
     return result
 
 
 # ===== Telemetry Query Endpoints =====
 
+
 @router.get("/latest/{device_id}", response_model=SensorReadingResponse)
 async def get_latest_telemetry(
-    device_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    device_claims = Depends(get_device_claims)
+    device_id: UUID, db: AsyncSession = Depends(get_db), device_claims=Depends(get_device_claims)
 ):
     """Get latest telemetry reading for a device."""
     cached = _latest_readings_cache.get(device_id)
@@ -798,10 +1146,12 @@ async def get_latest_telemetry(
             pump_current=cached.pump_current,
             pump_power=cached.pump_power,
             uv_state=cached.uv_state,
-            quality=QualityFlags(**cached.quality_flags) if cached.quality_flags else QualityFlags(),
+            quality=QualityFlags(**cached.quality_flags)
+            if cached.quality_flags
+            else QualityFlags(),
             overall_quality=cached.overall_quality,
         )
-    
+
     result = await db.execute(
         select(SensorReadingModel)
         .where(SensorReadingModel.device_id == device_id)
@@ -809,12 +1159,12 @@ async def get_latest_telemetry(
         .limit(1)
     )
     reading = result.scalar_one_or_none()
-    
+
     if not reading:
         raise HTTPException(status_code=404, detail="No telemetry found for device")
-    
+
     _latest_readings_cache[device_id] = reading
-    
+
     return SensorReadingResponse(
         id=reading.id,
         device_id=reading.device_id,
@@ -848,29 +1198,33 @@ async def get_telemetry_history(
     limit: int = 1000,
     sensors: Optional[List[str]] = None,
     db: AsyncSession = Depends(get_db),
-    device_claims = Depends(get_device_claims)
+    device_claims=Depends(get_device_claims),
 ):
     """Get historical telemetry with optional downsampling."""
     if start >= end:
         raise HTTPException(status_code=400, detail="Start must be before end")
-    
+
     if (end - start).total_seconds() > 30 * 24 * 3600:
         raise HTTPException(status_code=400, detail="Maximum range is 30 days")
-    
-    query = select(SensorReadingModel).where(
-        and_(
-            SensorReadingModel.device_id == device_id,
-            SensorReadingModel.timestamp >= start,
-            SensorReadingModel.timestamp <= end
+
+    query = (
+        select(SensorReadingModel)
+        .where(
+            and_(
+                SensorReadingModel.device_id == device_id,
+                SensorReadingModel.timestamp >= start,
+                SensorReadingModel.timestamp <= end,
+            )
         )
-    ).order_by(SensorReadingModel.timestamp)
-    
+        .order_by(SensorReadingModel.timestamp)
+    )
+
     result = await db.execute(query)
     readings = result.scalars().all()
-    
+
     if len(readings) > limit:
         readings = downsample_readings(readings, limit)
-    
+
     series = {}
     sensor_fields = {
         "tds": "tds",
@@ -886,59 +1240,57 @@ async def get_telemetry_history(
         "pump_current": "pump_current",
         "pump_power": "pump_power",
     }
-    
+
     if sensors is None:
         sensors = [k for k, v in sensor_fields.items() if v is not None]
-    
+
     for sensor in sensors:
         field = sensor_fields.get(sensor)
         if field:
             series[sensor] = [
                 {"timestamp": r.timestamp.isoformat(), "value": getattr(r, field)}
-                for r in readings if getattr(r, field) is not None
+                for r in readings
+                if getattr(r, field) is not None
             ]
-    
-    return TelemetryHistoryResponse(
-        device_id=device_id,
-        interval=interval,
-        series=series
-    )
+
+    return TelemetryHistoryResponse(device_id=device_id, interval=interval, series=series)
 
 
 @router.get("/status/{device_id}", response_model=DeviceStatusResponse)
 async def get_device_status(
-    device_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    device_claims = Depends(get_device_claims)
+    device_id: UUID, db: AsyncSession = Depends(get_db), device_claims=Depends(get_device_claims)
 ):
     """Get device status and latest reading."""
     device = await db.get(DeviceModel, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
-    
+
     latest = await get_latest_telemetry(device_id, db, device_claims)
-    
+
     sensor_health = {}
     if latest.quality:
         for k in latest.quality.__fields__.keys():
             sensor_health[k] = getattr(latest.quality, k).state
-    
+
     return DeviceStatusResponse(
         device_id=device_id,
         status=device.status,
         last_seen_at=device.last_seen,
         last_reading=latest,
-        sensor_health=sensor_health
+        sensor_health=sensor_health,
     )
 
 
 # ===== Helper Functions =====
 
-def downsample_readings(readings: List[SensorReadingModel], target_count: int) -> List[SensorReadingModel]:
+
+def downsample_readings(
+    readings: List[SensorReadingModel], target_count: int
+) -> List[SensorReadingModel]:
     """Downsample readings using simple decimation."""
     if len(readings) <= target_count:
         return readings
-    
+
     step = len(readings) / target_count
     return [readings[int(i * step)] for i in range(target_count)]
 

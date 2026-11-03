@@ -2,6 +2,7 @@
 Tests for Auto-resolution of Self-Clearing Alerts (Phase G2).
 These tests verify the AlertStateMachine auto-clear logic directly.
 """
+
 import pytest
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -15,11 +16,12 @@ from app.models.alert import Alert as AlertModel, AlertStatus, AlertSeverity
 
 class MockDevice:
     """Mock device for testing."""
+
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
-        self.id = kwargs.get('id', uuid4())
-        self.safety_config = kwargs.get('safety_config', {})
+        self.id = kwargs.get("id", uuid4())
+        self.safety_config = kwargs.get("safety_config", {})
 
 
 @pytest.fixture
@@ -38,7 +40,7 @@ def sample_device():
             "pressure_max_kpa": 600.0,
             "flow_min_lpm": 0.1,
             "pump_current_max_a": 2.5,
-        }
+        },
     )
 
 
@@ -163,7 +165,7 @@ class TestAutoClearLogic:
     async def test_auto_clear_if_applicable_returns_none_for_manual_code(self, mock_db):
         """Test auto_clear_if_applicable returns None for manual-only codes."""
         sm = AlertStateMachine(mock_db)
-        
+
         alert = AlertModel(
             id=uuid4(),
             device_id=uuid4(),
@@ -171,7 +173,7 @@ class TestAutoClearLogic:
             severity=AlertSeverity.CRITICAL,
             status=AlertStatus.OPEN,
         )
-        
+
         result = await sm.auto_clear_if_applicable(alert, current_condition_met=False)
         assert result is None
 
@@ -179,7 +181,7 @@ class TestAutoClearLogic:
     async def test_auto_clear_if_applicable_returns_none_for_resolved_alert(self, mock_db):
         """Test auto_clear_if_applicable returns None for already resolved alerts."""
         sm = AlertStateMachine(mock_db)
-        
+
         alert = AlertModel(
             id=uuid4(),
             device_id=uuid4(),
@@ -187,7 +189,7 @@ class TestAutoClearLogic:
             severity=AlertSeverity.CRITICAL,
             status=AlertStatus.RESOLVED,
         )
-        
+
         result = await sm.auto_clear_if_applicable(alert, current_condition_met=False)
         assert result is None
 
@@ -195,7 +197,7 @@ class TestAutoClearLogic:
     async def test_auto_clear_if_applicable_returns_none_when_condition_met(self, mock_db):
         """Test auto_clear_if_applicable returns None when condition still met."""
         sm = AlertStateMachine(mock_db)
-        
+
         alert = AlertModel(
             id=uuid4(),
             device_id=uuid4(),
@@ -203,7 +205,7 @@ class TestAutoClearLogic:
             severity=AlertSeverity.CRITICAL,
             status=AlertStatus.OPEN,
         )
-        
+
         result = await sm.auto_clear_if_applicable(alert, current_condition_met=True)
         assert result is None
 
@@ -211,7 +213,7 @@ class TestAutoClearLogic:
     async def test_auto_clear_if_applicable_calls_transition_when_conditions_met(self, mock_db):
         """Test auto_clear_if_applicable calls transition when all conditions met."""
         sm = AlertStateMachine(mock_db)
-        
+
         alert = AlertModel(
             id=uuid4(),
             device_id=uuid4(),
@@ -219,20 +221,22 @@ class TestAutoClearLogic:
             severity=AlertSeverity.CRITICAL,
             status=AlertStatus.OPEN,
         )
-        
+
         # Mock the transition method
         original_transition = sm.transition
-        mock_transition = AsyncMock(return_value=MagicMock(
-            result=TransitionResult.SUCCESS,
-            alert=alert,
-            message="Auto-cleared",
-            previous_status=AlertStatus.OPEN,
-            new_status=AlertStatus.AUTO_CLEARED,
-        ))
+        mock_transition = AsyncMock(
+            return_value=MagicMock(
+                result=TransitionResult.SUCCESS,
+                alert=alert,
+                message="Auto-cleared",
+                previous_status=AlertStatus.OPEN,
+                new_status=AlertStatus.AUTO_CLEARED,
+            )
+        )
         sm.transition = mock_transition
-        
+
         result = await sm.auto_clear_if_applicable(alert, current_condition_met=False)
-        
+
         assert result is not None
         mock_transition.assert_called_once_with(
             alert_id=alert.id,
@@ -241,23 +245,25 @@ class TestAutoClearLogic:
         )
 
     @pytest.mark.asyncio
-    async def test_check_and_auto_clear_alerts_returns_empty_for_manual_code(self, mock_db, sample_device):
+    async def test_check_and_auto_clear_alerts_returns_empty_for_manual_code(
+        self, mock_db, sample_device
+    ):
         """Test check_and_auto_clear_alerts returns empty for manual-only codes."""
         sm = AlertStateMachine(mock_db)
-        
+
         results = await sm.check_and_auto_clear_alerts(
             device_id=sample_device.id,
             alert_code="leak_detected",
             condition_met=False,
         )
-        
+
         assert results == []
 
     @pytest.mark.asyncio
     async def test_check_and_auto_clear_alerts_queries_database(self, mock_db, sample_device):
         """Test check_and_auto_clear_alerts queries database for active alerts."""
         sm = AlertStateMachine(mock_db)
-        
+
         # Mock db.execute to return an alert
         existing_alert = AlertModel(
             id=uuid4(),
@@ -266,25 +272,27 @@ class TestAutoClearLogic:
             severity=AlertSeverity.CRITICAL,
             status=AlertStatus.OPEN,
         )
-        
+
         mock_result = AsyncMock()
         mock_scalars = MagicMock()
         mock_scalars.all = MagicMock(return_value=[existing_alert])
         mock_result.scalars = MagicMock(return_value=mock_scalars)
         mock_db.execute = AsyncMock(return_value=mock_result)
-        
+
         # Mock auto_clear_if_applicable
-        sm.auto_clear_if_applicable = AsyncMock(return_value=MagicMock(
-            result=TransitionResult.SUCCESS,
-            alert=existing_alert,
-        ))
-        
+        sm.auto_clear_if_applicable = AsyncMock(
+            return_value=MagicMock(
+                result=TransitionResult.SUCCESS,
+                alert=existing_alert,
+            )
+        )
+
         results = await sm.check_and_auto_clear_alerts(
             device_id=sample_device.id,
             alert_code="pressure_high",
             condition_met=False,
         )
-        
+
         assert len(results) == 1
         mock_db.execute.assert_called_once()
         sm.auto_clear_if_applicable.assert_called_once()

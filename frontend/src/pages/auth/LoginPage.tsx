@@ -39,7 +39,11 @@ export function LoginPage() {
     getZodResolver().then(setResolver);
   }, []);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
     resolver: resolver ? resolver(schema) : undefined,
     defaultValues: {
       username: 'admin',
@@ -58,32 +62,36 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-base flex items-center justify-center p-6">
+    <div className="flex min-h-screen items-center justify-center bg-base p-6">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8 animate-fade-in">
-          <div className="w-12 h-12 bg-info rounded-xl flex items-center justify-center mb-4">
-            <Droplet className="w-7 h-7 text-white" />
+        <div className="mb-8 flex animate-fade-in flex-col items-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-info">
+            <Droplet className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-h2 font-semibold text-text-primary">Sign in to AquaNexis</h1>
-          <p className="text-body-sm text-text-secondary mt-1 text-center">
+          <h1 className="text-text-primary text-h2 font-semibold">Sign in to AquaNexis</h1>
+          <p className="mt-1 text-center text-body-sm text-text-secondary">
             Predictive Water Intelligence Platform
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-surface border border-subtle rounded-card p-6 shadow-card animate-slide-up">
+        <div className="border-subtle animate-slide-up rounded-card border bg-surface p-6 shadow-card">
           {serverError && (
-            <div className="flex items-start gap-2 p-3 bg-critical/10 border border-critical/20 rounded-button mb-4"
-              role="alert">
-              <AlertCircle className="w-4 h-4 text-critical flex-shrink-0 mt-0.5" />
+            <div
+              className="mb-4 flex items-start gap-2 rounded-button border border-critical/20 bg-critical/10 p-3"
+              role="alert"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-critical" />
               <p className="text-body-sm text-critical">{serverError}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <div>
-              <label className="label" htmlFor="username">Username</label>
+              <label className="label" htmlFor="username">
+                Username
+              </label>
               <input
                 id="username"
                 type="text"
@@ -102,24 +110,29 @@ export function LoginPage() {
             </div>
 
             <div>
-              <label className="label" htmlFor="password">Password</label>
+              <label className="label" htmlFor="password">
+                Password
+              </label>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  className={cn('input pr-10', errors.password && 'border-critical focus:ring-critical')}
+                  className={cn(
+                    'input pr-10',
+                    errors.password && 'border-critical focus:ring-critical'
+                  )}
                   aria-describedby={errors.password ? 'password-error' : undefined}
                   aria-invalid={!!errors.password}
                   {...register('password')}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors"
-                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted transition-colors hover:text-text-secondary"
+                  onClick={() => setShowPassword(v => !v)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 w-4" />}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="w-4 w-4" />}
                 </button>
               </div>
               {errors.password && (
@@ -129,16 +142,23 @@ export function LoginPage() {
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="btn btn-primary w-full mt-2"
-            >
+            <button type="submit" disabled={isSubmitting} className="btn btn-primary mt-2 w-full">
               {isSubmitting ? (
                 <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                   Signing in…
                 </>
@@ -149,7 +169,7 @@ export function LoginPage() {
           </form>
         </div>
 
-        <p className="text-caption text-text-muted text-center mt-6">
+        <p className="mt-6 text-center text-caption text-text-muted">
           AquaNexis — Engineering-grade water monitoring
         </p>
       </div>

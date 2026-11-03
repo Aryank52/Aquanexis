@@ -26,7 +26,12 @@ import type {
 
 // ===== Filter Catalog =====
 
-export function useFilterCatalog(params?: { category?: string; is_active?: boolean; limit?: number; offset?: number }) {
+export function useFilterCatalog(params?: {
+  category?: string;
+  is_active?: boolean;
+  limit?: number;
+  offset?: number;
+}) {
   return useQuery<FilterCatalogResponse[]>({
     queryKey: ['maintenance', 'filters', params],
     queryFn: () => maintenanceApi.listFilters(params),
@@ -115,7 +120,7 @@ export function useFilterInstance(instanceId: string) {
 
 export function useCheckCompatibility() {
   return useMutation<CompatibilityCheckResponse, Error, CompatibilityCheckRequest>({
-    mutationFn: (data) => maintenanceApi.checkCompatibility(data),
+    mutationFn: data => maintenanceApi.checkCompatibility(data),
   });
 }
 
@@ -158,8 +163,13 @@ export function useWorkflow(workflowId: string) {
 export function useTransitionWorkflow() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ workflowId, data }: { workflowId: string; data: MaintenanceWorkflowTransition }) =>
-      maintenanceApi.transitionWorkflow(workflowId, data),
+    mutationFn: ({
+      workflowId,
+      data,
+    }: {
+      workflowId: string;
+      data: MaintenanceWorkflowTransition;
+    }) => maintenanceApi.transitionWorkflow(workflowId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance', 'workflows'] });
     },
@@ -176,7 +186,10 @@ export function useCalibrationDue(deviceId: string) {
   });
 }
 
-export function useCalibrationRecords(deviceId: string, params?: { sensor_type?: string; limit?: number }) {
+export function useCalibrationRecords(
+  deviceId: string,
+  params?: { sensor_type?: string; limit?: number }
+) {
   return useQuery<CalibrationRecordResponse[]>({
     queryKey: ['maintenance', 'calibration', 'records', deviceId, params],
     queryFn: () => maintenanceApi.listCalibrationRecords(deviceId, params),
@@ -209,8 +222,13 @@ export function useStartVerification() {
 export function useCompleteVerification() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ verificationId, data }: { verificationId: string; data: VerificationRunComplete }) =>
-      maintenanceApi.completeVerification(verificationId, data),
+    mutationFn: ({
+      verificationId,
+      data,
+    }: {
+      verificationId: string;
+      data: VerificationRunComplete;
+    }) => maintenanceApi.completeVerification(verificationId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance', 'verification'] });
       queryClient.invalidateQueries({ queryKey: ['maintenance', 'baseline'] });
@@ -260,11 +278,8 @@ export function useFilterReplacement() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: {
-      device_id: string;
-      performed_by: string;
-      notes?: string;
-    }) => maintenanceApi.filterReplacement(data),
+    mutationFn: (data: { device_id: string; performed_by: string; notes?: string }) =>
+      maintenanceApi.filterReplacement(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maintenance'] });
       queryClient.invalidateQueries({ queryKey: ['filter-health'] });

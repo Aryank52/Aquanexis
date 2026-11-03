@@ -10,7 +10,12 @@ interface SystemStateBadgeProps {
 }
 
 const stateConfig = {
-  healthy: { icon: CheckCircle, bg: 'bg-success/10', text: 'text-success', label: 'SYSTEM HEALTHY' },
+  healthy: {
+    icon: CheckCircle,
+    bg: 'bg-success/10',
+    text: 'text-success',
+    label: 'SYSTEM HEALTHY',
+  },
   degraded: { icon: AlertTriangle, bg: 'bg-warning/10', text: 'text-warning', label: 'DEGRADED' },
   critical: { icon: XCircle, bg: 'bg-critical/10', text: 'text-critical', label: 'CRITICAL' },
 };
@@ -37,17 +42,22 @@ export function SystemStateBadge({ state, pulse = false, size = 'md' }: SystemSt
   const config = stateConfig[state];
 
   return (
-    <span className={cn(
-      'inline-flex items-center font-medium rounded-button border transition-all duration-200',
-      config.bg,
-      config.text,
-      sizeStyles[size],
-      pulse && 'animate-pulse-critical'
-    )}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded-button border font-medium transition-all duration-200',
+        config.bg,
+        config.text,
+        sizeStyles[size],
+        pulse && 'animate-pulse-critical'
+      )}
+    >
       <config.icon className={cn(iconSizes[size], 'flex-shrink-0')} aria-hidden="true" />
       <span className={cn(textSizes[size], 'whitespace-nowrap')}>{config.label}</span>
       {pulse && state === 'critical' && (
-        <Activity className={cn(iconSizes[size], 'text-critical/50 animate-pulse')} aria-hidden="true" />
+        <Activity
+          className={cn(iconSizes[size], 'animate-pulse text-critical/50')}
+          aria-hidden="true"
+        />
       )}
     </span>
   );

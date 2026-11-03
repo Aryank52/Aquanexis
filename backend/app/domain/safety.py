@@ -1,6 +1,7 @@
 """
 Safety domain models - pure Python, no framework dependencies.
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -10,6 +11,7 @@ from uuid import UUID, uuid4
 
 class SafetyActionType(str, Enum):
     """Types of safety actions that can be executed."""
+
     CLOSE_INLET_VALVE = "close_inlet_valve"
     STOP_PUMP = "stop_pump"
     OPEN_RELIEF_VALVE = "open_relief_valve"
@@ -18,6 +20,7 @@ class SafetyActionType(str, Enum):
 
 class SafetyEventType(str, Enum):
     """Types of safety events that can trigger actions."""
+
     LEAK_DETECTED = "leak_detected"
     OVERPRESSURE = "overpressure"
     DRY_RUN = "dry_run"
@@ -26,6 +29,7 @@ class SafetyEventType(str, Enum):
 
 class SafetyActionStatus(str, Enum):
     """Status of a safety action execution."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -37,6 +41,7 @@ class SafetyActionStatus(str, Enum):
 @dataclass
 class SafetyConfig:
     """Safety configuration for a device."""
+
     leak_action: str = "close_inlet_valve"
     leak_validate_with: List[str] = field(default_factory=lambda: ["flow_delta", "pressure_drop"])
     leak_cooldown_sec: int = 300
@@ -60,23 +65,26 @@ class SafetyConfig:
 
     persistence_required_readings: int = 2
     cooldown_enabled: bool = True
-    cooldown_by_code: Dict[str, int] = field(default_factory=lambda: {
-        "leak_detected": 120,
-        "pressure_high": 60,
-        "pressure_low": 60,
-        "flow_low": 30,
-        "flow_interrupted": 120,
-        "pump_overcurrent": 120,
-        "water_quality_degraded": 60,
-        "filter_stress_high": 120,
-        "filter_health_critical": 180,
-        "tank_level_low": 30,
-    })
+    cooldown_by_code: Dict[str, int] = field(
+        default_factory=lambda: {
+            "leak_detected": 120,
+            "pressure_high": 60,
+            "pressure_low": 60,
+            "flow_low": 30,
+            "flow_interrupted": 120,
+            "pump_overcurrent": 120,
+            "water_quality_degraded": 60,
+            "filter_stress_high": 120,
+            "filter_health_critical": 180,
+            "tank_level_low": 30,
+        }
+    )
 
 
 @dataclass
 class SafetyValidationContext:
     """Context for safety validation."""
+
     device_id: UUID
     timestamp: datetime
     current_reading: Dict[str, Any]
@@ -89,6 +97,7 @@ class SafetyValidationContext:
 @dataclass
 class SafetyValidationResult:
     """Result of safety validation."""
+
     event_type: str
     is_valid: bool
     validation_result: str  # VALID, INVALID, INSUFFICIENT_DATA, COOLDOWN_ACTIVE, SENSOR_FAULT
@@ -102,6 +111,7 @@ class SafetyValidationResult:
 @dataclass
 class SafetyAction:
     """A safety action to be executed."""
+
     device_id: UUID = field(default_factory=uuid4)
     action_type: SafetyActionType = SafetyActionType.CLOSE_INLET_VALVE
     event_type: SafetyEventType = SafetyEventType.LEAK_DETECTED
@@ -120,6 +130,7 @@ class SafetyAction:
 @dataclass
 class SafetyEvent:
     """Record of a safety event."""
+
     device_id: UUID = field(default_factory=uuid4)
     event_type: SafetyEventType = SafetyEventType.LEAK_DETECTED
     severity: str = "CRITICAL"
@@ -137,6 +148,7 @@ class SafetyEvent:
 @dataclass
 class LeakDiagnostics:
     """Leak detection diagnostics."""
+
     leak_detected: bool
     leak_probability: float  # 0-1
     flow_delta_lpm: float
@@ -149,6 +161,7 @@ class LeakDiagnostics:
 @dataclass
 class PressureDiagnostics:
     """Pressure diagnostics."""
+
     current_kpa: float
     trend_1h: float
     trend_24h: float
@@ -162,6 +175,7 @@ class PressureDiagnostics:
 @dataclass
 class FlowDiagnostics:
     """Flow diagnostics."""
+
     current_lpm: float
     trend_1h: float
     trend_24h: float
@@ -176,6 +190,7 @@ class FlowDiagnostics:
 @dataclass
 class PumpDiagnostics:
     """Pump energy diagnostics."""
+
     current_a: float
     power_w: Optional[float] = None
     efficiency_trend: float = 0.0  # % change over 7d
@@ -189,6 +204,7 @@ class PumpDiagnostics:
 @dataclass
 class TankDiagnostics:
     """Tank state diagnostics."""
+
     level_percent: float
     fill_rate_lpm: Optional[float] = None
     empty_rate_lpm: Optional[float] = None
@@ -199,6 +215,7 @@ class TankDiagnostics:
 @dataclass
 class SystemDiagnostics:
     """Aggregated system diagnostics."""
+
     device_id: UUID
     timestamp: datetime
     pressure: PressureDiagnostics
@@ -213,6 +230,7 @@ class SystemDiagnostics:
 @dataclass
 class SafetyActionCommand:
     """Command to execute a safety action on firmware."""
+
     device_id: UUID = field(default_factory=uuid4)
     action_type: SafetyActionType = SafetyActionType.CLOSE_INLET_VALVE
     event_type: SafetyEventType = SafetyEventType.LEAK_DETECTED
@@ -227,6 +245,7 @@ class SafetyActionCommand:
 @dataclass
 class SafetyActionResponse:
     """Response from firmware after safety action execution."""
+
     command_id: UUID
     device_id: UUID
     action_type: SafetyActionType
@@ -239,6 +258,7 @@ class SafetyActionResponse:
 @dataclass
 class FirmwareCommand:
     """Command sent to firmware."""
+
     device_id: UUID = field(default_factory=uuid4)
     command_type: str = "safety_action"
     payload: Dict[str, Any] = field(default_factory=dict)
@@ -251,6 +271,7 @@ class FirmwareCommand:
 @dataclass
 class FirmwareResponse:
     """Response from firmware."""
+
     command_id: UUID
     device_id: UUID
     status: str
@@ -263,6 +284,7 @@ class FirmwareResponse:
 @dataclass
 class SafetyAuditEvent:
     """Audit log entry for safety actions."""
+
     device_id: UUID = field(default_factory=uuid4)
     event_type: str = "safety_action"
     event_id: UUID = field(default_factory=uuid4)

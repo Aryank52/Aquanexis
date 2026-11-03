@@ -12,7 +12,15 @@ import type { AlertResponse, AlertSeverity, AlertState } from '@/types/api';
 
 const DEVICE_ID = import.meta.env.VITE_DEVICE_ID ?? '00000000-0000-0000-0000-000000000001';
 
-const severityConfig: Record<AlertSeverity, { icon: typeof AlertTriangle; color: string; bg: string; variant: 'critical' | 'warning' | 'info' }> = {
+const severityConfig: Record<
+  AlertSeverity,
+  {
+    icon: typeof AlertTriangle;
+    color: string;
+    bg: string;
+    variant: 'critical' | 'warning' | 'info';
+  }
+> = {
   CRITICAL: { icon: XCircle, color: 'text-critical', bg: 'bg-critical/10', variant: 'critical' },
   WARNING: { icon: AlertTriangle, color: 'text-warning', bg: 'bg-warning/10', variant: 'warning' },
   INFO: { icon: Info, color: 'text-info', bg: 'bg-info/10', variant: 'info' },
@@ -45,20 +53,31 @@ export function AlertsPage() {
   const acknowledge = useAcknowledgeAlert();
 
   if (isError) {
-    return <QueryError message={(error as Error)?.message ?? 'Failed to load alerts'} onRetry={refetch} />;
+    return (
+      <QueryError
+        message={(error as Error)?.message ?? 'Failed to load alerts'}
+        onRetry={refetch}
+      />
+    );
   }
 
   const allAlerts = data?.items ?? [];
   const activeAlerts = allAlerts.filter(
-    a => a.status === 'OPEN' || a.status === 'DETECTED' || a.status === 'ACKNOWLEDGED' || a.status === 'SNOOZED'
+    a =>
+      a.status === 'OPEN' ||
+      a.status === 'DETECTED' ||
+      a.status === 'ACKNOWLEDGED' ||
+      a.status === 'SNOOZED'
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="animate-fade-in space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-h1 font-semibold text-text-primary">Alerts</h1>
-          <p className="text-body-sm text-text-secondary mt-1">Monitor, acknowledge, and resolve system alerts</p>
+          <h1 className="text-text-primary text-h1 font-semibold">Alerts</h1>
+          <p className="mt-1 text-body-sm text-text-secondary">
+            Monitor, acknowledge, and resolve system alerts
+          </p>
         </div>
         <div className="flex gap-3">
           <select
@@ -97,42 +116,60 @@ export function AlertsPage() {
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded" />)}
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded" />
+              ))}
             </div>
           ) : activeAlerts.length === 0 ? (
             <EmptyState title="No active alerts" description="All systems operating normally" />
           ) : (
-            <div className="divide-y divide-subtle">
+            <div className="divide-subtle divide-y">
               {activeAlerts.map(alert => {
                 const sev = severityConfig[alert.severity];
                 const SevIcon = sev.icon;
                 return (
-                  <div key={alert.id} className={cn('flex items-center gap-4 py-3 px-2 rounded', sev.bg)}>
+                  <div
+                    key={alert.id}
+                    className={cn('flex items-center gap-4 rounded px-2 py-3', sev.bg)}
+                  >
                     <SevIcon className={cn('h-5 w-5 flex-shrink-0', sev.color)} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-body-sm text-text-primary">{snakeToTitle(alert.alert_code)}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-text-primary text-body-sm font-medium">
+                          {snakeToTitle(alert.alert_code)}
+                        </span>
                         <Badge variant={sev.variant}>{alert.severity}</Badge>
                         <Badge variant={stateVariant[alert.status]}>{alert.status}</Badge>
                       </div>
-                      <span className="text-caption text-text-muted flex items-center gap-1 mt-1">
+                      <span className="mt-1 flex items-center gap-1 text-caption text-text-muted">
                         <Clock className="h-3 w-3" />
                         {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex flex-shrink-0 gap-2">
                       {(alert.status === 'OPEN' || alert.status === 'DETECTED') && (
                         <Button
                           variant="secondary"
-                          onClick={() => acknowledge.mutate({ alertId: alert.id, data: { acknowledged_by: 'operator' } })}
+                          onClick={() =>
+                            acknowledge.mutate({
+                              alertId: alert.id,
+                              data: { acknowledged_by: 'operator' },
+                            })
+                          }
                           disabled={acknowledge.isPending}
                         >
-                          <CheckCircle className="h-4 w-4 mr-1" />
+                          <CheckCircle className="mr-1 h-4 w-4" />
                           Acknowledge
                         </Button>
                       )}
-                      <Button variant="ghost" onClick={() => { setSelectedAlert(alert); setDrawerOpen(true); }}>
-                        <Eye className="h-4 w-4 mr-1" />
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedAlert(alert);
+                          setDrawerOpen(true);
+                        }}
+                      >
+                        <Eye className="mr-1 h-4 w-4" />
                         Details
                       </Button>
                     </div>
@@ -152,7 +189,9 @@ export function AlertsPage() {
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded" />)}
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full rounded" />
+              ))}
             </div>
           ) : allAlerts.length === 0 ? (
             <EmptyState title="No alerts" description="No alerts match the current filters" />
@@ -160,28 +199,44 @@ export function AlertsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-body-sm">
                 <thead>
-                  <tr className="border-b border-subtle text-text-secondary text-left">
-                    <th className="py-2 px-3 font-medium">Severity</th>
-                    <th className="py-2 px-3 font-medium">Type</th>
-                    <th className="py-2 px-3 font-medium">Message</th>
-                    <th className="py-2 px-3 font-medium">Created</th>
-                    <th className="py-2 px-3 font-medium">State</th>
-                    <th className="py-2 px-3 font-medium sr-only">Actions</th>
+                  <tr className="border-subtle border-b text-left text-text-secondary">
+                    <th className="px-3 py-2 font-medium">Severity</th>
+                    <th className="px-3 py-2 font-medium">Type</th>
+                    <th className="px-3 py-2 font-medium">Message</th>
+                    <th className="px-3 py-2 font-medium">Created</th>
+                    <th className="px-3 py-2 font-medium">State</th>
+                    <th className="sr-only px-3 py-2 font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-subtle">
+                <tbody className="divide-subtle divide-y">
                   {allAlerts.map(alert => {
                     const sev = severityConfig[alert.severity];
                     const SevIcon = sev.icon;
                     return (
-                      <tr key={alert.id} className="hover:bg-hover transition-colors">
-                        <td className="py-2 px-3"><SevIcon className={cn('h-4 w-4', sev.color)} /></td>
-                        <td className="py-2 px-3 font-medium text-text-primary">{snakeToTitle(alert.alert_code)}</td>
-                        <td className="py-2 px-3 text-text-secondary max-w-xs truncate">{alert.message ?? '—'}</td>
-                        <td className="py-2 px-3 text-text-muted whitespace-nowrap">{formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}</td>
-                        <td className="py-2 px-3"><Badge variant={stateVariant[alert.status]}>{alert.status}</Badge></td>
-                        <td className="py-2 px-3">
-                          <Button variant="ghost" onClick={() => { setSelectedAlert(alert); setDrawerOpen(true); }}>
+                      <tr key={alert.id} className="transition-colors hover:bg-hover">
+                        <td className="px-3 py-2">
+                          <SevIcon className={cn('h-4 w-4', sev.color)} />
+                        </td>
+                        <td className="text-text-primary px-3 py-2 font-medium">
+                          {snakeToTitle(alert.alert_code)}
+                        </td>
+                        <td className="max-w-xs truncate px-3 py-2 text-text-secondary">
+                          {alert.message ?? '—'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2 text-text-muted">
+                          {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge variant={stateVariant[alert.status]}>{alert.status}</Badge>
+                        </td>
+                        <td className="px-3 py-2">
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedAlert(alert);
+                              setDrawerOpen(true);
+                            }}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                         </td>

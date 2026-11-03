@@ -1,26 +1,26 @@
 """
 Maintenance Pydantic schemas for API requests/responses.
 """
-from datetime import datetime
-from enum import Enum
-from typing import Optional, List, Dict, Any
-from uuid import UUID
-from pydantic import BaseModel, Field, EmailStr, HttpUrl
 
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 # Re-export enums
 from app.domain.maintenance import (
+    CalibrationState,
+    CompatibilityResult,
     FilterCategory,
     FilterLifecycleState,
     MaintenanceEventType,
     MaintenanceWorkflowState,
-    CalibrationState,
     VerificationState,
-    CompatibilityResult,
 )
 
-
 # ===== Filter Catalog Schemas =====
+
 
 class FilterCatalogBase(BaseModel):
     filter_identifier: str = Field(..., min_length=1, max_length=128)
@@ -72,6 +72,7 @@ class FilterCatalogResponse(FilterCatalogBase):
 
 # ===== Installed Filter Schemas =====
 
+
 class InstalledFilterBase(BaseModel):
     device_id: UUID
     catalog_id: UUID
@@ -115,6 +116,7 @@ class InstalledFilterResponse(InstalledFilterBase):
 
 # ===== Compatibility Check Schemas =====
 
+
 class CompatibilityCheckRequest(BaseModel):
     purifier_model: str
     filter_id: UUID
@@ -128,6 +130,7 @@ class CompatibilityCheckResponse(BaseModel):
 
 
 # ===== Maintenance Event Schemas =====
+
 
 class MaintenanceEventBase(BaseModel):
     device_id: UUID
@@ -157,6 +160,7 @@ class MaintenanceEventResponse(MaintenanceEventBase):
 
 # ===== Maintenance Workflow Schemas =====
 
+
 class MaintenanceWorkflowTransition(BaseModel):
     new_state: str
     error_message: Optional[str] = None
@@ -179,6 +183,7 @@ class MaintenanceWorkflowResponse(BaseModel):
 
 
 # ===== Calibration Schemas =====
+
 
 class CalibrationRecordBase(BaseModel):
     device_id: UUID
@@ -223,6 +228,7 @@ class CalibrationDueResponse(BaseModel):
 
 # ===== Verification Schemas =====
 
+
 class VerificationRunStart(BaseModel):
     device_id: UUID
     maintenance_event_id: UUID
@@ -254,6 +260,7 @@ class VerificationRunResponse(BaseModel):
 
 # ===== Baseline Version Schemas =====
 
+
 class BaselineVersionResponse(BaseModel):
     id: UUID
     device_id: UUID
@@ -269,6 +276,7 @@ class BaselineVersionResponse(BaseModel):
 
 
 # ===== Maintenance Recommendation Schemas =====
+
 
 class MaintenanceRecommendationResponse(BaseModel):
     id: UUID

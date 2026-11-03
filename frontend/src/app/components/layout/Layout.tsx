@@ -5,10 +5,31 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Menu, X, ChevronLeft, Droplet, Filter, Gauge, Waves,
-  Mountain, Database, Shield, AlertTriangle, Wrench, Cpu,
-  ClipboardCheck, Sun, Moon, LogOut, Bell, User, Wifi, WifiOff,
-  ChevronDown, Send, Settings, Package,
+  Menu,
+  X,
+  ChevronLeft,
+  Droplet,
+  Filter,
+  Gauge,
+  Waves,
+  Mountain,
+  Database,
+  Shield,
+  AlertTriangle,
+  Wrench,
+  Cpu,
+  ClipboardCheck,
+  Sun,
+  Moon,
+  LogOut,
+  Bell,
+  User,
+  Wifi,
+  WifiOff,
+  ChevronDown,
+  Send,
+  Settings,
+  Package,
 } from 'lucide-react';
 import { useTheme } from '@/state/theme';
 import { useAuth } from '@/state/auth';
@@ -32,7 +53,10 @@ const navigation = [
   { name: 'Readiness', href: '/readiness', icon: ClipboardCheck },
 ];
 
-const deviceStatusConfig: Record<DeviceStatus, { label: string; color: string; icon: typeof Wifi }> = {
+const deviceStatusConfig: Record<
+  DeviceStatus,
+  { label: string; color: string; icon: typeof Wifi }
+> = {
   online: { label: 'Online', color: 'text-success bg-success/10', icon: Wifi },
   degraded: { label: 'Degraded', color: 'text-warning bg-warning/10', icon: Wifi },
   offline: { label: 'Offline', color: 'text-text-muted bg-text-muted/10', icon: WifiOff },
@@ -52,15 +76,17 @@ export function Layout() {
     queryKey: ['demoStatus'],
     queryFn: () =>
       apiClient
-        .get<{ demo_mode: boolean; active_scenario: string; device_status?: DeviceStatus }>('/demo/status')
-        .then((r) => r.data),
+        .get<{ demo_mode: boolean; active_scenario: string; device_status?: DeviceStatus }>(
+          '/demo/status'
+        )
+        .then(r => r.data),
     refetchInterval: 5000,
     retry: false,
   });
 
   const switchScenario = useMutation({
     mutationFn: (scenario: string) =>
-      apiClient.post('/demo/scenario', { scenario }).then((r) => r.data),
+      apiClient.post('/demo/scenario', { scenario }).then(r => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries();
     },
@@ -72,55 +98,59 @@ export function Layout() {
   const activeScenario = demoStatus.data?.active_scenario ?? 'NORMAL';
 
   return (
-    <div className="min-h-screen bg-base flex">
+    <div className="flex min-h-screen bg-base">
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 bg-surface border-r border-subtle transition-all duration-300 ease-out',
+          'border-subtle fixed inset-y-0 left-0 z-40 border-r bg-surface transition-all duration-300 ease-out',
           sidebarOpen ? 'w-72' : 'w-18',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
         aria-label="Main navigation"
       >
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-subtle">
+        <div className="border-subtle flex h-16 items-center justify-between border-b px-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-info rounded-lg flex items-center justify-center flex-shrink-0">
-              <Droplet className="w-5 h-5 text-white" />
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-info">
+              <Droplet className="h-5 w-5 text-white" />
             </div>
             {sidebarOpen && (
-              <span className="font-semibold text-h3 text-text-primary">AquaNexis</span>
+              <span className="text-text-primary text-h3 font-semibold">AquaNexis</span>
             )}
           </div>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:block p-2 rounded-button hover:bg-hover text-text-secondary transition-colors"
+            className="hidden rounded-button p-2 text-text-secondary transition-colors hover:bg-hover lg:block"
             aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
-            <ChevronLeft className={cn('w-5 h-5 transition-transform', !sidebarOpen && 'rotate-180')} />
+            <ChevronLeft
+              className={cn('h-5 w-5 transition-transform', !sidebarOpen && 'rotate-180')}
+            />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 overflow-y-auto" aria-label="Main navigation">
+        <nav className="flex-1 overflow-y-auto py-4" aria-label="Main navigation">
           <ul className="space-y-1 px-2" role="list">
-            {navigation.map((item) => {
+            {navigation.map(item => {
               const Icon = item.icon;
               return (
                 <li key={item.name}>
                   <NavLink
                     to={item.href}
-                    className={({ isActive }) => cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-button text-body-sm transition-colors duration-150',
-                      isActive
-                        ? 'bg-info/10 text-info font-medium'
-                        : 'text-text-secondary hover:bg-hover hover:text-text-primary',
-                      !sidebarOpen && 'justify-center'
-                    )}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 rounded-button px-3 py-2.5 text-body-sm transition-colors duration-150',
+                        isActive
+                          ? 'bg-info/10 font-medium text-info'
+                          : 'hover:text-text-primary text-text-secondary hover:bg-hover',
+                        !sidebarOpen && 'justify-center'
+                      )
+                    }
                     title={sidebarOpen ? undefined : item.name}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                    <Icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
                     {sidebarOpen && <span className="truncate">{item.name}</span>}
                   </NavLink>
                 </li>
@@ -130,39 +160,39 @@ export function Layout() {
         </nav>
 
         {/* Bottom: Theme toggle, User */}
-        <div className="p-4 border-t border-subtle space-y-2">
+        <div className="border-subtle space-y-2 border-t p-4">
           <button
             onClick={toggleTheme}
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 rounded-button text-body-sm text-text-secondary',
-              'hover:bg-hover transition-colors',
+              'flex w-full items-center gap-3 rounded-button px-3 py-2 text-body-sm text-text-secondary',
+              'transition-colors hover:bg-hover',
               !sidebarOpen && 'justify-center'
             )}
             title={sidebarOpen ? undefined : theme === 'light' ? 'Dark mode' : 'Light mode'}
             aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
           >
-            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             {sidebarOpen && <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>}
           </button>
 
           {sidebarOpen && user && (
             <div className="flex items-center gap-3 px-3 py-2">
-              <div className="w-8 h-8 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
-                <User className="w-5 h-5 text-info" />
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-info/10">
+                <User className="h-5 w-5 text-info" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-body-sm font-medium text-text-primary truncate">
+              <div className="min-w-0 flex-1">
+                <p className="text-text-primary truncate text-body-sm font-medium">
                   {user.display_name}
                 </p>
-                <p className="text-caption text-text-muted truncate">{user.role}</p>
+                <p className="truncate text-caption text-text-muted">{user.role}</p>
               </div>
               <button
                 onClick={logout}
-                className="p-1.5 rounded-button hover:bg-hover text-text-muted hover:text-text-primary transition-colors"
+                className="hover:text-text-primary rounded-button p-1.5 text-text-muted transition-colors hover:bg-hover"
                 aria-label="Sign out"
                 title="Sign out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="h-4 w-4" />
               </button>
             </div>
           )}
@@ -179,54 +209,58 @@ export function Layout() {
       )}
 
       {/* Main content */}
-      <div className={cn(
-        'flex-1 flex flex-col min-w-0 transition-all duration-300',
-        sidebarOpen ? 'lg:ml-72' : 'lg:ml-18'
-      )}>
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 flex-col transition-all duration-300',
+          sidebarOpen ? 'lg:ml-72' : 'lg:ml-18'
+        )}
+      >
         {/* Header */}
-        <header className="sticky top-0 z-20 h-16 bg-elevated/80 backdrop-blur-sm border-b border-subtle flex items-center justify-between px-6">
+        <header className="border-subtle sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-elevated/80 px-6 backdrop-blur-sm">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-button hover:bg-hover text-text-secondary"
+              className="rounded-button p-2 text-text-secondary hover:bg-hover lg:hidden"
               aria-label="Open navigation menu"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="h-6 w-6" />
             </button>
 
             {/* Device selector + status */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-surface rounded-button border border-subtle">
-              <Database className="w-4 h-4 text-text-muted" />
-              <span className="text-body-sm text-text-primary">Kitchen RO System</span>
-              <span className={cn(
-                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-caption font-medium',
-                statusConfig.color
-              )}>
-                <StatusIcon className="w-3 h-3" />
+            <div className="border-subtle hidden items-center gap-2 rounded-button border bg-surface px-3 py-1.5 sm:flex">
+              <Database className="h-4 w-4 text-text-muted" />
+              <span className="text-text-primary text-body-sm">Kitchen RO System</span>
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-caption font-medium',
+                  statusConfig.color
+                )}
+              >
+                <StatusIcon className="h-3 w-3" />
                 {statusConfig.label}
               </span>
             </div>
 
             {/* Demo Mode Scenario Switcher */}
             {demoStatus.data?.demo_mode && (
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-surface rounded-button border border-subtle">
-                <span className="text-caption font-semibold text-warning px-1.5 py-0.5 rounded bg-warning/15">
+              <div className="border-subtle hidden items-center gap-1.5 rounded-button border bg-surface px-2.5 py-1 md:flex">
+                <span className="rounded bg-warning/15 px-1.5 py-0.5 text-caption font-semibold text-warning">
                   DEMO_MODE (SIMULATED)
                 </span>
-                {(['NORMAL', 'FILTER_STRESS', 'LEAK', 'SENSOR_FAULT'] as const).map((scen) => (
+                {(['NORMAL', 'FILTER_STRESS', 'LEAK', 'SENSOR_FAULT'] as const).map(scen => (
                   <button
                     key={scen}
                     type="button"
                     disabled={switchScenario.isPending}
                     onClick={() => switchScenario.mutate(scen)}
                     className={cn(
-                      'px-2 py-0.5 rounded text-caption font-mono transition-colors',
+                      'rounded px-2 py-0.5 font-mono text-caption transition-colors',
                       activeScenario === scen
                         ? scen === 'LEAK'
-                          ? 'bg-critical text-white font-semibold'
+                          ? 'bg-critical font-semibold text-white'
                           : scen === 'FILTER_STRESS' || scen === 'SENSOR_FAULT'
-                          ? 'bg-warning text-black font-semibold'
-                          : 'bg-info text-white font-semibold'
+                            ? 'bg-warning font-semibold text-black'
+                            : 'bg-info font-semibold text-white'
                         : 'text-text-secondary hover:bg-hover'
                     )}
                   >
@@ -240,33 +274,36 @@ export function Layout() {
           <div className="flex items-center gap-3">
             {/* Notifications */}
             <button
-              className="relative p-2 rounded-button hover:bg-hover text-text-secondary transition-colors"
+              className="relative rounded-button p-2 text-text-secondary transition-colors hover:bg-hover"
               aria-label="View notifications"
             >
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-critical rounded-full" aria-hidden="true" />
+              <Bell className="h-5 w-5" />
+              <span
+                className="absolute right-1 top-1 h-2 w-2 rounded-full bg-critical"
+                aria-hidden="true"
+              />
             </button>
 
             {/* Theme toggle for mobile */}
             <button
               onClick={toggleTheme}
-              className="sm:hidden p-2 rounded-button hover:bg-hover text-text-secondary transition-colors"
+              className="rounded-button p-2 text-text-secondary transition-colors hover:bg-hover sm:hidden"
               aria-label={theme === 'light' ? 'Enable dark mode' : 'Enable light mode'}
             >
-              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </button>
 
             {/* User avatar */}
-            <div className="hidden sm:flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-info/10 flex items-center justify-center">
-                <User className="w-5 h-5 text-info" />
+            <div className="hidden items-center gap-2 sm:flex">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info/10">
+                <User className="h-5 w-5 text-info" />
               </div>
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 lg:p-8 overflow-auto" id="main-content">
+        <main className="flex-1 overflow-auto p-6 lg:p-8" id="main-content">
           <Outlet />
         </main>
       </div>

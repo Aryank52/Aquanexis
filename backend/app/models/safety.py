@@ -1,19 +1,21 @@
 """
 Safety database models.
 """
+
 import enum
 import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Index, String, Text, JSON, Float, Integer
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import JSON, Column, DateTime, Enum, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 
 from app.infrastructure.database import Base
 
 
 class SafetyActionType(enum.Enum):
     """Types of safety actions that can be executed."""
+
     CLOSE_INLET_VALVE = "close_inlet_valve"
     STOP_PUMP = "stop_pump"
     OPEN_RELIEF_VALVE = "open_relief_valve"
@@ -22,6 +24,7 @@ class SafetyActionType(enum.Enum):
 
 class SafetyEventType(enum.Enum):
     """Types of safety events that can trigger actions."""
+
     LEAK_DETECTED = "leak_detected"
     OVERPRESSURE = "overpressure"
     DRY_RUN = "dry_run"
@@ -30,6 +33,7 @@ class SafetyEventType(enum.Enum):
 
 class SafetyActionStatus(enum.Enum):
     """Status of a safety action execution."""
+
     PENDING = "pending"
     EXECUTING = "executing"
     COMPLETED = "completed"
@@ -40,6 +44,7 @@ class SafetyActionStatus(enum.Enum):
 
 class SafetyEventType(enum.Enum):
     """Types of safety events that can trigger actions."""
+
     LEAK_DETECTED = "leak_detected"
     OVERPRESSURE = "overpressure"
     DRY_RUN = "dry_run"
@@ -48,11 +53,14 @@ class SafetyEventType(enum.Enum):
 
 class SafetyEventModel(Base):
     """Safety event record for audit trail."""
+
     __tablename__ = "safety_events"
     __allow_unmapped__ = True
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     event_type = Column(Enum(SafetyEventType, native_enum=False), nullable=False)
     action_type = Column(Enum(SafetyActionType, native_enum=False), nullable=True)
@@ -82,10 +90,13 @@ class SafetyEventModel(Base):
 
 class SafetyActionModel(Base):
     """Safety action command log."""
+
     __tablename__ = "safety_actions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_id = Column(
+        UUID(as_uuid=True), ForeignKey("devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     command_id = Column(UUID(as_uuid=True), nullable=False)
     action_type = Column(Enum(SafetyActionType, native_enum=False), nullable=False)
@@ -96,7 +107,11 @@ class SafetyActionModel(Base):
     timeout_sec = Column(Integer, nullable=False, default=5)
     signature = Column(String(256), nullable=True)
 
-    status = Column(Enum(SafetyActionStatus, native_enum=False), nullable=False, default=SafetyActionStatus.PENDING)
+    status = Column(
+        Enum(SafetyActionStatus, native_enum=False),
+        nullable=False,
+        default=SafetyActionStatus.PENDING,
+    )
     executed_at = Column(DateTime(timezone=True), nullable=True)
     error_message = Column(Text, nullable=True)
     firmware_response = Column(JSON, nullable=True)

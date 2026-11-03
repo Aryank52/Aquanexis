@@ -5,14 +5,14 @@ import { cn } from '@/utils/cn';
 
 export function PageSkeleton() {
   return (
-    <div className="min-h-screen bg-base flex">
+    <div className="flex min-h-screen bg-base">
       {/* Sidebar skeleton */}
-      <aside className="hidden lg:block w-72 bg-surface border-r border-subtle">
-        <div className="h-16 px-4 flex items-center gap-3 border-b border-subtle">
-          <div className="skeleton w-8 h-8 rounded-lg" />
+      <aside className="border-subtle hidden w-72 border-r bg-surface lg:block">
+        <div className="border-subtle flex h-16 items-center gap-3 border-b px-4">
+          <div className="skeleton h-8 w-8 rounded-lg" />
           <div className="skeleton h-5 w-24 rounded" />
         </div>
-        <div className="p-4 space-y-2">
+        <div className="space-y-2 p-4">
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className="skeleton h-10 w-full rounded-button" />
           ))}
@@ -22,16 +22,16 @@ export function PageSkeleton() {
       {/* Main content skeleton */}
       <div className="flex-1">
         {/* Header skeleton */}
-        <header className="h-16 bg-elevated border-b border-subtle flex items-center justify-between px-6">
+        <header className="border-subtle flex h-16 items-center justify-between border-b bg-elevated px-6">
           <div className="skeleton h-8 w-32 rounded" />
           <div className="flex items-center gap-3">
-            <div className="skeleton w-8 h-8 rounded-full" />
-            <div className="skeleton w-8 h-8 rounded-full" />
+            <div className="skeleton h-8 w-8 rounded-full" />
+            <div className="skeleton h-8 w-8 rounded-full" />
           </div>
         </header>
 
         {/* Content skeleton */}
-        <main className="p-6 lg:p-8 space-y-6">
+        <main className="space-y-6 p-6 lg:p-8">
           {/* Title */}
           <div className="space-y-2">
             <div className="skeleton h-8 w-48 rounded" />
@@ -39,12 +39,9 @@ export function PageSkeleton() {
           </div>
 
           {/* Cards grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-surface border border-subtle rounded-card p-6 space-y-4"
-              >
+              <div key={i} className="border-subtle space-y-4 rounded-card border bg-surface p-6">
                 <div className="skeleton h-6 w-32 rounded" />
                 <div className="skeleton h-40 w-full rounded" />
                 <div className="skeleton h-4 w-48 rounded" />
@@ -53,12 +50,9 @@ export function PageSkeleton() {
           </div>
 
           {/* Sensor grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-surface border border-subtle rounded-card p-4 space-y-2"
-              >
+              <div key={i} className="border-subtle space-y-2 rounded-card border bg-surface p-4">
                 <div className="skeleton h-4 w-16 rounded" />
                 <div className="skeleton h-8 w-20 rounded" />
                 <div className="skeleton h-3 w-12 rounded" />
@@ -74,17 +68,8 @@ export function PageSkeleton() {
 /**
  * Inline skeleton placeholder for use inside pages (cards, values, etc.)
  */
-export function Skeleton({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn('skeleton rounded', className)}
-      aria-hidden="true"
-      {...props}
-    />
-  );
+export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('skeleton rounded', className)} aria-hidden="true" {...props} />;
 }
 
 /**
@@ -99,9 +84,9 @@ export function QueryError({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="w-12 h-12 rounded-full bg-critical/10 flex items-center justify-center mb-4">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-critical/10">
         <svg
-          className="w-6 h-6 text-critical"
+          className="h-6 w-6 text-critical"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -114,15 +99,10 @@ export function QueryError({
           />
         </svg>
       </div>
-      <p className="text-body text-text-primary mb-1">{message}</p>
-      <p className="text-caption text-text-muted mb-4">
-        Check your connection and try again.
-      </p>
+      <p className="text-text-primary mb-1 text-body">{message}</p>
+      <p className="mb-4 text-caption text-text-muted">Check your connection and try again.</p>
       {onRetry && (
-        <button
-          onClick={onRetry}
-          className="btn btn-secondary btn-sm"
-        >
+        <button onClick={onRetry} className="btn btn-secondary btn-sm">
           Retry
         </button>
       )}
@@ -145,14 +125,12 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       {icon && (
-        <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center mb-4 border border-subtle">
+        <div className="border-subtle mb-4 flex h-12 w-12 items-center justify-center rounded-full border bg-surface">
           {icon}
         </div>
       )}
-      <p className="text-body font-medium text-text-primary mb-1">{title}</p>
-      {description && (
-        <p className="text-caption text-text-muted max-w-sm">{description}</p>
-      )}
+      <p className="text-text-primary mb-1 text-body font-medium">{title}</p>
+      {description && <p className="max-w-sm text-caption text-text-muted">{description}</p>}
     </div>
   );
 }

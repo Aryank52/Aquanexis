@@ -1,6 +1,7 @@
 """
 Tests for Notification Providers (Phase G3).
 """
+
 import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -27,59 +28,64 @@ from app.models.alert import Alert as AlertModel, AlertSeverity, AlertStatus
 
 class MockAlert:
     """Mock alert for testing."""
+
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
-        self.id = kwargs.get('id', uuid4())
-        self.device_id = kwargs.get('device_id', uuid4())
-        self.alert_code = kwargs.get('alert_code', 'test_alert')
-        self.severity = kwargs.get('severity', AlertSeverity.WARNING)
-        self.status = kwargs.get('status', AlertStatus.OPEN)
-        self.title = kwargs.get('title', 'Test Alert')
-        self.message = kwargs.get('message', 'Test message')
-        self.trigger_source = kwargs.get('trigger_source', 'test')
-        self.trigger_value = kwargs.get('trigger_value', {'value': 100})
-        self.threshold_value = kwargs.get('threshold_value', {'threshold': 50})
-        self.evidence = kwargs.get('evidence', {})
-        self.created_at = kwargs.get('created_at', datetime.now(timezone.utc))
+        self.id = kwargs.get("id", uuid4())
+        self.device_id = kwargs.get("device_id", uuid4())
+        self.alert_code = kwargs.get("alert_code", "test_alert")
+        self.severity = kwargs.get("severity", AlertSeverity.WARNING)
+        self.status = kwargs.get("status", AlertStatus.OPEN)
+        self.title = kwargs.get("title", "Test Alert")
+        self.message = kwargs.get("message", "Test message")
+        self.trigger_source = kwargs.get("trigger_source", "test")
+        self.trigger_value = kwargs.get("trigger_value", {"value": 100})
+        self.threshold_value = kwargs.get("threshold_value", {"threshold": 50})
+        self.evidence = kwargs.get("evidence", {})
+        self.created_at = kwargs.get("created_at", datetime.now(timezone.utc))
 
 
 class MockNotification:
     """Mock notification outbox for testing."""
+
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
-        self.id = kwargs.get('id', uuid4())
-        self.alert_id = kwargs.get('alert_id', uuid4())
-        self.device_id = kwargs.get('device_id', uuid4())
-        self.channel = kwargs.get('channel', NotificationChannel.CONSOLE)
-        self.provider = kwargs.get('provider', 'console')
-        self.recipient = kwargs.get('recipient', 'test@example.com')
-        self.subject = kwargs.get('subject')
-        self.body = kwargs.get('body', '')
-        self.template_name = kwargs.get('template_name', 'default')
-        self.template_data = kwargs.get('template_data', {
-            "alert_code": "test_alert",
-            "severity": "warning",
-            "title": "Test Alert",
-            "message": "Test message",
-            "trigger_source": "test",
-            "trigger_value": {"value": 100},
-            "threshold_value": {"threshold": 50},
-            "evidence": {},
-            "device_id": "test-device",
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
-        self.dedupe_key = kwargs.get('dedupe_key', 'test-key')
-        self.status = kwargs.get('status', NotificationStatus.PENDING)
-        self.error_category = kwargs.get('error_category')
-        self.last_error = kwargs.get('last_error')
-        self.attempt_count = kwargs.get('attempt_count', 0)
-        self.max_attempts = kwargs.get('max_attempts', 5)
-        self.next_attempt_at = kwargs.get('next_attempt_at')
-        self.created_at = kwargs.get('created_at', datetime.now(timezone.utc))
-        self.sent_at = kwargs.get('sent_at')
-        self.updated_at = kwargs.get('updated_at', datetime.now(timezone.utc))
+        self.id = kwargs.get("id", uuid4())
+        self.alert_id = kwargs.get("alert_id", uuid4())
+        self.device_id = kwargs.get("device_id", uuid4())
+        self.channel = kwargs.get("channel", NotificationChannel.CONSOLE)
+        self.provider = kwargs.get("provider", "console")
+        self.recipient = kwargs.get("recipient", "test@example.com")
+        self.subject = kwargs.get("subject")
+        self.body = kwargs.get("body", "")
+        self.template_name = kwargs.get("template_name", "default")
+        self.template_data = kwargs.get(
+            "template_data",
+            {
+                "alert_code": "test_alert",
+                "severity": "warning",
+                "title": "Test Alert",
+                "message": "Test message",
+                "trigger_source": "test",
+                "trigger_value": {"value": 100},
+                "threshold_value": {"threshold": 50},
+                "evidence": {},
+                "device_id": "test-device",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+        self.dedupe_key = kwargs.get("dedupe_key", "test-key")
+        self.status = kwargs.get("status", NotificationStatus.PENDING)
+        self.error_category = kwargs.get("error_category")
+        self.last_error = kwargs.get("last_error")
+        self.attempt_count = kwargs.get("attempt_count", 0)
+        self.max_attempts = kwargs.get("max_attempts", 5)
+        self.next_attempt_at = kwargs.get("next_attempt_at")
+        self.created_at = kwargs.get("created_at", datetime.now(timezone.utc))
+        self.sent_at = kwargs.get("sent_at")
+        self.updated_at = kwargs.get("updated_at", datetime.now(timezone.utc))
 
 
 @pytest.fixture
@@ -123,9 +129,9 @@ class TestConsoleNotificationProvider:
             recipient="console",
             template_name="default",
         )
-        
+
         result = await provider.send(notification)
-        
+
         assert result.success is True
         assert result.provider_response is not None
         assert result.provider_response["logged"] is True
@@ -151,9 +157,9 @@ class TestConsoleNotificationProvider:
                 "created_at": datetime.now(timezone.utc).isoformat(),
             },
         )
-        
+
         result = await provider.send(notification)
-        
+
         assert result.success is True
         assert "CRITICAL" in result.provider_response["message"]
         assert "Leak Detected" in result.provider_response["message"]
@@ -177,17 +183,17 @@ class TestEmailNotificationProvider:
     @pytest.mark.asyncio
     async def test_send_missing_config(self, provider):
         """Test sending with missing SMTP config."""
-        with patch('app.services.notification_providers.get_settings') as mock_settings:
+        with patch("app.services.notification_providers.get_settings") as mock_settings:
             mock_settings.return_value.notifications.smtp_host = None
-            
+
             notification = MockNotification(
                 channel=NotificationChannel.EMAIL,
                 provider="smtp",
                 recipient="test@example.com",
             )
-            
+
             result = await provider.send(notification)
-            
+
             assert result.success is False
             assert result.error_category == NotificationErrorCategory.PERMANENT
             assert "not configured" in result.error_message
@@ -195,19 +201,19 @@ class TestEmailNotificationProvider:
     @pytest.mark.asyncio
     async def test_send_invalid_recipient(self, provider):
         """Test sending with invalid email recipient."""
-        with patch('app.services.notification_providers.get_settings') as mock_settings:
+        with patch("app.services.notification_providers.get_settings") as mock_settings:
             mock_settings.return_value.notifications.smtp_host = "smtp.example.com"
             mock_settings.return_value.notifications.smtp_user = "user"
             mock_settings.return_value.notifications.smtp_password = "pass"
-            
+
             notification = MockNotification(
                 channel=NotificationChannel.EMAIL,
                 provider="smtp",
                 recipient="invalid-email",
             )
-            
+
             result = await provider.send(notification)
-            
+
             assert result.success is False
             assert result.error_category == NotificationErrorCategory.PERMANENT
             assert "Invalid email" in result.error_message
@@ -229,7 +235,7 @@ class TestWebhookNotificationProvider:
         assert provider._is_private_ip("169.254.0.1") is True
         assert provider._is_private_ip("8.8.8.8") is False
         assert provider._is_private_ip("1.1.1.1") is False
-        
+
         # IPv6
         assert provider._is_private_ip("::1") is True
         assert provider._is_private_ip("fe80::1") is True
@@ -237,38 +243,38 @@ class TestWebhookNotificationProvider:
 
     def test_validate_webhook_url_blocked_domains(self, provider):
         """Test URL validation blocks reserved domains."""
-        with patch('app.services.notification_providers.get_settings') as mock_settings:
+        with patch("app.services.notification_providers.get_settings") as mock_settings:
             mock_settings.return_value.is_production = True
-            
+
             error = provider._validate_webhook_url("https://localhost/webhook")
             assert error is not None
             assert "Blocked domain" in error
-            
+
             error = provider._validate_webhook_url("https://metadata.google.internal/webhook")
             assert error is not None
 
     def test_validate_webhook_url_http_in_production(self, provider):
         """Test URL validation requires HTTPS in production."""
-        with patch('app.services.notification_providers.get_settings') as mock_settings:
+        with patch("app.services.notification_providers.get_settings") as mock_settings:
             mock_settings.return_value.is_production = True
-            
+
             error = provider._validate_webhook_url("http://example.com/webhook")
             assert error is not None
             assert "HTTPS" in error
-            
+
             # HTTPS should be OK (but will fail on DNS resolution in test)
-            with patch('socket.getaddrinfo') as mock_getaddrinfo:
-                mock_getaddrinfo.return_value = [(2, 1, 6, '', ('93.184.216.34', 0))]
+            with patch("socket.getaddrinfo") as mock_getaddrinfo:
+                mock_getaddrinfo.return_value = [(2, 1, 6, "", ("93.184.216.34", 0))]
                 error = provider._validate_webhook_url("https://example.com/webhook")
                 assert error is None
 
     def test_validate_webhook_url_private_ip(self, provider):
         """Test URL validation blocks private IPs."""
-        with patch('app.services.notification_providers.get_settings') as mock_settings:
+        with patch("app.services.notification_providers.get_settings") as mock_settings:
             mock_settings.return_value.is_production = True
-            
-            with patch('socket.getaddrinfo') as mock_getaddrinfo:
-                mock_getaddrinfo.return_value = [(2, 1, 6, '', ('10.0.0.1', 0))]
+
+            with patch("socket.getaddrinfo") as mock_getaddrinfo:
+                mock_getaddrinfo.return_value = [(2, 1, 6, "", ("10.0.0.1", 0))]
                 error = provider._validate_webhook_url("https://internal.example.com/webhook")
                 assert error is not None
                 assert "private IP" in error
@@ -281,9 +287,9 @@ class TestWebhookNotificationProvider:
             provider="webhook",
             recipient="https://localhost/webhook",
         )
-        
+
         result = await provider.send(notification)
-        
+
         assert result.success is False
         assert result.error_category == NotificationErrorCategory.PERMANENT
 
@@ -329,14 +335,14 @@ class TestNotificationService:
         mock_db.commit = AsyncMock()
         mock_db.refresh = AsyncMock()
         mock_db.add = MagicMock()
-        
+
         notification = await service.create_notification(
             alert=sample_alert,
             channel=NotificationChannel.CONSOLE,
             recipient="console",
             provider="console",
         )
-        
+
         assert notification is not None
         assert notification.channel == NotificationChannel.CONSOLE
         assert notification.provider == "console"
@@ -351,7 +357,7 @@ class TestNotificationService:
         existing = MockNotification()
         mock_db.execute = AsyncMock()
         mock_db.execute.return_value.scalar_one_or_none.return_value = existing
-        
+
         notification = await service.create_notification(
             alert=sample_alert,
             channel=NotificationChannel.CONSOLE,
@@ -359,7 +365,7 @@ class TestNotificationService:
             provider="console",
             dedupe_key="test-dedupe-key",
         )
-        
+
         assert notification is None
         mock_db.add.assert_not_called()
 
@@ -368,6 +374,7 @@ class TestNotificationService:
         """Test creating notifications for all providers."""
         # Mock provider configs
         from app.models.notification import NotificationProviderConfig
+
         config = NotificationProviderConfig(
             id=uuid4(),
             device_id=sample_alert.device_id,
@@ -377,22 +384,23 @@ class TestNotificationService:
             config={"recipient": "console"},
             min_severity="info",
         )
-        
+
         # Mock execute to return provider configs
         mock_result = MagicMock()
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = [config]
         mock_result.scalars = MagicMock(return_value=mock_scalars)
-        
+
         # Mock for duplicate check (returns None)
         mock_duplicate_result = MagicMock()
         mock_duplicate_result.scalar_one_or_none = MagicMock(return_value=None)
-        
+
         # Mock for rate limit check
         mock_count_result = MagicMock()
         mock_count_result.scalar = MagicMock(return_value=0)
-        
+
         call_count = [0]
+
         def execute_side_effect(query):
             call_count[0] += 1
             query_str = str(query).lower()
@@ -406,14 +414,14 @@ class TestNotificationService:
             elif "count" in query_str:
                 return mock_count_result
             return mock_duplicate_result
-        
+
         mock_db.execute = AsyncMock(side_effect=execute_side_effect)
         mock_db.commit = AsyncMock()
         mock_db.refresh = AsyncMock()
         mock_db.add = MagicMock()
-        
+
         notifications = await service.create_notifications_for_alert(sample_alert)
-        
+
         assert len(notifications) == 1
         assert notifications[0].channel == NotificationChannel.CONSOLE
 
@@ -433,21 +441,23 @@ class TestNotificationServiceRetryLogic:
             status=NotificationStatus.PENDING,
             channel=NotificationChannel.CONSOLE,
         )
-        
+
         # Mock the provider send
-        with patch('app.services.notification_service.get_provider') as mock_get_provider:
+        with patch("app.services.notification_service.get_provider") as mock_get_provider:
             mock_provider = AsyncMock()
-            mock_provider.send = AsyncMock(return_value=NotificationResult(
-                success=True,
-                provider_response={"logged": True},
-            ))
+            mock_provider.send = AsyncMock(
+                return_value=NotificationResult(
+                    success=True,
+                    provider_response={"logged": True},
+                )
+            )
             mock_get_provider.return_value = mock_provider
-            
+
             mock_db.commit = AsyncMock()
             mock_db.refresh = AsyncMock()
-            
+
             result = await service._deliver_notification(notification)
-            
+
             assert result.success is True
             assert notification.status == NotificationStatus.SENT
             assert notification.sent_at is not None
@@ -462,21 +472,23 @@ class TestNotificationServiceRetryLogic:
             max_attempts=3,
             channel=NotificationChannel.CONSOLE,
         )
-        
-        with patch('app.services.notification_service.get_provider') as mock_get_provider:
+
+        with patch("app.services.notification_service.get_provider") as mock_get_provider:
             mock_provider = AsyncMock()
-            mock_provider.send = AsyncMock(return_value=NotificationResult(
-                success=False,
-                error_category=NotificationErrorCategory.TRANSIENT,
-                error_message="Connection timeout",
-            ))
+            mock_provider.send = AsyncMock(
+                return_value=NotificationResult(
+                    success=False,
+                    error_category=NotificationErrorCategory.TRANSIENT,
+                    error_message="Connection timeout",
+                )
+            )
             mock_get_provider.return_value = mock_provider
-            
+
             mock_db.commit = AsyncMock()
             mock_db.refresh = AsyncMock()
-            
+
             result = await service._deliver_notification(notification)
-            
+
             assert result.success is False
             assert notification.status == NotificationStatus.RETRY
             assert notification.attempt_count == 1
@@ -492,21 +504,23 @@ class TestNotificationServiceRetryLogic:
             max_attempts=5,
             channel=NotificationChannel.CONSOLE,
         )
-        
-        with patch('app.services.notification_service.get_provider') as mock_get_provider:
+
+        with patch("app.services.notification_service.get_provider") as mock_get_provider:
             mock_provider = AsyncMock()
-            mock_provider.send = AsyncMock(return_value=NotificationResult(
-                success=False,
-                error_category=NotificationErrorCategory.TRANSIENT,
-                error_message="Connection timeout",
-            ))
+            mock_provider.send = AsyncMock(
+                return_value=NotificationResult(
+                    success=False,
+                    error_category=NotificationErrorCategory.TRANSIENT,
+                    error_message="Connection timeout",
+                )
+            )
             mock_get_provider.return_value = mock_provider
-            
+
             mock_db.commit = AsyncMock()
             mock_db.refresh = AsyncMock()
-            
+
             result = await service._deliver_notification(notification)
-            
+
             assert result.success is False
             assert notification.status == NotificationStatus.DEAD_LETTER
             assert notification.attempt_count == 5
@@ -519,7 +533,7 @@ class TestNotificationTemplates:
         """Test that default templates exist for all critical alert types."""
         provider = ConsoleNotificationProvider({})
         templates = provider._get_default_templates()
-        
+
         assert "default" in templates
         assert "leak_detected" in templates
         assert "pressure_high" in templates
@@ -542,9 +556,9 @@ class TestNotificationTemplates:
             "device_id": "device-123",
             "created_at": "2024-01-15T10:30:00Z",
         }
-        
+
         subject, body = provider.render_template("leak_detected", template_data)
-        
+
         assert "Leak Detected" in subject
         assert "CRITICAL" in body
         assert "device-123" in body

@@ -1,10 +1,11 @@
 """
 Alert domain models - pure Python, no framework dependencies.
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Any, Callable, Dict, Optional
 from uuid import UUID, uuid4
 
 
@@ -26,7 +27,12 @@ class AlertStatus(str, Enum):
 # Valid state transitions
 ALERT_TRANSITIONS = {
     AlertStatus.DETECTED: [AlertStatus.OPEN, AlertStatus.AUTO_CLEARED],
-    AlertStatus.OPEN: [AlertStatus.ACKNOWLEDGED, AlertStatus.SNOOZED, AlertStatus.RESOLVED, AlertStatus.AUTO_CLEARED],
+    AlertStatus.OPEN: [
+        AlertStatus.ACKNOWLEDGED,
+        AlertStatus.SNOOZED,
+        AlertStatus.RESOLVED,
+        AlertStatus.AUTO_CLEARED,
+    ],
     AlertStatus.ACKNOWLEDGED: [AlertStatus.SNOOZED, AlertStatus.RESOLVED, AlertStatus.AUTO_CLEARED],
     AlertStatus.SNOOZED: [AlertStatus.OPEN, AlertStatus.RESOLVED, AlertStatus.AUTO_CLEARED],
     AlertStatus.RESOLVED: [],  # Terminal state
@@ -37,6 +43,7 @@ ALERT_TRANSITIONS = {
 @dataclass
 class Alert:
     """Alert entity with full lifecycle."""
+
     id: UUID = field(default_factory=uuid4)
     device_id: UUID = field(default_factory=uuid4)
     alert_code: str = ""
@@ -64,10 +71,10 @@ class Alert:
         """Attempt to transition to new status. Returns True if successful."""
         if not self.can_transition_to(new_status):
             return False
-        
+
         self.status = new_status
         now = datetime.utcnow()
-        
+
         if new_status == AlertStatus.ACKNOWLEDGED:
             self.acknowledged_at = now
             self.acknowledged_by = user
@@ -79,12 +86,17 @@ class Alert:
             self.resolved_by = user
         elif new_status == AlertStatus.AUTO_CLEARED:
             self.auto_cleared_at = now
-        
+
         return True
 
     def is_active(self) -> bool:
         """Check if alert is in an active state requiring attention."""
-        return self.status in (AlertStatus.DETECTED, AlertStatus.OPEN, AlertStatus.ACKNOWLEDGED, AlertStatus.SNOOZED)
+        return self.status in (
+            AlertStatus.DETECTED,
+            AlertStatus.OPEN,
+            AlertStatus.ACKNOWLEDGED,
+            AlertStatus.SNOOZED,
+        )
 
     def is_terminal(self) -> bool:
         """Check if alert is in a terminal state."""
@@ -94,13 +106,14 @@ class Alert:
 @dataclass
 class AlertRule:
     """Rule for automatic alert generation."""
+
     code: str
     name: str
     severity: AlertSeverity
     description: str
     # Function that evaluates the rule given device data
     # Returns (should_trigger, trigger_value, threshold_value, evidence)
-    evaluate: callable = field(default=None)
+    evaluate: Optional[Callable] = field(default=None)
     # Optional: auto-clear when condition is no longer met
     auto_clear: bool = False
     # Optional: cooldown period in seconds
@@ -112,13 +125,11 @@ ALERT_CODES = {
     # Water quality
     "water_quality_degraded": {"severity": AlertSeverity.WARNING, "auto_clear": True},
     "water_quality_critical": {"severity": AlertSeverity.CRITICAL, "auto_clear": True},
-    
     # Filter health
     "filter_stress_high": {"severity": AlertSeverity.WARNING, "auto_clear": True},
     "filter_health_critical": {"severity": AlertSeverity.CRITICAL, "auto_clear": False},
     "filter_rul_low": {"severity": AlertSeverity.WARNING, "auto_clear": True},
     "filter_rul_critical": {"severity": AlertSeverity.CRITICAL, "auto_clear": False},
-    
     # System diagnostics
     "leak_detected": {"severity": AlertSeverity.CRITICAL, "auto_clear": False},
     "leak_persistent": {"severity": AlertSeverity.CRITICAL, "auto_clear": False},
@@ -131,13 +142,11 @@ ALERT_CODES = {
     "flow_interrupted": {"severity": AlertSeverity.CRITICAL, "auto_clear": True},
     "flow_unstable": {"severity": AlertSeverity.WARNING, "auto_clear": True},
     "tank_level_low": {"severity": AlertSeverity.WARNING, "auto_clear": True},
-    
     # Pump
     "pump_dry_run_risk": {"severity": AlertSeverity.CRITICAL, "auto_clear": True},
     "pump_excessive_runtime": {"severity": AlertSeverity.WARNING, "auto_clear": True},
     "pump_overcurrent": {"severity": AlertSeverity.CRITICAL, "auto_clear": True},
     "pump_abnormal_power": {"severity": AlertSeverity.WARNING, "auto_clear": True},
-    
     # Sensors
     "sensor_missing": {"severity": AlertSeverity.WARNING, "auto_clear": True},
     "sensor_stuck": {"severity": AlertSeverity.WARNING, "auto_clear": True},
@@ -145,11 +154,9 @@ ALERT_CODES = {
     "sensor_rapid_change": {"severity": AlertSeverity.WARNING, "auto_clear": True},
     "sensor_calibration_due": {"severity": AlertSeverity.INFO, "auto_clear": True},
     "sensor_calibration_overdue": {"severity": AlertSeverity.WARNING, "auto_clear": True},
-    
     # Device
     "device_offline": {"severity": AlertSeverity.WARNING, "auto_clear": True},
     "device_reconnected": {"severity": AlertSeverity.INFO, "auto_clear": True},
-    
     # Maintenance
     "maintenance_due": {"severity": AlertSeverity.INFO, "auto_clear": True},
     "maintenance_overdue": {"severity": AlertSeverity.WARNING, "auto_clear": False},

@@ -1,25 +1,42 @@
 """
 Pydantic schemas for telemetry API requests/responses.
 """
+
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any, Literal
+from typing import Any, Dict, List, Literal, Optional
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
 
+from pydantic import BaseModel, Field
+
+from app.domain.canonical_telemetry import (
+    CANONICAL_SENSOR_UNITS,
+    CanonicalTelemetryPayload,
+    CanonicalTelemetryRecord,
+    DeviceLifecycleState,
+    TelemetryDataQuality,
+    TelemetryProvenance,
+)
+from app.domain.filter_intelligence import FilterHealthIndex
 
 # ===== Sensor Reading Schemas =====
 
+
 class SensorReadingInput(BaseModel):
     """Input sensor values from device."""
+
     tds: Optional[float] = Field(None, ge=0, le=5000, description="Total Dissolved Solids (ppm)")
-    conductivity: Optional[float] = Field(None, ge=0, le=10000, description="Electrical Conductivity (µS/cm)")
+    conductivity: Optional[float] = Field(
+        None, ge=0, le=10000, description="Electrical Conductivity (µS/cm)"
+    )
     ph: Optional[float] = Field(None, ge=0, le=14, description="pH (0-14)")
     turbidity: Optional[float] = Field(None, ge=0, le=1000, description="Turbidity (NTU)")
     temperature: Optional[float] = Field(None, ge=-20, le=80, description="Temperature (°C)")
     flow_rate: Optional[float] = Field(None, ge=0, le=100, description="Flow rate (L/min)")
     inlet_pressure: Optional[float] = Field(None, ge=0, le=2000, description="Inlet pressure (kPa)")
-    outlet_pressure: Optional[float] = Field(None, ge=0, le=2000, description="Outlet pressure (kPa)")
+    outlet_pressure: Optional[float] = Field(
+        None, ge=0, le=2000, description="Outlet pressure (kPa)"
+    )
     tank_level: Optional[float] = Field(None, ge=0, le=100, description="Tank level (%)")
     leak: Optional[bool] = Field(None, description="Leak detected")
     pump_current: Optional[float] = Field(None, ge=0, le=20, description="Pump current (A)")
@@ -29,6 +46,7 @@ class SensorReadingInput(BaseModel):
 
 class QualityFlag(BaseModel):
     """Quality flag for a single sensor."""
+
     state: Literal["valid", "suspect", "missing", "out_of_range", "calibration_due"] = "valid"
     message: Optional[str] = None
     expected_range: Optional[List[float]] = None
@@ -37,6 +55,7 @@ class QualityFlag(BaseModel):
 
 class QualityFlags(BaseModel):
     """Quality flags for all sensors."""
+
     tds: QualityFlag = Field(default_factory=QualityFlag)
     conductivity: QualityFlag = Field(default_factory=QualityFlag)
     ph: QualityFlag = Field(default_factory=QualityFlag)
@@ -63,22 +82,31 @@ class QualityFlags(BaseModel):
 
 class TelemetryPayload(BaseModel):
     """Complete telemetry payload from device."""
+
     device_id: UUID
     timestamp: datetime
     sequence: Optional[int] = Field(None, ge=0, description="Sequence number for deduplication")
-    firmware_version: Optional[str] = Field(None, max_length=32)
+    firmware_version: Optional[str] = Field(None, max_length=64)
     readings: SensorReadingInput = Field(default_factory=SensorReadingInput)
     quality: Optional[QualityFlags] = None
+    provenance: Optional[Literal["MEASURED", "SIMULATED", "CALCULATED", "MODEL_PREDICTED"]] = Field(
+        None, description="Explicit data provenance"
+    )
+    units: Optional[Dict[str, str]] = None
+    calibration_state: Optional[Dict[str, Any]] = None
+    device_state: Optional[str] = None
 
 
 class BatchTelemetryPayload(BaseModel):
     """Batch telemetry payload for buffered readings."""
+
     device_id: UUID
     firmware_version: Optional[str] = Field(None, max_length=32)
     readings: List[TelemetryPayload] = Field(default_factory=list, min_length=1, max_length=1000)
 
 
 # ===== Device Schemas =====
+
 
 class SensorConfig(BaseModel):
     enabled: bool = True
@@ -108,6 +136,7 @@ class SafetyConfig(BaseModel):
     """Safety configuration for device registration (minimal version).
     Full safety schemas are in app/schemas/safety.py
     """
+
     leak_action: Literal["close_inlet_valve", "stop_pump", "both"] = "close_inlet_valve"
     leak_validate_with: List[str] = Field(default_factory=lambda: ["flow_delta", "pressure_drop"])
     leak_cooldown_sec: int = 300
@@ -163,8 +192,10 @@ class DeviceResponse(BaseModel):
 
 # ===== Telemetry Response Schemas =====
 
+
 class TelemetryIngestResponse(BaseModel):
     """Response for telemetry ingestion."""
+
     accepted: bool
     reading_id: int
     quality: QualityFlags
@@ -181,6 +212,7 @@ class BatchTelemetryResult(BaseModel):
 
 class SensorReadingResponse(BaseModel):
     """Stored sensor reading with quality."""
+
     id: int
     device_id: UUID
     timestamp: datetime
@@ -227,10 +259,13 @@ class DeviceStatusResponse(BaseModel):
     status: Literal["active", "offline", "degraded", "maintenance"]
     last_seen_at: Optional[datetime]
     last_reading: Optional[SensorReadingResponse] = None
-    sensor_health: Dict[str, Literal["valid", "suspect", "missing", "out_of_range", "calibration_due"]] = Field(default_factory=dict)
+    sensor_health: Dict[
+        str, Literal["valid", "suspect", "missing", "out_of_range", "calibration_due"]
+    ] = Field(default_factory=dict)
 
 
 # ===== Water Quality Schemas =====
+
 
 class ParameterScore(BaseModel):
     parameter: str
@@ -278,6 +313,7 @@ class AquaScoreResponse(BaseModel):
 
 # ===== Filter Health Schemas =====
 
+
 class ModelMetadata(BaseModel):
     name: str
     version: str
@@ -303,10 +339,13 @@ class FilterHealthResponse(BaseModel):
     input_features: Dict[str, float] = Field(default_factory=dict)
     explanation: Optional[ExplanationPayload] = None
     data_freshness_seconds: int
-    provenance: Literal["MEASURED", "SIMULATED", "CALCULATED", "MODEL_PREDICTED"] = "MODEL_PREDICTED"
+    provenance: Literal["MEASURED", "SIMULATED", "CALCULATED", "MODEL_PREDICTED"] = (
+        "MODEL_PREDICTED"
+    )
 
 
 # ===== Alert Schemas =====
+
 
 class AlertSeverity(str, Enum):
     INFO = "info"
@@ -391,6 +430,7 @@ class AlertTransitionResponse(BaseModel):
 
 
 # ===== Phase E: Filter Intelligence Enhancement Schemas =====
+
 
 class CounterfactualAnalysisResponse(BaseModel):
     device_id: UUID
@@ -487,141 +527,6 @@ class ExperimentRecordResponse(BaseModel):
 
 # ===== Safety Schemas =====
 
-class SafetyConfigResponse(BaseModel):
-    device_id: UUID
-    leak_action: str
-    leak_validate_with: List[str]
-    leak_cooldown_sec: int
-    leak_persistence_readings: int
-    pressure_max_kpa: float
-    pressure_action: str
-    pressure_cooldown_sec: int
-    pressure_min_kpa: float
-    pressure_action_low: str
-    flow_min_lpm: float
-    dry_run_action: str
-    dry_run_cooldown_sec: int
-    flow_unstable_threshold_pct: float
-    pump_current_max_a: float
-    overcurrent_action: str
-    overcurrent_cooldown_sec: int
-    pump_power_max_w: float
-    persistence_required_readings: int
-    cooldown_enabled: bool
-    cooldown_by_code: Dict[str, int]
-
-
-class SafetyConfigUpdate(BaseModel):
-    leak_action: Optional[str] = None
-    leak_validate_with: Optional[List[str]] = None
-    leak_cooldown_sec: Optional[int] = None
-    leak_persistence_readings: Optional[int] = None
-    pressure_max_kpa: Optional[float] = None
-    pressure_action: Optional[str] = None
-    pressure_cooldown_sec: Optional[int] = None
-    pressure_min_kpa: Optional[float] = None
-    pressure_action_low: Optional[str] = None
-    flow_min_lpm: Optional[float] = None
-    dry_run_action: Optional[str] = None
-    dry_run_cooldown_sec: Optional[int] = None
-    flow_unstable_threshold_pct: Optional[float] = None
-    pump_current_max_a: Optional[float] = None
-    overcurrent_action: Optional[str] = None
-    overcurrent_cooldown_sec: Optional[int] = None
-    pump_power_max_w: Optional[float] = None
-    persistence_required_readings: Optional[int] = None
-    cooldown_enabled: Optional[bool] = None
-    cooldown_by_code: Optional[Dict[str, int]] = None
-
-
-class SafetyTestRequest(BaseModel):
-    device_id: UUID
-    test_type: Literal["leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"]
-    custom_reading: Optional[Dict[str, Any]] = None
-
-
-class SafetyTestResponse(BaseModel):
-    test_type: str
-    passed: bool
-    details: Dict[str, Any]
-    simulated_action: Optional[str] = None
-
-
-class SafetyActionCommand(BaseModel):
-    command_id: UUID
-    device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    event_type: str
-    trigger_value: float
-    threshold_value: float
-    timestamp: datetime
-    timeout_sec: int = 5
-    signature: Optional[str] = None
-
-
-class SafetyActionResponse(BaseModel):
-    command_id: UUID
-    device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    status: Literal["pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"]
-    executed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
-    firmware_response: Optional[Dict[str, Any]] = None
-
-
-# ===== Additional Response Models for Dashboard =====
-
-class AquaScoreResponse(BaseModel):
-    device_id: UUID
-    timestamp: datetime
-    aquascore: int
-    parameter_scores: List[ParameterScore] = Field(default_factory=list)
-    trends: Dict[str, TrendAnalysis] = Field(default_factory=dict)
-    anomaly_score: Optional[float] = None
-    anomaly_flags: Dict[str, float] = Field(default_factory=dict)
-
-
-class DiagnosticsDataResponse(BaseModel):
-    device_id: UUID
-    timestamp: datetime
-    pressure: Optional[float] = None
-    flow: Optional[float] = None
-    leak: Optional[bool] = None
-    tank: Optional[float] = None
-    pump: Optional[float] = None
-
-
-class PurificationPerformanceResponse(BaseModel):
-    device_id: UUID
-    timestamp: datetime
-    rejection_rate: Optional[float] = None
-    recovery_ratio: Optional[float] = None
-    permeate_quality: Optional[float] = None
-    feed_quality: Optional[float] = None
-    efficiency: Optional[float] = None
-
-
-# Aliases for backward compatibility
-WaterQualityResponse = AquaScoreResponse
-# FilterHealthResponse uses the domain FilterHealthIndex model from app.domain.filter_intelligence
-from app.domain.filter_intelligence import FilterHealthIndex
-FilterHealthResponse = FilterHealthIndex
-DiagnosticsDataResponse = DiagnosticsDataResponse
-PurificationPerformanceResponse = PurificationPerformanceResponse
-
-
-# ===== Dashboard Composite =====
-
-class DashboardData(BaseModel):
-    device: DeviceResponse
-    latest_telemetry: Optional[SensorReadingResponse] = None
-    water_quality: Optional[WaterQualityResponse] = None
-    filter_health: Optional[FilterHealthResponse] = None
-    diagnostics: Optional[DiagnosticsDataResponse] = None
-    purification: Optional[PurificationPerformanceResponse] = None
-    active_alert: Optional[AlertResponse] = None
-    data_freshness_seconds: int
-
 
 class SafetyConfigResponse(BaseModel):
     device_id: UUID
@@ -672,7 +577,9 @@ class SafetyConfigUpdate(BaseModel):
 
 class SafetyTestRequest(BaseModel):
     device_id: UUID
-    test_type: Literal["leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"]
+    test_type: Literal[
+        "leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"
+    ]
     custom_reading: Optional[Dict[str, Any]] = None
 
 
@@ -686,7 +593,9 @@ class SafetyTestResponse(BaseModel):
 class SafetyActionCommand(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
     event_type: str
     trigger_value: float
     threshold_value: float
@@ -698,14 +607,19 @@ class SafetyActionCommand(BaseModel):
 class SafetyActionResponse(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    status: Literal["pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
+    status: Literal[
+        "pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"
+    ]
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
     firmware_response: Optional[Dict[str, Any]] = None
 
 
 # ===== Additional Response Models for Dashboard =====
+
 
 class AquaScoreResponse(BaseModel):
     device_id: UUID
@@ -739,14 +653,13 @@ class PurificationPerformanceResponse(BaseModel):
 
 # Aliases for backward compatibility
 WaterQualityResponse = AquaScoreResponse
-# FilterHealthResponse uses the domain FilterHealthIndex model from app.domain.filter_intelligence
-from app.domain.filter_intelligence import FilterHealthIndex
 FilterHealthResponse = FilterHealthIndex
 DiagnosticsDataResponse = DiagnosticsDataResponse
 PurificationPerformanceResponse = PurificationPerformanceResponse
 
 
 # ===== Dashboard Composite =====
+
 
 class DashboardData(BaseModel):
     device: DeviceResponse
@@ -757,3 +670,42 @@ class DashboardData(BaseModel):
     purification: Optional[PurificationPerformanceResponse] = None
     active_alert: Optional[AlertResponse] = None
     data_freshness_seconds: int
+
+
+# ===== Device Provisioning Schemas =====
+
+
+class DeviceProvisionRequest(BaseModel):
+    serial_number: str = Field(..., min_length=1, max_length=64)
+    model: str = Field(default="AquaNexis-Edge-ESP32", max_length=64)
+    firmware_version: str = Field(default="v1.0.0", max_length=32)
+    display_name: Optional[str] = Field(None, max_length=128)
+
+
+class DeviceProvisionResponse(BaseModel):
+    device_id: UUID
+    serial_number: str
+    token: str
+    token_type: str = "Bearer"
+    expires_in_days: int = 365
+    server_time: datetime
+
+
+__all__ = [
+    "SensorReadingInput",
+    "QualityFlag",
+    "QualityFlags",
+    "SensorReadingResponse",
+    "AquaScoreResponse",
+    "DiagnosticsDataResponse",
+    "PurificationPerformanceResponse",
+    "DashboardData",
+    "DeviceProvisionRequest",
+    "DeviceProvisionResponse",
+    "TelemetryProvenance",
+    "DeviceLifecycleState",
+    "TelemetryDataQuality",
+    "CANONICAL_SENSOR_UNITS",
+    "CanonicalTelemetryRecord",
+    "CanonicalTelemetryPayload",
+]

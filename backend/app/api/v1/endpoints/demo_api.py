@@ -2,6 +2,7 @@
 Auth, Demo Control, and DEMO_MODE API endpoints matching the Frontend & Simulator contracts.
 All endpoints require authentication (Bearer JWT or X-API-Key) except /auth/login and /auth/refresh.
 """
+
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
@@ -40,6 +41,7 @@ class ScenarioSwitchRequest(BaseModel):
 
 
 # ── Authentication Endpoints ──────────────────────────────────────────────────
+
 
 @router.post("/auth/login", tags=["auth"])
 async def login(payload: LoginRequestModel) -> Dict[str, Any]:
@@ -94,6 +96,7 @@ async def auth_me(claims: DeviceClaims = Depends(get_device_claims)) -> Dict[str
 
 # ── Demo Scenario Control Endpoints ───────────────────────────────────────────
 
+
 @router.get("/demo/status", tags=["demo"])
 async def get_demo_status() -> Dict[str, Any]:
     await demo_engine.initialize()
@@ -140,6 +143,7 @@ async def switch_demo_scenario(
 
 # ── Devices & Telemetry Endpoints ─────────────────────────────────────────────
 
+
 @router.get("/devices", tags=["devices"])
 async def list_devices(_: bool = Depends(verify_api_key)) -> List[Dict[str, Any]]:
     await demo_engine.initialize()
@@ -163,7 +167,13 @@ async def update_device(
 ) -> Dict[str, Any]:
     await demo_engine.initialize()
     dev = demo_engine.devices.get(device_id) or demo_engine.devices.get(str(DEFAULT_DEMO_DEVICE_ID))
-    dev.update({k: v for k, v in updates.items() if k in ("name", "display_name", "status", "safety_config")})
+    dev.update(
+        {
+            k: v
+            for k, v in updates.items()
+            if k in ("name", "display_name", "status", "safety_config")
+        }
+    )
     dev["updated_at"] = datetime.now(timezone.utc).isoformat()
     return dev
 
@@ -227,7 +237,17 @@ async def get_telemetry_history(
 ) -> Dict[str, Any]:
     await demo_engine.initialize()
     series: Dict[str, List[Dict[str, Any]]] = {}
-    keys = ["tds", "ec", "ph", "turbidity", "temperature", "flow", "pressure", "tank_level", "pump_current"]
+    keys = [
+        "tds",
+        "ec",
+        "ph",
+        "turbidity",
+        "temperature",
+        "flow",
+        "pressure",
+        "tank_level",
+        "pump_current",
+    ]
     for k in keys:
         pts = []
         for item in demo_engine.telemetry_history[-limit:]:
@@ -253,6 +273,7 @@ async def get_telemetry_history(
 
 # ── Composite Dashboard Endpoint ──────────────────────────────────────────────
 
+
 @router.get("/devices/{device_id}/dashboard", tags=["dashboard"])
 async def get_dashboard(
     device_id: str,
@@ -261,7 +282,11 @@ async def get_dashboard(
     await demo_engine.initialize()
     dev = demo_engine.devices.get(device_id) or demo_engine.devices[str(DEFAULT_DEMO_DEVICE_ID)]
     now = datetime.now(timezone.utc)
-    last_ts_str = demo_engine.latest_telemetry["timestamp"] if demo_engine.latest_telemetry else now.isoformat()
+    last_ts_str = (
+        demo_engine.latest_telemetry["timestamp"]
+        if demo_engine.latest_telemetry
+        else now.isoformat()
+    )
     try:
         last_dt = datetime.fromisoformat(last_ts_str)
         if last_dt.tzinfo is None:
@@ -271,7 +296,9 @@ async def get_dashboard(
         freshness = 2
 
     # Select highest priority open alert (CRITICAL first, then WARNING)
-    open_alerts = [a for a in demo_engine.alerts.values() if a["status"] in ("OPEN", "ACKNOWLEDGED")]
+    open_alerts = [
+        a for a in demo_engine.alerts.values() if a["status"] in ("OPEN", "ACKNOWLEDGED")
+    ]
     open_alerts.sort(key=lambda a: (0 if a["severity"] == "CRITICAL" else 1, a["created_at"]))
     active_alert = open_alerts[0] if open_alerts else None
 
@@ -288,6 +315,7 @@ async def get_dashboard(
 
 
 # ── Water Quality Endpoints ───────────────────────────────────────────────────
+
 
 @router.get("/devices/{device_id}/water-quality", tags=["water-quality"])
 @router.get("/water-quality/current/{device_id}", tags=["water-quality"])
@@ -324,6 +352,7 @@ async def get_water_quality_anomalies(
 
 
 # ── Filter Health & Prognostics Endpoints ─────────────────────────────────────
+
 
 @router.get("/devices/{device_id}/filter-health", tags=["filter-health"])
 @router.get("/filter-health/{device_id}", tags=["filter-health"])
@@ -379,9 +408,18 @@ async def get_rul_stability(
         "trend_direction": "stable" if demo_engine.current_profile == "normal" else "degrading",
         "window_hours": 24,
         "predictions": [
-            {"timestamp": (now - timedelta(hours=3)).isoformat(), "rul_days": round(rul_val + 2.0, 1)},
-            {"timestamp": (now - timedelta(hours=2)).isoformat(), "rul_days": round(rul_val + 1.0, 1)},
-            {"timestamp": (now - timedelta(hours=1)).isoformat(), "rul_days": round(rul_val + 0.4, 1)},
+            {
+                "timestamp": (now - timedelta(hours=3)).isoformat(),
+                "rul_days": round(rul_val + 2.0, 1),
+            },
+            {
+                "timestamp": (now - timedelta(hours=2)).isoformat(),
+                "rul_days": round(rul_val + 1.0, 1),
+            },
+            {
+                "timestamp": (now - timedelta(hours=1)).isoformat(),
+                "rul_days": round(rul_val + 0.4, 1),
+            },
             {"timestamp": now.isoformat(), "rul_days": round(rul_val, 1)},
         ],
     }
@@ -414,6 +452,7 @@ async def get_counterfactual(
 
 # ── Purification Performance & Diagnostics Endpoints ──────────────────────────
 
+
 @router.get("/devices/{device_id}/purification-performance", tags=["purification-performance"])
 @router.get("/purification-performance/{device_id}/current", tags=["purification-performance"])
 async def get_purification_performance(
@@ -424,7 +463,9 @@ async def get_purification_performance(
     return demo_engine.latest_purification
 
 
-@router.get("/devices/{device_id}/purification-performance/history", tags=["purification-performance"])
+@router.get(
+    "/devices/{device_id}/purification-performance/history", tags=["purification-performance"]
+)
 @router.get("/purification-performance/{device_id}/history", tags=["purification-performance"])
 async def get_purification_history(
     device_id: str,
@@ -445,6 +486,7 @@ async def get_diagnostics(
 
 
 # ── Alerts Endpoints ──────────────────────────────────────────────────────────
+
 
 @router.get("/devices/{device_id}/alerts", tags=["alerts"])
 @router.get("/alerts", tags=["alerts"])
@@ -551,7 +593,9 @@ async def snooze_alert(
     actor = body.get("snoozed_by") or body.get("user") or "operator@aquanexis.local"
     mins = int(body.get("snooze_duration_minutes") or body.get("duration_minutes") or 30)
     try:
-        updated = demo_engine.transition_alert(alert_id, "SNOOZED", actor=actor, snooze_minutes=mins)
+        updated = demo_engine.transition_alert(
+            alert_id, "SNOOZED", actor=actor, snooze_minutes=mins
+        )
     except KeyError:
         raise HTTPException(status_code=404, detail="Alert not found")
     except ValueError as e:
@@ -561,6 +605,7 @@ async def snooze_alert(
 
 
 # ── Maintenance, Calibration & Verification Endpoints ─────────────────────────
+
 
 @router.get("/devices/{device_id}/maintenance/history", tags=["maintenance"])
 async def get_maintenance_history(
@@ -641,7 +686,9 @@ async def create_filter_catalog_item(
     fid = f"cat-custom-{len(demo_engine.filter_catalog) + 1:03d}"
     item = {
         "id": fid,
-        "filter_identifier": body.get("filter_identifier", f"AQX-CUST-{len(demo_engine.filter_catalog) + 1}"),
+        "filter_identifier": body.get(
+            "filter_identifier", f"AQX-CUST-{len(demo_engine.filter_catalog) + 1}"
+        ),
         "manufacturer": body.get("manufacturer", "AquaNexis Filtration"),
         "product_name": body.get("product_name", "Custom Replacement Filter"),
         "category": (body.get("category") or "SEDIMENT").upper(),
@@ -744,8 +791,13 @@ async def check_filter_compatibility(
     if cat and (model in cat.get("purifier_compatibility", []) or "AQUANEXIS" in model.upper()):
         return {
             "result": "COMPATIBLE",
-            "reasons": [f"Filter {cat['filter_identifier']} is certified for {model} stage {cat['stage_position']}."],
-            "details": {"stage_position": cat["stage_position"], "connector": cat["connector_details"]},
+            "reasons": [
+                f"Filter {cat['filter_identifier']} is certified for {model} stage {cat['stage_position']}."
+            ],
+            "details": {
+                "stage_position": cat["stage_position"],
+                "connector": cat["connector_details"],
+            },
         }
     return {
         "result": "COMPATIBLE",
@@ -895,9 +947,24 @@ async def start_verification(
         "started_at": now,
         "completed_at": now,
         "checks": [
-            {"name": "Differential Pressure Reset (<50 kPa)", "passed": True, "value": 25.0, "threshold": 50.0},
-            {"name": "Permeate Flow Rate (>=1.5 L/min)", "passed": True, "value": 2.0, "threshold": 1.5},
-            {"name": "TDS Rejection Efficiency (>=90%)", "passed": True, "value": 95.5, "threshold": 90.0},
+            {
+                "name": "Differential Pressure Reset (<50 kPa)",
+                "passed": True,
+                "value": 25.0,
+                "threshold": 50.0,
+            },
+            {
+                "name": "Permeate Flow Rate (>=1.5 L/min)",
+                "passed": True,
+                "value": 2.0,
+                "threshold": 1.5,
+            },
+            {
+                "name": "TDS Rejection Efficiency (>=90%)",
+                "passed": True,
+                "value": 95.5,
+                "threshold": 90.0,
+            },
             {"name": "Leak Contact Dry Check", "passed": True, "value": 0, "threshold": 0},
         ],
         "overall_result": True,
@@ -932,7 +999,9 @@ async def complete_verification(
     _: bool = Depends(verify_api_key),
 ) -> Dict[str, Any]:
     await demo_engine.initialize()
-    run = demo_engine.verifications.get(verification_id) or next(iter(demo_engine.verifications.values()))
+    run = demo_engine.verifications.get(verification_id) or next(
+        iter(demo_engine.verifications.values())
+    )
     run["state"] = "PASSED"
     run["overall_result"] = True
     run["completed_at"] = datetime.now(timezone.utc).isoformat()
@@ -973,6 +1042,7 @@ async def get_maintenance_recommendations(
 
 
 # ── Notifications Endpoints ───────────────────────────────────────────────────
+
 
 @router.get("/notifications", tags=["notifications"])
 async def list_notifications(
@@ -1069,6 +1139,7 @@ async def get_demo_worker_stats(
 
 
 # ── Safety Endpoints ──────────────────────────────────────────────────────────
+
 
 @router.get("/safety/events/{device_id}", tags=["safety"])
 async def get_safety_events(

@@ -1,26 +1,31 @@
 """
 Alert State Machine Service - Enforces valid state transitions with audit logging.
 """
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
-from sqlalchemy import select, and_
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.alerts import ALERT_TRANSITIONS, Alert
+from app.domain.alerts import AlertSeverity as DomainAlertSeverity
+from app.domain.alerts import AlertStatus as DomainAlertStatus
 from app.infrastructure.database import get_db
 from app.infrastructure.logging import get_logger
-from app.models.alert import Alert as AlertModel, AlertStatus, AlertSeverity
-from app.domain.alerts import Alert, ALERT_TRANSITIONS, AlertSeverity as DomainAlertSeverity, AlertStatus as DomainAlertStatus
+from app.models.alert import Alert as AlertModel
+from app.models.alert import AlertStatus
 
 logger = get_logger(__name__)
 
 
 class TransitionResult(Enum):
     """Result of a state transition attempt."""
+
     SUCCESS = "success"
     INVALID_TRANSITION = "invalid_transition"
     NOT_FOUND = "not_found"
@@ -32,6 +37,7 @@ class TransitionResult(Enum):
 @dataclass
 class TransitionOutcome:
     """Outcome of a transition operation."""
+
     result: TransitionResult
     alert: Optional[AlertModel] = None
     message: str = ""
@@ -44,7 +50,7 @@ class AlertStateMachine:
     Service that enforces the alert state machine.
     Validates transitions, logs audit trail, and handles auto-clearing.
     """
-    
+
     # Define which alert codes support auto-clearing
     AUTO_CLEAR_CODES = {
         "water_quality_degraded",
@@ -74,7 +80,7 @@ class AlertStateMachine:
         "device_reconnected",
         "maintenance_due",
     }
-    
+
     # Codes that should NOT auto-clear (require manual intervention)
     MANUAL_ONLY_CODES = {
         "filter_health_critical",
@@ -102,20 +108,20 @@ class AlertStateMachine:
         """
         current_domain = self._to_domain_status(alert.status)
         new_domain = self._to_domain_status(new_status)
-        
+
         # Check if already in the target state
         if alert.status == new_status:
             return False, f"Alert already in {new_status.value} state"
-        
+
         # Check if in terminal state
         if current_domain in (DomainAlertStatus.RESOLVED, DomainAlertStatus.AUTO_CLEARED):
             return False, f"Cannot transition from terminal state {alert.status.value}"
-        
+
         # Check valid transitions
         valid_targets = ALERT_TRANSITIONS.get(current_domain, [])
         if new_domain not in valid_targets:
             return False, f"Invalid transition from {alert.status.value} to {new_status.value}"
-        
+
         return True, ""
 
     async def transition(
@@ -135,7 +141,7 @@ class AlertStateMachine:
                 result=TransitionResult.NOT_FOUND,
                 message=f"Alert {alert_id} not found",
             )
-        
+
         # Validate transition
         is_valid, reason = self.can_transition(alert, new_status)
         if not is_valid:
@@ -146,10 +152,10 @@ class AlertStateMachine:
                 previous_status=alert.status,
                 new_status=new_status,
             )
-        
+
         # Store previous state for audit
         previous_status = alert.status
-        
+
         # Perform transition
         domain_alert = Alert(
             id=alert.id,
@@ -158,7 +164,7 @@ class AlertStateMachine:
             severity=DomainAlertSeverity(alert.severity.value),
             status=self._to_domain_status(alert.status),
         )
-        
+
         success = domain_alert.transition_to(self._to_domain_status(new_status), user)
         if not success:
             return TransitionOutcome(
@@ -168,11 +174,11 @@ class AlertStateMachine:
                 previous_status=previous_status,
                 new_status=new_status,
             )
-        
+
         # Update model
         alert.status = new_status
         now = datetime.now(timezone.utc)
-        
+
         if new_status == AlertStatus.ACKNOWLEDGED:
             alert.acknowledged_at = now
             alert.acknowledged_by = user
@@ -184,10 +190,10 @@ class AlertStateMachine:
             alert.resolved_by = user
         elif new_status == AlertStatus.AUTO_CLEARED:
             alert.auto_cleared_at = now
-        
+
         await self.db.commit()
         await self.db.refresh(alert)
-        
+
         # Audit log
         logger.info(
             "alert_transition",
@@ -198,7 +204,7 @@ class AlertStateMachine:
             new_status=new_status.value,
             user=user,
         )
-        
+
         return TransitionOutcome(
             result=TransitionResult.SUCCESS,
             alert=alert,
@@ -222,14 +228,14 @@ class AlertStateMachine:
         # 3. Condition is no longer met (current_condition_met = False)
         if alert.alert_code not in self.AUTO_CLEAR_CODES:
             return None
-        
+
         if alert.status in (AlertStatus.RESOLVED, AlertStatus.AUTO_CLEARED):
             return None
-        
+
         if current_condition_met:
             # Condition still met, don't auto-clear
             return None
-        
+
         # Auto-clear the alert
         return await self.transition(
             alert_id=alert.id,
@@ -246,10 +252,10 @@ class AlertStateMachine:
         alert = await self.db.get(AlertModel, alert_id)
         if not alert:
             return None
-        
+
         if device_id and alert.device_id != device_id:
             return None
-        
+
         return alert
 
     async def bulk_transition(
@@ -267,17 +273,19 @@ class AlertStateMachine:
             "failed": [],
             "total": len(alert_ids),
         }
-        
+
         for alert_id in alert_ids:
             outcome = await self.transition(alert_id, new_status, user)
             if outcome.result == TransitionResult.SUCCESS:
                 results["success"].append(str(alert_id))
             else:
-                results["failed"].append({
-                    "alert_id": str(alert_id),
-                    "reason": outcome.message,
-                })
-        
+                results["failed"].append(
+                    {
+                        "alert_id": str(alert_id),
+                        "reason": outcome.message,
+                    }
+                )
+
         return results
 
     async def check_and_auto_clear_alerts(
@@ -292,30 +300,32 @@ class AlertStateMachine:
         """
         if alert_code not in self.AUTO_CLEAR_CODES:
             return []
-        
+
         # Find active alerts of this code for this device
         query = select(AlertModel).where(
             and_(
                 AlertModel.device_id == device_id,
                 AlertModel.alert_code == alert_code,
-                AlertModel.status.in_([
-                    AlertStatus.DETECTED,
-                    AlertStatus.OPEN,
-                    AlertStatus.ACKNOWLEDGED,
-                    AlertStatus.SNOOZED,
-                ]),
+                AlertModel.status.in_(
+                    [
+                        AlertStatus.DETECTED,
+                        AlertStatus.OPEN,
+                        AlertStatus.ACKNOWLEDGED,
+                        AlertStatus.SNOOZED,
+                    ]
+                ),
             )
         )
-        
+
         result = await self.db.execute(query)
         alerts = result.scalars().all()
-        
+
         outcomes = []
         for alert in alerts:
             outcome = await self.auto_clear_if_applicable(alert, condition_met)
             if outcome:
                 outcomes.append(outcome)
-        
+
         return outcomes
 
 

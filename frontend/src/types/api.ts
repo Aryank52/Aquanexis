@@ -293,7 +293,8 @@ export interface DiagnosticsDataResponse {
 
 // --- Alerts (matches backend AlertResponse) ---
 export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
-export type AlertState = 'DETECTED' | 'OPEN' | 'ACKNOWLEDGED' | 'SNOOZED' | 'RESOLVED' | 'AUTO_CLEARED';
+export type AlertState =
+  'DETECTED' | 'OPEN' | 'ACKNOWLEDGED' | 'SNOOZED' | 'RESOLVED' | 'AUTO_CLEARED';
 
 export interface AlertResponse {
   id: string;
@@ -554,8 +555,10 @@ export interface APIError {
 
 // --- Notifications ---
 export type NotificationChannel = 'email' | 'sms' | 'webhook' | 'push';
-export type NotificationStatus = 'pending' | 'processing' | 'sent' | 'retry' | 'dead_letter' | 'failed';
-export type NotificationErrorCategory = 'TRANSIENT' | 'PERMANENT' | 'RATE_LIMITED' | 'QUOTA_EXCEEDED' | 'UNKNOWN';
+export type NotificationStatus =
+  'pending' | 'processing' | 'sent' | 'retry' | 'dead_letter' | 'failed';
+export type NotificationErrorCategory =
+  'TRANSIENT' | 'PERMANENT' | 'RATE_LIMITED' | 'QUOTA_EXCEEDED' | 'UNKNOWN';
 
 export interface NotificationOutboxResponse {
   id: string;
@@ -663,7 +666,8 @@ export interface NotificationTestResponse {
 }
 
 // --- Maintenance - Filter Catalog ---
-export type FilterCategory = 'SEDIMENT' | 'CARBON' | 'RO_MEMBRANE' | 'POST_CARBON' | 'UV' | 'MINERALIZATION' | 'OTHER';
+export type FilterCategory =
+  'SEDIMENT' | 'CARBON' | 'RO_MEMBRANE' | 'POST_CARBON' | 'UV' | 'MINERALIZATION' | 'OTHER';
 
 export interface FilterCatalogResponse {
   id: string;
@@ -800,7 +804,8 @@ export interface MaintenanceEventCreate {
 }
 
 // --- Maintenance - Workflows ---
-export type MaintenanceWorkflowState = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+export type MaintenanceWorkflowState =
+  'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
 export interface MaintenanceWorkflowTransition {
   new_state: string;

@@ -2,10 +2,11 @@
 Filter Intelligence domain - Filter Stress Index, Filter Health Index, RUL.
 Pure Python, no framework dependencies.
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, List, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 
@@ -55,6 +56,7 @@ class DatasetType(str, Enum):
 @dataclass
 class FilterStressIndex:
     """Filter Stress Index - deterministic engineering index."""
+
     device_id: UUID
     timestamp: datetime
     state: FilterStressState  # LOW, MODERATE, HIGH
@@ -80,6 +82,7 @@ class FilterStressIndex:
 @dataclass
 class FilterHealthIndex:
     """Filter Health Index - 0-100 health score."""
+
     device_id: UUID
     timestamp: datetime
     health_score: int  # 0-100
@@ -103,6 +106,7 @@ class FilterHealthIndex:
 @dataclass
 class RULPrediction:
     """Remaining Useful Life prediction."""
+
     device_id: UUID
     timestamp: datetime
     rul_days: Optional[float] = None
@@ -121,11 +125,13 @@ class RULPrediction:
     is_stable: bool = True
     # Confidence level
     confidence_level: str = "medium"
+    counterfactual: Optional[Dict[str, Any]] = None
 
 
 @dataclass
 class FailureRiskAssessment:
     """Failure risk classification."""
+
     device_id: UUID
     timestamp: datetime
     risk_level: FailureRiskLevel
@@ -145,6 +151,7 @@ class FailureRiskAssessment:
 @dataclass
 class PurificationPerformance:
     """Purification performance metrics."""
+
     device_id: UUID
     timestamp: datetime
     rejection_rate: Optional[float] = None  # %
@@ -155,7 +162,6 @@ class PurificationPerformance:
     permeate_conductivity: Optional[float] = None  # µS/cm
     permeate_flow: Optional[float] = None  # L/min
     reject_flow: Optional[float] = None  # L/min
-    recovery_ratio: Optional[float] = None  # calculated from flows
     feed_quality: Optional[float] = None
     permeate_quality: Optional[float] = None
     efficiency: Optional[float] = None
@@ -165,6 +171,7 @@ class PurificationPerformance:
 @dataclass
 class HydraulicIntelligence:
     """Hydraulic intelligence metrics."""
+
     device_id: UUID
     timestamp: datetime
     differential_pressure: Optional[float] = None  # kPa
@@ -186,6 +193,7 @@ class HydraulicIntelligence:
 @dataclass
 class AquaScoreExplanation:
     """Explanation for AquaScore."""
+
     overall_score: int
     state: str  # EXCELLENT, GOOD, FAIR, POOR
     confidence: float
@@ -199,36 +207,37 @@ class AquaScoreExplanation:
 @dataclass
 class FilterStressConfig:
     """Configuration for Filter Stress Index calculation."""
+
     # Differential pressure thresholds (kPa)
     dp_low_threshold: float = 50.0
     dp_high_threshold: float = 200.0
     dp_weight: float = 0.25
-    
+
     # Flow deviation thresholds (% from baseline)
     flow_dev_low_threshold: float = 5.0
     flow_dev_high_threshold: float = 20.0
     flow_dev_weight: float = 0.20
-    
+
     # Turbidity exposure (NTU-hours)
     turbidity_exposure_low: float = 10.0
     turbidity_exposure_high: float = 100.0
     turbidity_weight: float = 0.15
-    
+
     # Cumulative volume (L)
     cum_volume_low: float = 1000.0
     cum_volume_high: float = 10000.0
     cum_volume_weight: float = 0.15
-    
+
     # Filter age (days)
     age_low: float = 90.0
     age_high: float = 365.0
     age_weight: float = 0.10
-    
+
     # Operating hours
     op_hours_low: float = 500.0
     op_hours_high: float = 2000.0
     op_hours_weight: float = 0.08
-    
+
     # TDS trend
     tds_trend_weight: float = 0.07
 
@@ -236,18 +245,19 @@ class FilterStressConfig:
 @dataclass
 class FilterHealthConfig:
     """Configuration for Filter Health Index calculation."""
+
     stress_weight: float = 0.30
     lifecycle_weight: float = 0.25
     usage_weight: float = 0.20
     pressure_flow_weight: float = 0.15
     historical_behavior_weight: float = 0.10
-    
+
     # State thresholds
     excellent_min: int = 90
     good_min: int = 70
     fair_min: int = 50
     poor_min: int = 30
-    
+
     # Maintenance band thresholds
     monitor_min: int = 70
     plan_maintenance_min: int = 50
@@ -257,6 +267,7 @@ class FilterHealthConfig:
 @dataclass
 class RULConfig:
     """Configuration for RUL prediction."""
+
     model_path: str = "/app/models/rul_model.pkl"
     feature_schema_version: str = "1.0"
     inference_cadence_minutes: int = 60  # How often to run ML inference
@@ -270,6 +281,7 @@ class RULConfig:
 @dataclass
 class BaselineConfig:
     """Configuration for baseline computation."""
+
     window_hours: int = 168  # 1 week
     min_samples: int = 100
     update_cadence_hours: int = 24
@@ -279,6 +291,7 @@ class BaselineConfig:
 @dataclass
 class ModelConfig:
     """Configuration for ML model."""
+
     model_path: str = "/app/models/rul_model.pkl"
     feature_schema_version: str = "1.0"
     inference_cadence_minutes: int = 60
@@ -293,6 +306,7 @@ class ModelConfig:
 @dataclass
 class AlertConfig:
     """Configuration for alert behavior."""
+
     # Deduplication
     dedup_window_hours: int = 24
     # Cooldown
@@ -302,20 +316,20 @@ class AlertConfig:
     # Auto-clear
     auto_clear_enabled: bool = True
     # Cooldown per alert code (minutes)
-    cooldown_by_code: Dict[str, int] = field(default_factory=lambda: {
-        "leak_detected": 120,
-        "pressure_high": 60,
-        "pressure_low": 60,
-        "flow_low": 30,
-        "flow_interrupted": 120,
-        "pump_overcurrent": 120,
-        "water_quality_degraded": 60,
-        "filter_stress_high": 120,
-        "filter_health_critical": 180,
-        "pressure_high": 60,
-        "pump_overcurrent": 120,
-        "tank_level_low": 30,
-    })
+    cooldown_by_code: Dict[str, int] = field(
+        default_factory=lambda: {
+            "leak_detected": 120,
+            "pressure_high": 60,
+            "pressure_low": 60,
+            "flow_low": 30,
+            "flow_interrupted": 120,
+            "pump_overcurrent": 120,
+            "water_quality_degraded": 60,
+            "filter_stress_high": 120,
+            "filter_health_critical": 180,
+            "tank_level_low": 30,
+        }
+    )
 
 
 # Default configurations
@@ -374,7 +388,7 @@ FSI_CONFIG_VERSIONS = [
             "operating_hours": "hours",
             "tds_trend": "% increase",
         },
-        description="Initial FSI configuration"
+        description="Initial FSI configuration",
     ),
 ]
 
@@ -388,6 +402,7 @@ class BaselineMetrics:
     sample_count: int
     flow_baseline_lpm: Optional[float] = None
     pressure_baseline_kpa: Optional[float] = None
+    outlet_pressure_baseline_kpa: Optional[float] = None
     delta_pressure_baseline_kpa: Optional[float] = None
     turbidity_baseline_ntu: Optional[float] = None
     tds_baseline_ppm: Optional[float] = None
@@ -410,6 +425,7 @@ class BaselineStatus:
 @dataclass
 class CounterfactualAnalysis:
     """What-changed analysis for prediction changes."""
+
     device_id: UUID
     timestamp: datetime
     previous_rul_days: Optional[float] = None
@@ -424,6 +440,7 @@ class CounterfactualAnalysis:
 @dataclass
 class RULStabilityReport:
     """Report on RUL prediction stability."""
+
     device_id: UUID
     timestamp: datetime
     window_hours: int

@@ -2,9 +2,11 @@
 Structured logging configuration using structlog.
 Provides JSON output with request correlation IDs.
 """
+
 import logging
 import sys
-from typing import Any, Callable, Optional
+from contextvars import ContextVar
+from typing import Callable, Optional
 
 import structlog
 from structlog.types import EventDict, WrappedLogger
@@ -18,6 +20,7 @@ def add_request_id(logger: WrappedLogger, method_name: str, event_dict: EventDic
     """Add request ID from contextvars if available."""
     try:
         from contextvars import ContextVar
+
         request_id_var: ContextVar[str] = ContextVar("request_id", default="")
         request_id = request_id_var.get()
         if request_id:
@@ -27,14 +30,18 @@ def add_request_id(logger: WrappedLogger, method_name: str, event_dict: EventDic
     return event_dict
 
 
-def add_service_context(logger: WrappedLogger, method_name: str, event_dict: EventDict) -> EventDict:
+def add_service_context(
+    logger: WrappedLogger, method_name: str, event_dict: EventDict
+) -> EventDict:
     """Add service context to all log entries."""
     event_dict["service"] = "aquanexis-backend"
     event_dict["environment"] = settings.env
     return event_dict
 
 
-def drop_color_message_key(logger: WrappedLogger, method_name: str, event_dict: EventDict) -> EventDict:
+def drop_color_message_key(
+    logger: WrappedLogger, method_name: str, event_dict: EventDict
+) -> EventDict:
     """Remove color_message key if present (from console renderer)."""
     event_dict.pop("color_message", None)
     return event_dict
@@ -97,12 +104,13 @@ def get_logger(name: Optional[str] = None) -> structlog.stdlib.BoundLogger:
 
 
 # Request ID context variable for middleware
-from contextvars import ContextVar
 request_id_var: ContextVar[str] = ContextVar("request_id", default="")
+
 
 def set_request_id(request_id: str) -> None:
     """Set request ID in contextvars."""
     request_id_var.set(request_id)
+
 
 def get_request_id() -> str:
     """Get current request ID."""

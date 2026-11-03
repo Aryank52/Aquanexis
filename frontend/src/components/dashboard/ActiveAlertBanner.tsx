@@ -21,17 +21,25 @@ interface ActiveAlertBannerProps {
 
 const severityConfig = {
   INFO: { icon: Info, bg: 'bg-info/10', border: 'border-info', text: 'text-info', label: 'INFO' },
-  WARNING: { icon: AlertTriangle, bg: 'bg-warning/10', border: 'border-warning', text: 'text-warning', label: 'WARNING' },
-  CRITICAL: { icon: XCircle, bg: 'bg-critical/10', border: 'border-critical', text: 'text-critical', label: 'CRITICAL' },
+  WARNING: {
+    icon: AlertTriangle,
+    bg: 'bg-warning/10',
+    border: 'border-warning',
+    text: 'text-warning',
+    label: 'WARNING',
+  },
+  CRITICAL: {
+    icon: XCircle,
+    bg: 'bg-critical/10',
+    border: 'border-critical',
+    text: 'text-critical',
+    label: 'CRITICAL',
+  },
 };
 
 export function ActiveAlertBanner({ alert, onAcknowledge, onDismiss }: ActiveAlertBannerProps) {
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
-
-  if (!alert || !visible && !exiting) return null;
-
-  const config = severityConfig[alert.severity];
 
   useEffect(() => {
     if (alert) {
@@ -39,6 +47,10 @@ export function ActiveAlertBanner({ alert, onAcknowledge, onDismiss }: ActiveAle
       setVisible(true);
     }
   }, [alert]);
+
+  if (!alert || (!visible && !exiting)) return null;
+
+  const config = severityConfig[alert.severity];
 
   const handleDismiss = () => {
     setExiting(true);
@@ -56,40 +68,51 @@ export function ActiveAlertBanner({ alert, onAcknowledge, onDismiss }: ActiveAle
   return (
     <div
       className={cn(
-        'fixed top-16 left-6 right-6 z-50 animate-slide-down',
+        'fixed left-6 right-6 top-16 z-50 animate-slide-down',
         exiting && 'animate-fade-out',
         config.bg,
         config.border,
-        'border-l-4 rounded-r-button shadow-elevated'
+        'rounded-r-button border-l-4 shadow-elevated'
       )}
       role="alert"
       aria-live={alert.severity === 'CRITICAL' ? 'assertive' : 'polite'}
     >
       <div className="p-4">
         <div className="flex items-start gap-3">
-          <config.icon className={cn('w-6 h-6 flex-shrink-0 mt-0.5', config.text)} aria-hidden="true" />
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className={cn('font-semibold text-body-sm', config.text)}>
+          <config.icon
+            className={cn('mt-0.5 h-6 w-6 flex-shrink-0', config.text)}
+            aria-hidden="true"
+          />
+
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex items-center gap-2">
+              <span className={cn('text-body-sm font-semibold', config.text)}>
                 {config.label} ALERT
               </span>
-              <span className="text-caption text-text-muted">{new Date(alert.createdAt).toLocaleTimeString()}</span>
+              <span className="text-caption text-text-muted">
+                {new Date(alert.createdAt).toLocaleTimeString()}
+              </span>
             </div>
-            <p className="text-body text-text-primary">{alert.message}</p>
+            <p className="text-text-primary text-body">{alert.message}</p>
             {(alert.triggerValue !== undefined || alert.thresholdValue !== undefined) && (
               <div className="mt-2 flex items-center gap-2 text-caption text-text-secondary">
                 {alert.triggerValue !== undefined && (
-                  <span>Trigger: <span className="font-mono text-text-primary">{alert.triggerValue}</span></span>
+                  <span>
+                    Trigger:{' '}
+                    <span className="text-text-primary font-mono">{alert.triggerValue}</span>
+                  </span>
                 )}
                 {alert.thresholdValue !== undefined && (
-                  <span>Threshold: <span className="font-mono text-text-primary">{alert.thresholdValue}</span></span>
+                  <span>
+                    Threshold:{' '}
+                    <span className="text-text-primary font-mono">{alert.thresholdValue}</span>
+                  </span>
                 )}
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center gap-2">
             {!alert.acknowledged && (
               <button
                 onClick={handleAcknowledge}
@@ -106,7 +129,7 @@ export function ActiveAlertBanner({ alert, onAcknowledge, onDismiss }: ActiveAle
               className="btn btn-ghost btn-sm p-2"
               aria-label="Dismiss alert"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 """
 Tests for configuration management.
 """
+
 import pytest
 from pydantic import ValidationError
 
@@ -149,8 +150,6 @@ class TestAppSettings:
 
     def test_allowed_origins(self):
         """Test CORS origins parsing."""
-        settings = AppSettings(
-            allowed_origins=["http://localhost:3000", "https://app.example.com"]
-        )
+        settings = AppSettings(allowed_origins=["http://localhost:3000", "https://app.example.com"])
         assert len(settings.allowed_origins) == 2
         assert "http://localhost:3000" in settings.allowed_origins

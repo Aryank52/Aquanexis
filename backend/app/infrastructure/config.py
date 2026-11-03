@@ -2,14 +2,17 @@
 Application configuration using Pydantic Settings v2.
 All settings loaded from environment variables with validation.
 """
+
 from functools import lru_cache
 from typing import List, Optional, Union
+
 from pydantic import AliasChoices, Field, PostgresDsn, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
     """Database connection settings."""
+
     model_config = SettingsConfigDict(env_prefix="DB_", extra="ignore")
 
     host: str = "localhost"
@@ -44,12 +47,15 @@ class DatabaseSettings(BaseSettings):
 
 class AuthSettings(BaseSettings):
     """Authentication and authorization settings."""
+
     model_config = SettingsConfigDict(env_prefix="AUTH_", extra="ignore")
 
     device_jwt_secret: str = Field(
         default="test-secret-minimum-32-characters-long-for-testing-only",
         min_length=32,
-        validation_alias=AliasChoices("device_jwt_secret", "AUTH_DEVICE_JWT_SECRET", "DEVICE_JWT_SECRET"),
+        validation_alias=AliasChoices(
+            "device_jwt_secret", "AUTH_DEVICE_JWT_SECRET", "DEVICE_JWT_SECRET"
+        ),
     )
     device_jwt_algorithm: str = "HS256"
     device_jwt_expiry_hours: int = 24
@@ -68,6 +74,7 @@ class AuthSettings(BaseSettings):
 
 class MLSettings(BaseSettings):
     """Machine learning settings."""
+
     model_config = SettingsConfigDict(env_prefix="ML_")
 
     enabled: bool = True
@@ -79,6 +86,7 @@ class MLSettings(BaseSettings):
 
 class NotificationSettings(BaseSettings):
     """Notification provider settings."""
+
     model_config = SettingsConfigDict(env_prefix="NOTIFY_")
 
     providers: List[str] = Field(default_factory=lambda: ["console"])
@@ -93,6 +101,7 @@ class NotificationSettings(BaseSettings):
 
 class SafetySettings(BaseSettings):
     """Safety system settings."""
+
     model_config = SettingsConfigDict(env_prefix="SAFETY_")
 
     enabled: bool = True
@@ -105,6 +114,7 @@ class SafetySettings(BaseSettings):
 
 class LoggingSettings(BaseSettings):
     """Logging configuration."""
+
     model_config = SettingsConfigDict(env_prefix="LOG_")
 
     level: str = "INFO"
@@ -116,6 +126,7 @@ class LoggingSettings(BaseSettings):
 
 class AppSettings(BaseSettings):
     """Main application settings."""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

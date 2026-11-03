@@ -2,43 +2,44 @@
 Database models package.
 Import all models here so they're registered with SQLAlchemy Base.
 """
-from app.models.device import Device
-from app.models.reading import SensorReading
+
 from app.models.alert import Alert
-from app.models.water_quality import WaterQualityScore
+from app.models.device import Device
 from app.models.filter_health import FilterHealth
-from app.models.purification_performance import PurificationPerformance
-from app.models.system_diagnostics import SystemDiagnostics
-from app.models.safety import SafetyEventModel, SafetyActionModel
-from app.models.notification import (
-    NotificationOutbox,
-    NotificationProviderConfig,
-    NotificationTemplate,
-    NotificationChannel,
-    NotificationStatus,
-    NotificationErrorCategory,
-)
 from app.models.maintenance import (
-    FilterCatalogModel,
-    InstalledFilterModel,
-    MaintenanceEventModel,
-    MaintenanceWorkflowModel,
-    CalibrationRecordModel,
-    CalibrationPolicyModel,
-    VerificationRunModel,
     BaselineVersionModel,
-    MaintenanceRecommendationModel,
+    CalibrationPolicyModel,
+    CalibrationRecordModel,
+    CalibrationState,
+    FilterCatalogModel,
     FilterCategory,
     FilterLifecycleState,
+    InstalledFilterModel,
+    MaintenanceEventModel,
     MaintenanceEventType,
+    MaintenanceRecommendationModel,
+    MaintenanceWorkflowModel,
     MaintenanceWorkflowState,
-    CalibrationState,
+    VerificationRunModel,
     VerificationState,
 )
+from app.models.notification import (
+    NotificationChannel,
+    NotificationErrorCategory,
+    NotificationOutbox,
+    NotificationProviderConfig,
+    NotificationStatus,
+    NotificationTemplate,
+)
+from app.models.purification_performance import PurificationPerformance
+from app.models.reading import SensorReading
+from app.models.safety import SafetyActionModel, SafetyEventModel
+from app.models.system_diagnostics import SystemDiagnostics
+from app.models.water_quality import WaterQualityScore
 
 __all__ = [
-    "Device", 
-    "SensorReading", 
+    "Device",
+    "SensorReading",
     "Alert",
     "WaterQualityScore",
     "FilterHealth",

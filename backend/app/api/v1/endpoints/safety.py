@@ -1,30 +1,26 @@
 """
 Safety API endpoints - safety configuration and testing.
 """
+
 from datetime import datetime
-from typing import Optional, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
-from sqlalchemy import select, desc
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database import get_db
-from app.infrastructure.security import get_device_claims, verify_api_key, rate_limit
 from app.infrastructure.logging import get_logger
+from app.infrastructure.security import get_device_claims, verify_api_key
+from app.models.safety import SafetyActionModel as SafetyActionModel
+from app.models.safety import SafetyEventModel as SafetyEventModel
 from app.schemas.safety import (
+    SafetyActionCommand,
+    SafetyActionResponse,
     SafetyConfigResponse,
     SafetyConfigUpdate,
     SafetyTestRequest,
     SafetyTestResponse,
-    SafetyActionCommand,
-    SafetyActionResponse,
-    SafetyConfigResponse,
-    SafetyTestRequest,
-    SafetyTestResponse,
 )
-from app.models.safety import SafetyEventModel as SafetyEventModel, SafetyActionModel as SafetyActionModel
-from app.infrastructure.security import get_device_claims, verify_api_key
 
 logger = get_logger(__name__)
 
@@ -41,6 +37,7 @@ async def get_safety_config(
     # In a real implementation, fetch from device config
     # For now, return default config
     from app.domain.safety import SafetyConfig
+
     config = SafetyConfig()
     return SafetyConfigResponse(
         device_id=device_id,
@@ -78,6 +75,7 @@ async def update_safety_config(
     # In a real implementation, update device safety config in database
     # For now, return the updated config
     from app.domain.safety import SafetyConfig
+
     config = SafetyConfig(**config_update.model_dump(exclude_unset=True))
     return SafetyConfigResponse(
         device_id=device_id,
@@ -114,31 +112,27 @@ async def test_safety_action(
     Test a safety action without actually executing it on hardware.
     Useful for validating configuration and alerting logic.
     """
-    from app.services.safety_service import SafetyService
     from app.domain.safety import SafetyConfig
-    from app.domain.safety import SafetyConfig
-    
+    from app.services.energy_protection import EnergyProtectionService
+    from app.services.flow_protection import FlowProtectionService
+
     # Validate device exists
     # In a real implementation, check device exists and user has access
-    
     # Simulate safety validation
     from app.services.leak_protection import LeakProtectionService
     from app.services.pressure_protection import PressureProtectionService
-    from app.services.flow_protection import FlowProtectionService
-    from app.services.energy_protection import EnergyProtectionService
-    from app.domain.safety import SafetyConfig
-    
+
     config = SafetyConfig()
     leak_service = LeakProtectionService(SafetyConfig())
     pressure_service = PressureProtectionService(SafetyConfig())
     flow_service = FlowProtectionService(SafetyConfig())
     energy_service = EnergyProtectionService(SafetyConfig())
-    
+
     # Create test reading based on test type
+    from datetime import datetime
+
     from tests.unit.test_phase_d_services import MockReading
-    from datetime import datetime, timedelta
-    from uuid import uuid4
-    
+
     if request.test_type == "leak":
         reading = MockReading(
             device_id=request.device_id,
@@ -146,64 +140,68 @@ async def test_safety_action(
             leak_detected=True,
         )
         leak_service = LeakProtectionService(SafetyConfig())
-        device = type('Device', (), {
-            'id': request.device_id,
-            'serial_number': 'TEST-001',
-            'safety_config': {},
-        })()
-        
+        device = type(
+            "Device",
+            (),
+            {
+                "id": request.device_id,
+                "serial_number": "TEST-001",
+                "safety_config": {},
+            },
+        )()
+
         result = await LeakProtectionService(SafetyConfig()).validate_leak(
             device_id=request.device_id,
-            current_reading={'leak_detected': True},
+            current_reading={"leak_detected": True},
             previous_readings=[],
             device_config={},
             safety_config={},
         )
-        
+
         return SafetyTestResponse(
             test_type=request.test_type,
             passed=True,
             details={"message": "Leak detection test simulated", "triggered": True},
             simulated_action="close_inlet_valve",
         )
-    
+
     elif request.test_type == "pressure_high":
         reading = MockReading(
             device_id=request.device_id,
             timestamp=datetime.utcnow(),
             pressure=650.0,
         )
-        
+
         pressure_service = PressureProtectionService(SafetyConfig())
         result = await pressure_service.validate_pressure(
             device_id=request.device_id,
-            current_reading={'pressure': 650.0},
+            current_reading={"pressure": 650.0},
             previous_readings=[],
             device_config={},
             safety_config={},
         )
-        
+
         return SafetyTestResponse(
             test_type=request.test_type,
             passed=True,
             details={"message": "High pressure test simulated", "triggered": True},
             simulated_action="open_relief_valve",
         )
-    
+
     elif request.test_type == "pressure_low":
         reading = MockReading(
             device_id=request.device_id,
             timestamp=datetime.utcnow(),
             pressure=30.0,
         )
-        
+
         return SafetyTestResponse(
             test_type=request.test_type,
             passed=True,
             details={"message": "Low pressure test simulated", "triggered": True},
             simulated_action="stop_pump",
         )
-    
+
     elif request.test_type == "flow_low":
         return SafetyTestResponse(
             test_type=request.test_type,
@@ -211,7 +209,7 @@ async def test_safety_action(
             details={"message": "Low flow test simulated", "triggered": True},
             simulated_action="stop_pump",
         )
-    
+
     elif request.test_type == "pump_overcurrent":
         return SafetyTestResponse(
             test_type=request.test_type,
@@ -219,7 +217,7 @@ async def test_safety_action(
             details={"message": "Overcurrent test simulated", "triggered": True},
             simulated_action="stop_pump",
         )
-    
+
     elif request.test_type == "dry_run":
         return SafetyTestResponse(
             test_type=request.test_type,
@@ -227,11 +225,11 @@ async def test_safety_action(
             details={"message": "Dry run test simulated", "triggered": True},
             simulated_action="stop_pump",
         )
-    
+
     else:
         raise HTTPException(
             status_code=400,
-            detail=f"Unknown test type: {request.test_type}. Valid types: leak, pressure_high, pressure_low, flow_low, pump_overcurrent, dry_run"
+            detail=f"Unknown test type: {request.test_type}. Valid types: leak, pressure_high, pressure_low, flow_low, pump_overcurrent, dry_run",
         )
 
 
@@ -239,7 +237,7 @@ async def test_safety_action(
 async def execute_safety_action(
     command: SafetyActionCommand,
     db: AsyncSession = Depends(get_db),
-    device_claims = Depends(get_device_claims),
+    device_claims=Depends(get_device_claims),
 ):
     """
     Execute a safety action on a device.
@@ -248,14 +246,14 @@ async def execute_safety_action(
     # Verify device ownership
     if device_claims and device_claims.device_id != command.device_id:
         raise HTTPException(status_code=403, detail="Not authorized for this device")
-    
+
     # In a real implementation, this would send a command to the firmware
     # For now, we simulate the action
-    
-    from app.domain.safety import SafetyActionResponse, SafetyActionStatus
-    from uuid import uuid4
+
     from datetime import datetime
-    
+
+    from app.domain.safety import SafetyActionResponse, SafetyActionStatus
+
     return SafetyActionResponse(
         command_id=command.command_id,
         device_id=command.device_id,
@@ -273,10 +271,10 @@ async def test_safety_action(
     _: bool = Depends(verify_api_key),
 ):
     """Test a safety action without executing on hardware (admin only)."""
-    from app.domain.safety import SafetyActionResponse, SafetyActionStatus
-    from uuid import uuid4
     from datetime import datetime
-    
+
+    from app.domain.safety import SafetyActionResponse, SafetyActionStatus
+
     return SafetyActionResponse(
         command_id=command.command_id,
         device_id=command.device_id,
@@ -294,12 +292,12 @@ async def get_safety_events(
     end: datetime = None,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    device_claims = Depends(get_device_claims),
+    device_claims=Depends(get_device_claims),
 ):
     """Get safety events for a device."""
     if device_claims and device_claims.device_id != device_id:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
+
     # In a real implementation, query safety events from database
     return {
         "device_id": str(device_id),

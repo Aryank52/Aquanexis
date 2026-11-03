@@ -1,11 +1,12 @@
 """
 Safety Pydantic schemas for API requests/responses.
 """
+
 from datetime import datetime
-from enum import Enum
-from typing import Optional, List, Dict, Any, Literal
+from typing import Any, Dict, List, Literal, Optional
 from uuid import UUID
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel
 
 
 # Safety configuration
@@ -58,7 +59,9 @@ class SafetyConfigUpdate(BaseModel):
 
 class SafetyTestRequest(BaseModel):
     device_id: UUID
-    test_type: Literal["leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"]
+    test_type: Literal[
+        "leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"
+    ]
     custom_reading: Optional[Dict[str, Any]] = None
 
 
@@ -72,7 +75,9 @@ class SafetyTestResponse(BaseModel):
 class SafetyActionCommand(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
     event_type: str
     trigger_value: float
     threshold_value: float
@@ -84,8 +89,12 @@ class SafetyActionCommand(BaseModel):
 class SafetyActionResponse(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    status: Literal["pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
+    status: Literal[
+        "pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"
+    ]
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
     firmware_response: Optional[Dict[str, Any]] = None
@@ -140,7 +149,9 @@ class SafetyConfigUpdate(BaseModel):
 
 class SafetyTestRequest(BaseModel):
     device_id: UUID
-    test_type: Literal["leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"]
+    test_type: Literal[
+        "leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"
+    ]
     custom_reading: Optional[Dict[str, Any]] = None
 
 
@@ -154,7 +165,9 @@ class SafetyTestResponse(BaseModel):
 class SafetyActionCommand(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
     event_type: str
     trigger_value: float
     threshold_value: float
@@ -166,8 +179,12 @@ class SafetyActionCommand(BaseModel):
 class SafetyActionResponse(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    status: Literal["pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
+    status: Literal[
+        "pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"
+    ]
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
     firmware_response: Optional[Dict[str, Any]] = None
@@ -222,7 +239,9 @@ class SafetyConfigUpdate(BaseModel):
 
 class SafetyTestRequest(BaseModel):
     device_id: UUID
-    test_type: Literal["leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"]
+    test_type: Literal[
+        "leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"
+    ]
     custom_reading: Optional[Dict[str, Any]] = None
 
 
@@ -236,7 +255,9 @@ class SafetyTestResponse(BaseModel):
 class SafetyActionCommand(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
     event_type: str
     trigger_value: float
     threshold_value: float
@@ -248,8 +269,12 @@ class SafetyActionCommand(BaseModel):
 class SafetyActionResponse(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    status: Literal["pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
+    status: Literal[
+        "pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"
+    ]
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
     firmware_response: Optional[Dict[str, Any]] = None
@@ -304,7 +329,9 @@ class SafetyConfigUpdate(BaseModel):
 
 class SafetyTestRequest(BaseModel):
     device_id: UUID
-    test_type: Literal["leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"]
+    test_type: Literal[
+        "leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"
+    ]
     custom_reading: Optional[Dict[str, Any]] = None
 
 
@@ -318,7 +345,9 @@ class SafetyTestResponse(BaseModel):
 class SafetyActionCommand(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
     event_type: str
     trigger_value: float
     threshold_value: float
@@ -330,8 +359,12 @@ class SafetyActionCommand(BaseModel):
 class SafetyActionResponse(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    status: Literal["pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
+    status: Literal[
+        "pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"
+    ]
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
     firmware_response: Optional[Dict[str, Any]] = None
@@ -386,7 +419,9 @@ class SafetyConfigUpdate(BaseModel):
 
 class SafetyTestRequest(BaseModel):
     device_id: UUID
-    test_type: Literal["leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"]
+    test_type: Literal[
+        "leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"
+    ]
     custom_reading: Optional[Dict[str, Any]] = None
 
 
@@ -400,7 +435,9 @@ class SafetyTestResponse(BaseModel):
 class SafetyActionCommand(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
     event_type: str
     trigger_value: float
     threshold_value: float
@@ -412,8 +449,12 @@ class SafetyActionCommand(BaseModel):
 class SafetyActionResponse(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    status: Literal["pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
+    status: Literal[
+        "pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"
+    ]
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
     firmware_response: Optional[Dict[str, Any]] = None
@@ -468,7 +509,9 @@ class SafetyConfigUpdate(BaseModel):
 
 class SafetyTestRequest(BaseModel):
     device_id: UUID
-    test_type: Literal["leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"]
+    test_type: Literal[
+        "leak", "pressure_high", "pressure_low", "flow_low", "pump_overcurrent", "dry_run"
+    ]
     custom_reading: Optional[Dict[str, Any]] = None
 
 
@@ -482,7 +525,9 @@ class SafetyTestResponse(BaseModel):
 class SafetyActionCommand(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
     event_type: str
     trigger_value: float
     threshold_value: float
@@ -494,8 +539,12 @@ class SafetyActionCommand(BaseModel):
 class SafetyActionResponse(BaseModel):
     command_id: UUID
     device_id: UUID
-    action_type: Literal["close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"]
-    status: Literal["pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"]
+    action_type: Literal[
+        "close_inlet_valve", "stop_pump", "open_relief_valve", "both_valve_and_pump"
+    ]
+    status: Literal[
+        "pending", "executing", "completed", "failed", "validation_failed", "cooldown_active"
+    ]
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
     firmware_response: Optional[Dict[str, Any]] = None

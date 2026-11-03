@@ -1,11 +1,12 @@
 """
 Device model - represents a physical water purification device.
 """
+
 import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Enum, Index, String, Text
+from sqlalchemy import Column, DateTime, Enum, Index, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.infrastructure.database import Base
@@ -13,6 +14,7 @@ from app.infrastructure.database import Base
 
 class DeviceStatus(str, enum.Enum):
     """Device connection/status states."""
+
     ACTIVE = "active"
     OFFLINE = "offline"
     DEGRADED = "degraded"
@@ -56,9 +58,7 @@ class Device(Base):
     )
 
     # Indexes
-    __table_args__ = (
-        Index("ix_devices_status_last_seen", "status", "last_seen"),
-    )
+    __table_args__ = (Index("ix_devices_status_last_seen", "status", "last_seen"),)
 
     def __repr__(self) -> str:
         return f"<Device(id={self.id}, serial={self.serial_number}, status={self.status})>"

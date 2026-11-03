@@ -1,19 +1,7 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '@/api/endpoints';
-import {
-  setTokens,
-  clearTokens,
-  hasValidSession,
-  setSessionExpiredHandler,
-} from '@/api/client';
+import { setTokens, clearTokens, hasValidSession, setSessionExpiredHandler } from '@/api/client';
 import type { AuthUser, LoginRequest } from '@/types/api';
 
 interface AuthContextValue {
@@ -85,7 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) setIsLoading(false);
         return;
       }
-      const explicitLogout = typeof window !== 'undefined' && sessionStorage.getItem(LOGGED_OUT_KEY) === 'true';
+      const explicitLogout =
+        typeof window !== 'undefined' && sessionStorage.getItem(LOGGED_OUT_KEY) === 'true';
       if (!explicitLogout) {
         try {
           const response = await authApi.login({ username: 'admin', password: 'password123' });
@@ -111,23 +100,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
-  const login = useCallback(
-    async (credentials: LoginRequest) => {
-      const response = await authApi.login(credentials);
-      setTokens(response.access_token, response.refresh_token);
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem(LOGGED_OUT_KEY);
-        sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
-      }
-      setUser(response.user);
-    },
-    []
-  );
+  const login = useCallback(async (credentials: LoginRequest) => {
+    const response = await authApi.login(credentials);
+    setTokens(response.access_token, response.refresh_token);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(LOGGED_OUT_KEY);
+      sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(response.user));
+    }
+    setUser(response.user);
+  }, []);
 
   return (
-    <AuthContext.Provider
-      value={{ user, isAuthenticated, isLoading, login, logout }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

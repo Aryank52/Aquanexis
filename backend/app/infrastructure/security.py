@@ -1,13 +1,16 @@
 """
 Security infrastructure: JWT token handling, device authentication, API key validation.
 """
+
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Annotated
+from time import time
+from typing import Annotated, Optional
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, Header, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
+from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from app.infrastructure.config import get_settings
@@ -23,6 +26,7 @@ api_key_header = Header(None, alias="X-API-Key")
 
 class TokenPayload(BaseModel):
     """JWT token payload structure."""
+
     sub: str  # device_id
     iat: int
     exp: int
@@ -33,6 +37,7 @@ class TokenPayload(BaseModel):
 
 class DeviceClaims(BaseModel):
     """Extracted device claims from token."""
+
     device_id: UUID
     scope: str
 
@@ -80,7 +85,7 @@ def verify_device_token(token: str) -> TokenPayload:
 
 
 async def get_device_claims(
-    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(bearer_scheme)]
+    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(bearer_scheme)],
 ) -> DeviceClaims:
     """FastAPI dependency to extract device claims from JWT."""
     if credentials is None:
@@ -155,9 +160,6 @@ async def verify_api_key(
 
 
 # Rate limiting (simple in-memory, replace with Redis in production)
-from collections import defaultdict
-from time import time
-
 _rate_limit_store: dict[str, list[float]] = defaultdict(list)
 
 

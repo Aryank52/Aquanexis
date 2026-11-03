@@ -1,15 +1,17 @@
 """
 Device domain models - pure Python, no framework dependencies.
 """
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 
 class DeviceStatus(str, Enum):
     """Device connection/status states."""
+
     ACTIVE = "active"
     OFFLINE = "offline"
     DEGRADED = "degraded"
@@ -19,6 +21,7 @@ class DeviceStatus(str, Enum):
 @dataclass
 class SensorConfig:
     """Per-sensor configuration."""
+
     enabled: bool = True
     min_value: Optional[float] = None
     max_value: Optional[float] = None
@@ -30,6 +33,7 @@ class SensorConfig:
 @dataclass
 class DeviceSensorConfig:
     """Complete sensor configuration for a device."""
+
     tds: SensorConfig = field(default_factory=SensorConfig)
     conductivity: SensorConfig = field(default_factory=SensorConfig)
     ph: SensorConfig = field(default_factory=SensorConfig)
@@ -47,6 +51,7 @@ class DeviceSensorConfig:
 @dataclass
 class SafetyConfig:
     """Safety thresholds and actions."""
+
     leak_action: str = "close_inlet_valve"
     leak_validate_with: list[str] = field(default_factory=lambda: ["flow_delta", "pressure_drop"])
     leak_cooldown_sec: int = 300
@@ -64,6 +69,7 @@ class SafetyConfig:
 @dataclass
 class Device:
     """Physical device entity."""
+
     id: UUID
     serial_number: str
     display_name: Optional[str] = None

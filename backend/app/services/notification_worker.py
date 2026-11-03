@@ -1,14 +1,11 @@
 """
 Notification worker - background task for processing notification outbox.
 """
+
 import asyncio
-import logging
-import signal
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Optional
-
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.config import get_settings
 from app.infrastructure.database import db_manager
@@ -20,7 +17,7 @@ logger = get_logger(__name__)
 
 class NotificationWorker:
     """Background worker for processing notification outbox."""
-    
+
     def __init__(
         self,
         poll_interval_seconds: int = 30,
@@ -41,17 +38,17 @@ class NotificationWorker:
             "total_errors": 0,
             "last_cycle": None,
         }
-    
+
     async def start(self) -> None:
         """Start the worker."""
         if self._running:
             logger.warning("Notification worker already running")
             return
-        
+
         # Initialize database if not already
         if db_manager._engine is None:
             db_manager.initialize()
-        
+
         self._running = True
         self._shutdown_event.clear()
         self._semaphore = asyncio.Semaphore(self.max_concurrent)
@@ -62,16 +59,16 @@ class NotificationWorker:
             batch_size=self.batch_size,
             max_concurrent=self.max_concurrent,
         )
-    
+
     async def stop(self, timeout: float = 30.0) -> None:
         """Stop the worker gracefully."""
         if not self._running:
             return
-        
+
         logger.info("notification_worker_stopping")
         self._running = False
         self._shutdown_event.set()
-        
+
         if self._task:
             try:
                 await asyncio.wait_for(self._task, timeout=timeout)
@@ -82,9 +79,9 @@ class NotificationWorker:
                     await self._task
                 except asyncio.CancelledError:
                     pass
-        
+
         logger.info("notification_worker_stopped")
-    
+
     async def _run_loop(self) -> None:
         """Main worker loop."""
         while self._running:
@@ -93,7 +90,7 @@ class NotificationWorker:
                 await self._process_batch()
                 self.stats["cycles"] += 1
                 self.stats["last_cycle"] = cycle_start.isoformat()
-                
+
                 # Wait for next cycle or shutdown
                 try:
                     await asyncio.wait_for(
@@ -105,7 +102,7 @@ class NotificationWorker:
                 except asyncio.TimeoutError:
                     # Normal timeout, continue to next cycle
                     pass
-                    
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
@@ -113,22 +110,22 @@ class NotificationWorker:
                 self.stats["total_errors"] += 1
                 # Brief pause before retry
                 await asyncio.sleep(5)
-    
+
     async def _process_batch(self) -> None:
         """Process a batch of notifications."""
         async with db_manager.session() as session:
             service = NotificationService(session)
             result = await service.process_pending_notifications(batch_size=self.batch_size)
-            
+
             self.stats["total_processed"] += result.get("processed", 0)
             self.stats["total_sent"] += result.get("sent", 0)
-            
+
             if result.get("processed", 0) > 0:
                 logger.info(
                     "notification_worker_batch_complete",
                     **result,
                 )
-    
+
     def get_stats(self) -> dict:
         """Get worker statistics."""
         return self.stats.copy()

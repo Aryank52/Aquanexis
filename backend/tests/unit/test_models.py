@@ -1,6 +1,7 @@
 """
 Tests for database models and repositories.
 """
+
 import pytest
 from datetime import datetime, timezone
 from uuid import uuid4

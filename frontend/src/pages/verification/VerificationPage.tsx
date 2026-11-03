@@ -1,17 +1,34 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, Clock, Play, RotateCcw, AlertTriangle, Info, ClipboardCheck } from 'lucide-react';
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Play,
+  RotateCcw,
+  AlertTriangle,
+  Info,
+  ClipboardCheck,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/Card';
 import { Badge } from '@components/ui/Badge';
 import { Button } from '@components/ui/Button';
 import { Skeleton, QueryError, EmptyState } from '@components/ui/PageSkeleton';
 import { cn } from '@utils/cn';
-import { useMaintenanceEvents, useStartVerification, useCompleteVerification, useVerification } from '@/hooks/useMaintenance';
+import {
+  useMaintenanceEvents,
+  useStartVerification,
+  useCompleteVerification,
+  useVerification,
+} from '@/hooks/useMaintenance';
 import type { VerificationRunResponse, VerificationState } from '@/types/api';
 
 const DEVICE_ID = import.meta.env.VITE_DEVICE_ID ?? '00000000-0000-0000-0000-000000000001';
 
-const stateVariant: Record<VerificationState, 'success' | 'warning' | 'critical' | 'info' | 'default'> = {
+const stateVariant: Record<
+  VerificationState,
+  'success' | 'warning' | 'critical' | 'info' | 'default'
+> = {
   PENDING: 'info',
   RUNNING: 'warning',
   PASSED: 'success',
@@ -21,16 +38,25 @@ const stateVariant: Record<VerificationState, 'success' | 'warning' | 'critical'
 
 function stateIcon(state: VerificationState) {
   switch (state) {
-    case 'PASSED': return <CheckCircle className="h-4 w-4 text-success" />;
-    case 'FAILED': return <XCircle className="h-4 w-4 text-critical" />;
-    case 'RUNNING': return <RotateCcw className="h-4 w-4 text-warning animate-spin" />;
-    case 'PENDING': return <Clock className="h-4 w-4 text-info" />;
-    default: return <XCircle className="h-4 w-4 text-text-muted" />;
+    case 'PASSED':
+      return <CheckCircle className="h-4 w-4 text-success" />;
+    case 'FAILED':
+      return <XCircle className="h-4 w-4 text-critical" />;
+    case 'RUNNING':
+      return <RotateCcw className="h-4 w-4 animate-spin text-warning" />;
+    case 'PENDING':
+      return <Clock className="h-4 w-4 text-info" />;
+    default:
+      return <XCircle className="h-4 w-4 text-text-muted" />;
   }
 }
 
 function CheckIcon({ passed }: { passed: boolean }): JSX.Element {
-  return passed ? <CheckCircle className="h-4 w-4 text-success" /> : <XCircle className="h-4 w-4 text-critical" />;
+  return passed ? (
+    <CheckCircle className="h-4 w-4 text-success" />
+  ) : (
+    <XCircle className="h-4 w-4 text-critical" />
+  );
 }
 
 export function VerificationPage() {
@@ -38,40 +64,58 @@ export function VerificationPage() {
   const [showCompleteForm, setShowCompleteForm] = useState<VerificationRunResponse | null>(null);
   const [currentReadings, setCurrentReadings] = useState<Record<string, number>>({});
 
-  const events = useMaintenanceEvents({ device_id: DEVICE_ID, event_type: 'VERIFICATION', limit: 20 });
+  const events = useMaintenanceEvents({
+    device_id: DEVICE_ID,
+    event_type: 'VERIFICATION',
+    limit: 20,
+  });
   const startVerification = useStartVerification();
   const completeVerification = useCompleteVerification();
   const verificationDetail = useVerification(selectedEventId ?? '');
 
   if (events.isError) {
-    return <QueryError message={(events.error as Error)?.message ?? 'Failed to load verification events'} onRetry={events.refetch} />;
+    return (
+      <QueryError
+        message={(events.error as Error)?.message ?? 'Failed to load verification events'}
+        onRetry={events.refetch}
+      />
+    );
   }
 
-  const handleStartVerification = (maintenanceEventId: string, baselineBefore?: Record<string, unknown>) => {
-    startVerification.mutate({
-      device_id: DEVICE_ID,
-      maintenance_event_id: maintenanceEventId,
-      baseline_before: baselineBefore,
-    }, {
-      onSuccess: (newVerification) => {
-        setSelectedEventId(newVerification.id);
-        events.refetch();
+  const handleStartVerification = (
+    maintenanceEventId: string,
+    baselineBefore?: Record<string, unknown>
+  ) => {
+    startVerification.mutate(
+      {
+        device_id: DEVICE_ID,
+        maintenance_event_id: maintenanceEventId,
+        baseline_before: baselineBefore,
       },
-    });
+      {
+        onSuccess: newVerification => {
+          setSelectedEventId(newVerification.id);
+          events.refetch();
+        },
+      }
+    );
   };
 
   const handleCompleteVerification = (verificationId: string) => {
-    completeVerification.mutate({
-      verificationId,
-      data: { current_readings: currentReadings },
-    }, {
-      onSuccess: (completed) => {
-        setSelectedEventId(completed.id);
-        setShowCompleteForm(null);
-        setCurrentReadings({});
-        events.refetch();
+    completeVerification.mutate(
+      {
+        verificationId,
+        data: { current_readings: currentReadings },
       },
-    });
+      {
+        onSuccess: completed => {
+          setSelectedEventId(completed.id);
+          setShowCompleteForm(null);
+          setCurrentReadings({});
+          events.refetch();
+        },
+      }
+    );
   };
 
   const handleReadingChange = (sensor: string, value: string) => {
@@ -79,14 +123,20 @@ export function VerificationPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="animate-fade-in space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-h1 font-semibold text-text-primary">Verification Runs</h1>
-          <p className="text-body-sm text-text-secondary mt-1">Post-maintenance verification and baseline validation</p>
+          <h1 className="text-text-primary text-h1 font-semibold">Verification Runs</h1>
+          <p className="mt-1 text-body-sm text-text-secondary">
+            Post-maintenance verification and baseline validation
+          </p>
         </div>
-        <Button variant="ghost" onClick={() => events.refetch()} className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          onClick={() => events.refetch()}
+          className="flex items-center gap-2"
+        >
           <RotateCcw className="h-4 w-4" />
           Refresh
         </Button>
@@ -100,22 +150,33 @@ export function VerificationPage() {
         <CardContent>
           {events.isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded" />)}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded" />
+              ))}
             </div>
           ) : !events.data || events.data.length === 0 ? (
-            <EmptyState title="No verification runs" description="Start a verification after a maintenance event" />
+            <EmptyState
+              title="No verification runs"
+              description="Start a verification after a maintenance event"
+            />
           ) : (
             <div className="space-y-3">
-              {events.data.map((event) => {
-                const state = event.verification_status as VerificationState || 'PENDING';
+              {events.data.map(event => {
+                const state = (event.verification_status as VerificationState) || 'PENDING';
                 return (
-                  <div key={event.id} className="flex items-center justify-between p-4 bg-surface rounded-card border border-subtle">
+                  <div
+                    key={event.id}
+                    className="border-subtle flex items-center justify-between rounded-card border bg-surface p-4"
+                  >
                     <div className="flex items-center gap-4">
                       {stateIcon(state)}
                       <div>
-                        <div className="font-medium text-body-sm text-text-primary">Maintenance #{event.id.slice(0, 8)}</div>
+                        <div className="text-text-primary text-body-sm font-medium">
+                          Maintenance #{event.id.slice(0, 8)}
+                        </div>
                         <div className="text-caption text-text-muted">
-                          {event.event_type.replace('_', ' ')} {' • '}{format(new Date(event.timestamp), 'dd MMM yyyy HH:mm')}
+                          {event.event_type.replace('_', ' ')} {' • '}
+                          {format(new Date(event.timestamp), 'dd MMM yyyy HH:mm')}
                         </div>
                       </div>
                     </div>
@@ -146,30 +207,45 @@ export function VerificationPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-body-sm text-text-secondary mb-4">
+          <p className="mb-4 text-body-sm text-text-secondary">
             Select a completed maintenance event to start a post-maintenance verification run.
           </p>
           <div className="space-y-2">
-            {events.data?.filter(e => e.verification_status === 'PENDING' || !e.verification_status).map((event) => (
-              <div key={event.id} className="flex items-center justify-between p-3 bg-surface rounded-button border border-subtle">
-                <div>
-                  <div className="font-medium text-body-sm">Maintenance #{event.id.slice(0, 8)}</div>
-                  <div className="text-caption text-text-muted">
-                    {event.event_type.replace('_', ' ')} • {format(new Date(event.timestamp), 'dd MMM yyyy HH:mm')}
-                  </div>
-                </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => handleStartVerification(event.id, event.post_maintenance_state as Record<string, unknown> || undefined)}
-                  disabled={startVerification.isPending}
+            {events.data
+              ?.filter(e => e.verification_status === 'PENDING' || !e.verification_status)
+              .map(event => (
+                <div
+                  key={event.id}
+                  className="border-subtle flex items-center justify-between rounded-button border bg-surface p-3"
                 >
-                  {startVerification.isPending ? 'Starting…' : 'Start Verification'}
-                </Button>
-              </div>
-            ))}
-            {(!events.data || events.data.filter(e => e.verification_status === 'PENDING' || !e.verification_status).length === 0) && (
-              <p className="text-body-sm text-text-muted text-center py-4">
+                  <div>
+                    <div className="text-body-sm font-medium">
+                      Maintenance #{event.id.slice(0, 8)}
+                    </div>
+                    <div className="text-caption text-text-muted">
+                      {event.event_type.replace('_', ' ')} •{' '}
+                      {format(new Date(event.timestamp), 'dd MMM yyyy HH:mm')}
+                    </div>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() =>
+                      handleStartVerification(
+                        event.id,
+                        (event.post_maintenance_state as Record<string, unknown>) || undefined
+                      )
+                    }
+                    disabled={startVerification.isPending}
+                  >
+                    {startVerification.isPending ? 'Starting…' : 'Start Verification'}
+                  </Button>
+                </div>
+              ))}
+            {(!events.data ||
+              events.data.filter(e => e.verification_status === 'PENDING' || !e.verification_status)
+                .length === 0) && (
+              <p className="py-4 text-center text-body-sm text-text-muted">
                 No maintenance events pending verification
               </p>
             )}
@@ -194,7 +270,10 @@ export function VerificationPage() {
           currentReadings={currentReadings}
           onReadingChange={handleReadingChange}
           onSubmit={() => handleCompleteVerification(showCompleteForm.id)}
-          onCancel={() => { setShowCompleteForm(null); setCurrentReadings({}); }}
+          onCancel={() => {
+            setShowCompleteForm(null);
+            setCurrentReadings({});
+          }}
           isSubmitting={completeVerification.isPending}
         />
       )}
@@ -210,62 +289,100 @@ interface VerificationDetailDrawerProps {
   isCompleting: boolean;
 }
 
-function VerificationDetailDrawer({ verification, isLoading, onClose, onComplete, isCompleting }: VerificationDetailDrawerProps) {
+function VerificationDetailDrawer({
+  verification,
+  isLoading,
+  onClose,
+  onComplete,
+  isCompleting,
+}: VerificationDetailDrawerProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-elevated rounded-t-lg sm:rounded-card shadow-elevated w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-        <div className="sticky top-0 bg-elevated border-b border-subtle p-4 flex items-center justify-between">
+      <div className="relative max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-t-lg bg-elevated shadow-elevated sm:rounded-card">
+        <div className="border-subtle sticky top-0 flex items-center justify-between border-b bg-elevated p-4">
           <h2 className="text-h2 font-semibold">Verification Details</h2>
-          <button onClick={onClose} className="p-1 hover:bg-hover rounded-button">✕</button>
+          <button onClick={onClose} className="rounded-button p-1 hover:bg-hover">
+            ✕
+          </button>
         </div>
 
         {isLoading ? (
-          <div className="p-6 space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+          <div className="space-y-4 p-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
           </div>
         ) : verification ? (
-          <div className="p-6 space-y-6">
-            <div className="flex items-center gap-4 p-4 bg-surface rounded-card">
+          <div className="space-y-6 p-6">
+            <div className="flex items-center gap-4 rounded-card bg-surface p-4">
               {stateIcon(verification.state)}
               <div>
-                <div className="text-h3 font-semibold text-text-primary">
-                  {verification.state === 'PASSED' ? 'Verification Passed' : 
-                   verification.state === 'FAILED' ? 'Verification Failed' :
-                   verification.state === 'RUNNING' ? 'Running Checks…' : 'Pending'}
+                <div className="text-text-primary text-h3 font-semibold">
+                  {verification.state === 'PASSED'
+                    ? 'Verification Passed'
+                    : verification.state === 'FAILED'
+                      ? 'Verification Failed'
+                      : verification.state === 'RUNNING'
+                        ? 'Running Checks…'
+                        : 'Pending'}
                 </div>
-                <div className="text-caption text-text-muted">
-                  ID: {verification.id}
-                </div>
+                <div className="text-caption text-text-muted">ID: {verification.id}</div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-body-sm">
-              <div><span className="text-text-secondary">Started:</span> <span className="ml-2">{verification.started_at ? format(new Date(verification.started_at), 'dd MMM yyyy HH:mm') : '—'}</span></div>
-              <div><span className="text-text-secondary">Completed:</span> <span className="ml-2">{verification.completed_at ? format(new Date(verification.completed_at), 'dd MMM yyyy HH:mm') : '—'}</span></div>
-              <div><span className="text-text-secondary">Maintenance Event:</span> <span className="ml-2 font-mono">{verification.maintenance_event_id}</span></div>
-              <div><span className="text-text-secondary">Device:</span> <span className="ml-2 font-mono">{verification.device_id}</span></div>
+              <div>
+                <span className="text-text-secondary">Started:</span>{' '}
+                <span className="ml-2">
+                  {verification.started_at
+                    ? format(new Date(verification.started_at), 'dd MMM yyyy HH:mm')
+                    : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="text-text-secondary">Completed:</span>{' '}
+                <span className="ml-2">
+                  {verification.completed_at
+                    ? format(new Date(verification.completed_at), 'dd MMM yyyy HH:mm')
+                    : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="text-text-secondary">Maintenance Event:</span>{' '}
+                <span className="ml-2 font-mono">{verification.maintenance_event_id}</span>
+              </div>
+              <div>
+                <span className="text-text-secondary">Device:</span>{' '}
+                <span className="ml-2 font-mono">{verification.device_id}</span>
+              </div>
             </div>
 
             {verification.checks && verification.checks.length > 0 && (
               <div>
-                <h3 className="text-body font-medium mb-3">Checks</h3>
+                <h3 className="mb-3 text-body font-medium">Checks</h3>
                 <div className="space-y-2">
                   {verification.checks.map((check, i) => {
                     const details = (check as Record<string, unknown>).details;
-                    const hasDetails = details !== undefined && details !== null && Object.keys(details as Record<string, unknown>).length > 0;
+                    const hasDetails =
+                      details !== undefined &&
+                      details !== null &&
+                      Object.keys(details as Record<string, unknown>).length > 0;
                     const passed = (check as Record<string, unknown>).passed as boolean;
-                    const checkName = String(check.name ?? ('Check ' + (i + 1)));
+                    const checkName = String(check.name ?? 'Check ' + (i + 1));
                     return (
-                      <div key={i} className="flex items-center justify-between p-3 bg-surface rounded-button border border-subtle">
+                      <div
+                        key={i}
+                        className="border-subtle flex items-center justify-between rounded-button border bg-surface p-3"
+                      >
                         <div className="flex items-center gap-3">
-                          <span className="text-body-sm text-text-primary">{checkName}</span>
+                          <span className="text-text-primary text-body-sm">{checkName}</span>
                         </div>
                         {hasDetails ? (
-                            <span className="text-caption text-text-muted">
-                              {JSON.stringify(details)}
-                            </span>
-                          ) : null}
+                          <span className="text-caption text-text-muted">
+                            {JSON.stringify(details)}
+                          </span>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -274,13 +391,13 @@ function VerificationDetailDrawer({ verification, isLoading, onClose, onComplete
             )}
 
             {verification.failure_reasons && verification.failure_reasons.length > 0 && (
-              <div className="bg-critical/10 border border-critical/30 rounded-card p-4">
-                <h3 className="text-body font-medium text-critical mb-2 flex items-center gap-2">
+              <div className="rounded-card border border-critical/30 bg-critical/10 p-4">
+                <h3 className="mb-2 flex items-center gap-2 text-body font-medium text-critical">
                   <AlertTriangle className="h-4 w-4" /> Failure Reasons
                 </h3>
                 <ul className="space-y-1">
                   {verification.failure_reasons.map((reason, i) => (
-                    <li key={i} className="text-body-sm text-text-primary flex items-center gap-2">
+                    <li key={i} className="text-text-primary flex items-center gap-2 text-body-sm">
                       <XCircle className="h-3 w-3 text-critical" /> {reason}
                     </li>
                   ))}
@@ -288,37 +405,43 @@ function VerificationDetailDrawer({ verification, isLoading, onClose, onComplete
               </div>
             )}
 
-            {verification.baseline_before && Object.keys(verification.baseline_before).length > 0 && (
-              <div>
-                <h3 className="text-body font-medium mb-2">Baseline Before</h3>
-                <pre className="text-caption text-text-primary bg-background p-3 rounded-button overflow-auto max-h-40">
-                  {JSON.stringify(verification.baseline_before, null, 2)}
-                </pre>
-              </div>
-            )}
+            {verification.baseline_before &&
+              Object.keys(verification.baseline_before).length > 0 && (
+                <div>
+                  <h3 className="mb-2 text-body font-medium">Baseline Before</h3>
+                  <pre className="text-text-primary bg-background max-h-40 overflow-auto rounded-button p-3 text-caption">
+                    {JSON.stringify(verification.baseline_before, null, 2)}
+                  </pre>
+                </div>
+              )}
 
             {verification.baseline_after && Object.keys(verification.baseline_after).length > 0 && (
               <div>
-                <h3 className="text-body font-medium mb-2">Baseline After</h3>
-                <pre className="text-caption text-text-primary bg-background p-3 rounded-button overflow-auto max-h-40">
+                <h3 className="mb-2 text-body font-medium">Baseline After</h3>
+                <pre className="text-text-primary bg-background max-h-40 overflow-auto rounded-button p-3 text-caption">
                   {JSON.stringify(verification.baseline_after, null, 2)}
                 </pre>
               </div>
             )}
 
-            <div className="flex gap-2 pt-4 border-t border-subtle">
+            <div className="border-subtle flex gap-2 border-t pt-4">
               {onComplete && verification.state === 'PENDING' && (
-                <Button variant="primary" className="flex-1" onClick={() => onComplete(verification.id)} disabled={isCompleting}>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={() => onComplete(verification.id)}
+                  disabled={isCompleting}
+                >
                   {isCompleting ? 'Completing…' : 'Complete Verification'}
                 </Button>
               )}
-              <Button variant="ghost" className="flex-1" onClick={onClose}>Close</Button>
+              <Button variant="ghost" className="flex-1" onClick={onClose}>
+                Close
+              </Button>
             </div>
           </div>
         ) : (
-          <div className="p-6 text-center text-text-muted">
-            Verification not found
-          </div>
+          <div className="p-6 text-center text-text-muted">Verification not found</div>
         )}
       </div>
     </div>
@@ -333,7 +456,13 @@ interface CompleteVerificationFormProps {
   isSubmitting: boolean;
 }
 
-function CompleteVerificationForm({ currentReadings, onReadingChange, onSubmit, onCancel, isSubmitting }: CompleteVerificationFormProps) {
+function CompleteVerificationForm({
+  currentReadings,
+  onReadingChange,
+  onSubmit,
+  onCancel,
+  isSubmitting,
+}: CompleteVerificationFormProps) {
   // Common sensors to check
   const sensors = [
     { key: 'tds', label: 'TDS (ppm)', unit: 'ppm' },
@@ -347,23 +476,26 @@ function CompleteVerificationForm({ currentReadings, onReadingChange, onSubmit, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-elevated rounded-card shadow-elevated w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
-        <h2 className="text-h2 font-semibold mb-4">Complete Verification</h2>
-        <p className="text-body-sm text-text-secondary mb-4">
+      <div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-card bg-elevated p-6 shadow-elevated">
+        <h2 className="mb-4 text-h2 font-semibold">Complete Verification</h2>
+        <p className="mb-4 text-body-sm text-text-secondary">
           Enter current sensor readings to complete the verification run.
         </p>
 
-        <div className="space-y-3 max-h-60 overflow-y-auto">
-          {sensors.map((sensor) => (
-            <div key={sensor.key} className="flex items-center gap-4 p-3 bg-surface rounded-button border border-subtle">
+        <div className="max-h-60 space-y-3 overflow-y-auto">
+          {sensors.map(sensor => (
+            <div
+              key={sensor.key}
+              className="border-subtle flex items-center gap-4 rounded-button border bg-surface p-3"
+            >
               <div className="flex-1">
                 <label className="text-caption text-text-secondary">{sensor.label}</label>
                 <input
                   type="number"
                   step="any"
-                  className="input w-full mt-1"
+                  className="input mt-1 w-full"
                   value={currentReadings[sensor.key] ?? ''}
-                  onChange={(e) => onReadingChange(sensor.key, e.target.value)}
+                  onChange={e => onReadingChange(sensor.key, e.target.value)}
                   placeholder={`Current ${sensor.label}`}
                 />
               </div>
@@ -372,11 +504,13 @@ function CompleteVerificationForm({ currentReadings, onReadingChange, onSubmit, 
           ))}
         </div>
 
-        <div className="flex gap-2 pt-4 border-t border-subtle">
+        <div className="border-subtle flex gap-2 border-t pt-4">
           <Button variant="primary" className="flex-1" onClick={onSubmit} disabled={isSubmitting}>
             {isSubmitting ? 'Completing…' : 'Complete Verification'}
           </Button>
-          <Button variant="ghost" className="flex-1" onClick={onCancel}>Cancel</Button>
+          <Button variant="ghost" className="flex-1" onClick={onCancel}>
+            Cancel
+          </Button>
         </div>
       </div>
     </div>

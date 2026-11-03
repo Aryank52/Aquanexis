@@ -16,7 +16,7 @@ export function ProtectedRoute({ allowedRoles, fallbackPath = '/login' }: Protec
     return (
       <div className={cn('fixed inset-0 flex items-center justify-center', 'bg-background')}>
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <Loader2 className="text-primary h-10 w-10 animate-spin" />
           <p className="text-body-sm text-text-secondary">Verifying session…</p>
         </div>
       </div>
@@ -45,7 +45,7 @@ export function PublicRoute({ children, redirectTo = '/' }: PublicRouteProps) {
   if (isLoading) {
     return (
       <div className={cn('fixed inset-0 flex items-center justify-center', 'bg-background')}>
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <Loader2 className="text-primary h-10 w-10 animate-spin" />
       </div>
     );
   }

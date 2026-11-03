@@ -1,37 +1,54 @@
 import { Link } from 'react-router-dom';
-import { Droplet, Filter, Gauge, Shield, ArrowRight, CheckCircle, BarChart2, Zap, Database, Wrench } from 'lucide-react';
+import {
+  Droplet,
+  Filter,
+  Gauge,
+  Shield,
+  ArrowRight,
+  CheckCircle,
+  BarChart2,
+  Zap,
+  Database,
+  Wrench,
+} from 'lucide-react';
 import { cn } from '@utils/cn';
 
 const features = [
   {
     icon: Droplet,
     title: 'Multi-Parameter Sensing',
-    description: 'Beyond TDS: pH, turbidity, temperature, flow, pressure, tank level, leak detection, and pump energy monitoring.',
+    description:
+      'Beyond TDS: pH, turbidity, temperature, flow, pressure, tank level, leak detection, and pump energy monitoring.',
   },
   {
     icon: Filter,
     title: 'Filter Intelligence',
-    description: 'Filter Stress Index (FSI), Filter Health Index (FHI), and Remaining Useful Life (RUL) predictions with explainable AI.',
+    description:
+      'Filter Stress Index (FSI), Filter Health Index (FHI), and Remaining Useful Life (RUL) predictions with explainable AI.',
   },
   {
     icon: Gauge,
     title: 'AquaScore Water Quality',
-    description: 'Real-time 0-100 water quality score from weighted WHO/EPA guideline compliance across all parameters.',
+    description:
+      'Real-time 0-100 water quality score from weighted WHO/EPA guideline compliance across all parameters.',
   },
   {
     icon: Shield,
     title: 'Safety-First Diagnostics',
-    description: 'Leak, overpressure, dry-run, and overcurrent protection with validated actions and full audit trail.',
+    description:
+      'Leak, overpressure, dry-run, and overcurrent protection with validated actions and full audit trail.',
   },
   {
     icon: BarChart2,
     title: 'Trend Analysis & Anomalies',
-    description: 'Statistical anomaly detection (z-score, IQR, rate-of-change) with historical trend visualization.',
+    description:
+      'Statistical anomaly detection (z-score, IQR, rate-of-change) with historical trend visualization.',
   },
   {
     icon: Wrench,
     title: 'Maintenance Workflows',
-    description: 'Guided filter replacement, sensor calibration, and post-maintenance verification with automated quality checks.',
+    description:
+      'Guided filter replacement, sensor calibration, and post-maintenance verification with automated quality checks.',
   },
 ];
 
@@ -46,64 +63,66 @@ const specs = [
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-base flex flex-col">
+    <div className="flex min-h-screen flex-col bg-base">
       {/* Hero Section */}
-      <section className="relative flex-1 flex items-center justify-center px-6 py-20 overflow-hidden">
+      <section className="relative flex flex-1 items-center justify-center overflow-hidden px-6 py-20">
         {/* Background pattern */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-info/5 via-transparent to-transparent" />
-        
-        <div className="relative max-w-6xl mx-auto w-full text-center">
+
+        <div className="relative mx-auto w-full max-w-6xl text-center">
           {/* Product visualization */}
           <div className="mb-12 animate-fade-in">
             <SystemVisualization />
           </div>
 
           {/* Title & Value Proposition */}
-          <h1 className="text-display font-semibold text-text-primary mb-6 animate-slide-up">
+          <h1 className="text-text-primary mb-6 animate-slide-up text-display font-semibold">
             AquaNexis
           </h1>
-          <p className="text-body-lg text-text-secondary max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            Predictive Water Intelligence Platform — Sense → Validate → Understand → Detect → Predict → Alert → Protect → Assist
+          <p
+            className="mx-auto mb-10 max-w-2xl animate-slide-up text-body-lg text-text-secondary"
+            style={{ animationDelay: '100ms' }}
+          >
+            Predictive Water Intelligence Platform — Sense → Validate → Understand → Detect →
+            Predict → Alert → Protect → Assist
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <div
+            className="flex animate-slide-up flex-col items-center justify-center gap-4 sm:flex-row"
+            style={{ animationDelay: '200ms' }}
+          >
             <Link
               to="/dashboard"
-              className={cn(
-                'btn btn-primary btn-lg w-full sm:w-auto',
-                'group'
-              )}
+              className={cn('btn btn-primary btn-lg w-full sm:w-auto', 'group')}
             >
               Open Live System
-              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
-            <Link
-              to="/filter-health"
-              className={cn(
-                'btn btn-secondary btn-lg w-full sm:w-auto'
-              )}
-            >
+            <Link to="/filter-health" className={cn('btn btn-secondary btn-lg w-full sm:w-auto')}>
               Filter Intelligence
             </Link>
           </div>
 
           {/* Trust indicators */}
-          <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-caption text-text-muted animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <div
+            className="mt-16 flex animate-fade-in flex-wrap items-center justify-center gap-8 text-caption text-text-muted"
+            style={{ animationDelay: '300ms' }}
+          >
             <span className="flex items-center gap-1">
-              <CheckCircle className="w-4 h-4 text-success" />
+              <CheckCircle className="h-4 w-4 text-success" />
               WCAG 2.1 AA Accessible
             </span>
             <span className="flex items-center gap-1">
-              <CheckCircle className="w-4 h-4 text-success" />
+              <CheckCircle className="h-4 w-4 text-success" />
               OpenAPI Documented
             </span>
             <span className="flex items-center gap-1">
-              <CheckCircle className="w-4 h-4 text-success" />
+              <CheckCircle className="h-4 w-4 text-success" />
               TypeScript Strict
             </span>
             <span className="flex items-center gap-1">
-              <CheckCircle className="w-4 h-4 text-success" />
+              <CheckCircle className="h-4 w-4 text-success" />
               Test Coverage {'>'} 80%
             </span>
           </div>
@@ -111,16 +130,16 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-6 bg-surface border-y border-subtle">
-        <div className="max-w-6xl mx-auto">
-          <header className="text-center mb-16">
-            <h2 className="text-h1 font-semibold text-text-primary mb-4">Core Capabilities</h2>
-            <p className="text-body-lg text-text-secondary max-w-2xl mx-auto">
+      <section className="border-subtle border-y bg-surface px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <header className="mb-16 text-center">
+            <h2 className="text-text-primary mb-4 text-h1 font-semibold">Core Capabilities</h2>
+            <p className="mx-auto max-w-2xl text-body-lg text-text-secondary">
               Every component designed for engineering-grade reliability and transparency
             </p>
           </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature, index) => (
               <article
                 key={feature.title}
@@ -130,10 +149,10 @@ export function LandingPage() {
                 )}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="w-12 h-12 bg-info/10 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-info" />
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-info/10">
+                  <feature.icon className="h-6 w-6 text-info" />
                 </div>
-                <h3 className="text-h3 font-semibold text-text-primary mb-2">{feature.title}</h3>
+                <h3 className="text-text-primary mb-2 text-h3 font-semibold">{feature.title}</h3>
                 <p className="text-body text-text-secondary">{feature.description}</p>
               </article>
             ))}
@@ -142,26 +161,26 @@ export function LandingPage() {
       </section>
 
       {/* Specs Section */}
-      <section className="py-20 px-6 bg-base">
-        <div className="max-w-6xl mx-auto">
-          <header className="text-center mb-16">
-            <h2 className="text-h1 font-semibold text-text-primary mb-4">Engineering Targets</h2>
-            <p className="text-body-lg text-text-secondary max-w-2xl mx-auto">
+      <section className="bg-base px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <header className="mb-16 text-center">
+            <h2 className="text-text-primary mb-4 text-h1 font-semibold">Engineering Targets</h2>
+            <p className="mx-auto max-w-2xl text-body-lg text-text-secondary">
               Measurable goals that define product quality
             </p>
           </header>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
             {specs.map((spec, index) => (
               <div
                 key={spec.label}
                 className={cn(
-                  'card p-5 text-center transition-colors hover:border-emphasis',
+                  'card hover:border-emphasis p-5 text-center transition-colors',
                   'animate-fade-in'
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <p className="text-data-lg font-bold text-text-primary mb-1">{spec.value}</p>
+                <p className="text-text-primary mb-1 text-data-lg font-bold">{spec.value}</p>
                 <p className="text-caption text-text-secondary">{spec.label}</p>
               </div>
             ))}
@@ -170,15 +189,21 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-subtle bg-surface">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <footer className="border-subtle border-t bg-surface px-6 py-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-caption text-text-secondary">
             AquaNexis — Predictive Water Intelligence
           </p>
           <div className="flex items-center gap-6 text-caption text-text-muted">
-            <Link to="/documentation" className="hover:text-text-primary transition-colors">Documentation</Link>
-            <Link to="/documentation" className="hover:text-text-primary transition-colors">GitHub</Link>
-            <Link to="/documentation" className="hover:text-text-primary transition-colors">Privacy</Link>
+            <Link to="/documentation" className="hover:text-text-primary transition-colors">
+              Documentation
+            </Link>
+            <Link to="/documentation" className="hover:text-text-primary transition-colors">
+              GitHub
+            </Link>
+            <Link to="/documentation" className="hover:text-text-primary transition-colors">
+              Privacy
+            </Link>
           </div>
         </div>
       </footer>
@@ -204,11 +229,21 @@ function SystemVisualization() {
   ];
 
   return (
-    <div className="relative h-32 w-full max-w-4xl mx-auto">
+    <div className="relative mx-auto h-32 w-full max-w-4xl">
       {/* Flow lines */}
-      <svg className="absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 pointer-events-none" aria-hidden="true">
+      <svg
+        className="pointer-events-none absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2"
+        aria-hidden="true"
+      >
         <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="9"
+            refY="3.5"
+            orient="auto"
+          >
             <polygon points="0 0, 10 3.5, 0 7" fill="currentColor" />
           </marker>
         </defs>
@@ -226,7 +261,7 @@ function SystemVisualization() {
               strokeWidth="2"
               strokeDasharray="8 4"
               markerEnd="url(#arrowhead)"
-              className="text-info/30 animate-dash"
+              className="animate-dash text-info/30"
               style={{ animationDelay: `${i * 200}ms` }}
             />
           );
@@ -234,24 +269,28 @@ function SystemVisualization() {
       </svg>
 
       {/* Nodes */}
-      {nodes.map((node) => (
+      {nodes.map(node => (
         <div
           key={node.id}
           className="absolute flex flex-col items-center gap-2 transition-all duration-300"
           style={{ left: node.x, top: node.y, transform: 'translateX(-50%)' }}
         >
-          <div className={cn(
-            'w-16 h-16 rounded-xl flex items-center justify-center shadow-card',
-            'border-2 border-subtle bg-surface'
-          )}>
-            <node.icon className="w-8 h-8 text-info" />
+          <div
+            className={cn(
+              'flex h-16 w-16 items-center justify-center rounded-xl shadow-card',
+              'border-subtle border-2 bg-surface'
+            )}
+          >
+            <node.icon className="h-8 w-8 text-info" />
           </div>
-          <span className="text-caption text-text-secondary font-medium whitespace-nowrap">{node.label}</span>
+          <span className="whitespace-nowrap text-caption font-medium text-text-secondary">
+            {node.label}
+          </span>
         </div>
       ))}
 
       {/* Intelligence layer overlay */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-4">
+      <div className="absolute bottom-0 left-1/2 flex -translate-x-1/2 gap-4">
         {[
           { icon: BarChart2, label: 'Analyze' },
           { icon: Zap, label: 'Predict' },
@@ -260,12 +299,12 @@ function SystemVisualization() {
           <div
             key={item.label}
             className={cn(
-              'flex flex-col items-center gap-1 px-3 py-2 bg-surface/80 backdrop-blur-sm rounded-button',
-              'border border-subtle shadow-card animate-slide-up'
+              'flex flex-col items-center gap-1 rounded-button bg-surface/80 px-3 py-2 backdrop-blur-sm',
+              'border-subtle animate-slide-up border shadow-card'
             )}
             style={{ animationDelay: `${300 + i * 100}ms` }}
           >
-            <item.icon className="w-5 h-5 text-info" />
+            <item.icon className="h-5 w-5 text-info" />
             <span className="text-caption text-text-secondary">{item.label}</span>
           </div>
         ))}

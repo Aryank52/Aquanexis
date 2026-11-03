@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { authApi } from '@/api/endpoints';
-import { setTokens, clearTokens, getAccessToken, hasValidSession, setSessionExpiredHandler } from '@/api/client';
+import {
+  setTokens,
+  clearTokens,
+  getAccessToken,
+  hasValidSession,
+  setSessionExpiredHandler,
+} from '@/api/client';
 import type { AuthUser, LoginRequest, LoginResponse } from '@/types/api';
 
 interface AuthContextType {
@@ -44,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     checkAuth();
-    
+
     // Set up session expired handler
     setSessionExpiredHandler(() => {
       clearTokens();
@@ -83,7 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, refreshSession }}>
+    <AuthContext.Provider
+      value={{ user, isAuthenticated: !!user, isLoading, login, logout, refreshSession }}
+    >
       {children}
     </AuthContext.Provider>
   );

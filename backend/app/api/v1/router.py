@@ -2,6 +2,7 @@
 API v1 Router - Aggregates all v1 endpoints.
 Includes DEMO_MODE / Auth router and fixes duplicate router prefixes on database-backed endpoints.
 """
+
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (

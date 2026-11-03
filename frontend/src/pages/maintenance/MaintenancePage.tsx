@@ -19,7 +19,9 @@ const eventTypeLabels: Record<string, string> = {
 
 function metricsToString(m: Record<string, number> | null): string {
   if (!m || Object.keys(m).length === 0) return '—';
-  return Object.entries(m).map(([k, v]) => `${k}: ${typeof v === 'number' ? v.toFixed(2) : v}`).join(', ');
+  return Object.entries(m)
+    .map(([k, v]) => `${k}: ${typeof v === 'number' ? v.toFixed(2) : v}`)
+    .join(', ');
 }
 
 export function MaintenancePage() {
@@ -31,25 +33,38 @@ export function MaintenancePage() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   if (history.isError) {
-    return <QueryError message={(history.error as Error)?.message ?? 'Failed to load maintenance history'} onRetry={history.refetch} />;
+    return (
+      <QueryError
+        message={(history.error as Error)?.message ?? 'Failed to load maintenance history'}
+        onRetry={history.refetch}
+      />
+    );
   }
 
-  const isCritical = fh.data && (fh.data.fhi < 40 || fh.data.maintenance_band === 'REPLACE_RECOMMENDED');
+  const isCritical =
+    fh.data && (fh.data.fhi < 40 || fh.data.maintenance_band === 'REPLACE_RECOMMENDED');
 
   const handleReplace = () => {
     replacement.mutate(
       { device_id: DEVICE_ID, performed_by: 'operator', notes: replaceNotes || undefined },
       {
-        onSuccess: () => { setConfirmReplace(false); setReplaceNotes(''); setShowSuccess(true); setTimeout(() => setShowSuccess(false), 5000); },
-      },
+        onSuccess: () => {
+          setConfirmReplace(false);
+          setReplaceNotes('');
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 5000);
+        },
+      }
     );
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="animate-fade-in space-y-6">
       <div>
-        <h1 className="text-h1 font-semibold text-text-primary">Maintenance</h1>
-        <p className="text-body-sm text-text-secondary mt-1">Filter replacement, calibration, and maintenance history</p>
+        <h1 className="text-text-primary text-h1 font-semibold">Maintenance</h1>
+        <p className="mt-1 text-body-sm text-text-secondary">
+          Filter replacement, calibration, and maintenance history
+        </p>
       </div>
 
       {/* Filter Replacement Action */}
@@ -60,18 +75,30 @@ export function MaintenancePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {fh.isLoading ? <Skeleton className="h-16 w-full" /> : (
+          {fh.isLoading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : (
             <div className="space-y-4">
-              <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex flex-wrap items-center gap-4">
                 {fh.data && (
                   <>
                     <span className="text-body-sm">
-                      FHI: <strong className={cn(fh.data.fhi > 70 ? 'text-success' : fh.data.fhi > 40 ? 'text-warning' : 'text-critical')}>
+                      FHI:{' '}
+                      <strong
+                        className={cn(
+                          fh.data.fhi > 70
+                            ? 'text-success'
+                            : fh.data.fhi > 40
+                              ? 'text-warning'
+                              : 'text-critical'
+                        )}
+                      >
                         {fh.data.fhi.toFixed(1)}
                       </strong>
                     </span>
                     <span className="text-body-sm">
-                      Band: <Badge variant={isCritical ? 'critical' : 'success'}>
+                      Band:{' '}
+                      <Badge variant={isCritical ? 'critical' : 'success'}>
                         {fh.data.maintenance_band.replace(/_/g, ' ')}
                       </Badge>
                     </span>
@@ -83,13 +110,13 @@ export function MaintenancePage() {
               </div>
 
               {showSuccess && (
-                <div className="bg-success/10 border border-success/30 rounded-button px-3 py-2 text-success text-body-sm flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-button border border-success/30 bg-success/10 px-3 py-2 text-body-sm text-success">
                   <CheckCircle className="h-4 w-4" /> Filter replaced successfully. History updated.
                 </div>
               )}
 
               {replacement.isError && (
-                <div className="bg-critical/10 border border-critical/30 rounded-button px-3 py-2 text-critical text-body-sm">
+                <div className="rounded-button border border-critical/30 bg-critical/10 px-3 py-2 text-body-sm text-critical">
                   Error: {(replacement.error as Error)?.message ?? 'Failed to record replacement'}
                 </div>
               )}
@@ -99,11 +126,13 @@ export function MaintenancePage() {
                   variant={isCritical ? 'danger' : 'primary'}
                   onClick={() => setConfirmReplace(true)}
                 >
-                  <Wrench className="h-4 w-4 mr-1" /> Replace Filter
+                  <Wrench className="mr-1 h-4 w-4" /> Replace Filter
                 </Button>
               ) : (
-                <div className="space-y-3 p-3 bg-surface rounded-card border border-subtle">
-                  <p className="text-body-sm text-text-primary font-medium">Confirm Filter Replacement</p>
+                <div className="border-subtle space-y-3 rounded-card border bg-surface p-3">
+                  <p className="text-text-primary text-body-sm font-medium">
+                    Confirm Filter Replacement
+                  </p>
                   <textarea
                     className="input w-full text-body-sm"
                     rows={2}
@@ -112,10 +141,18 @@ export function MaintenancePage() {
                     onChange={e => setReplaceNotes(e.target.value)}
                   />
                   <div className="flex gap-2">
-                    <Button variant="danger" onClick={handleReplace} disabled={replacement.isPending}>
+                    <Button
+                      variant="danger"
+                      onClick={handleReplace}
+                      disabled={replacement.isPending}
+                    >
                       {replacement.isPending ? 'Recording…' : 'Confirm Replacement'}
                     </Button>
-                    <Button variant="ghost" onClick={() => setConfirmReplace(false)} disabled={replacement.isPending}>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setConfirmReplace(false)}
+                      disabled={replacement.isPending}
+                    >
                       Cancel
                     </Button>
                   </div>
@@ -134,40 +171,57 @@ export function MaintenancePage() {
         <CardContent>
           {history.isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded" />)}
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full rounded" />
+              ))}
             </div>
           ) : !history.data || history.data.length === 0 ? (
-            <EmptyState title="No maintenance records" description="No maintenance events have been recorded for this device" />
+            <EmptyState
+              title="No maintenance records"
+              description="No maintenance events have been recorded for this device"
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-body-sm">
                 <thead>
-                  <tr className="border-b border-subtle text-text-secondary text-left">
-                    <th className="py-2 px-3 font-medium">Date</th>
-                    <th className="py-2 px-3 font-medium">Type</th>
-                    <th className="py-2 px-3 font-medium">Performed By</th>
-                    <th className="py-2 px-3 font-medium">Pre-metrics</th>
-                    <th className="py-2 px-3 font-medium">Post-metrics</th>
-                    <th className="py-2 px-3 font-medium">Notes</th>
-                    <th className="py-2 px-3 font-medium">Verified</th>
+                  <tr className="border-subtle border-b text-left text-text-secondary">
+                    <th className="px-3 py-2 font-medium">Date</th>
+                    <th className="px-3 py-2 font-medium">Type</th>
+                    <th className="px-3 py-2 font-medium">Performed By</th>
+                    <th className="px-3 py-2 font-medium">Pre-metrics</th>
+                    <th className="px-3 py-2 font-medium">Post-metrics</th>
+                    <th className="px-3 py-2 font-medium">Notes</th>
+                    <th className="px-3 py-2 font-medium">Verified</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-subtle">
+                <tbody className="divide-subtle divide-y">
                   {history.data.map(event => (
-                    <tr key={event.id} className="hover:bg-hover transition-colors">
-                      <td className="py-2 px-3 whitespace-nowrap">{format(new Date(event.performed_at), 'dd MMM yyyy HH:mm')}</td>
-                      <td className="py-2 px-3">
-                        <Badge variant="default">{eventTypeLabels[event.event_type] ?? event.event_type}</Badge>
+                    <tr key={event.id} className="transition-colors hover:bg-hover">
+                      <td className="whitespace-nowrap px-3 py-2">
+                        {format(new Date(event.performed_at), 'dd MMM yyyy HH:mm')}
                       </td>
-                      <td className="py-2 px-3 text-text-secondary">{event.performed_by ?? '—'}</td>
-                      <td className="py-2 px-3 text-text-muted text-caption max-w-[160px] truncate" title={metricsToString(event.pre_metrics)}>
+                      <td className="px-3 py-2">
+                        <Badge variant="default">
+                          {eventTypeLabels[event.event_type] ?? event.event_type}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 text-text-secondary">{event.performed_by ?? '—'}</td>
+                      <td
+                        className="max-w-[160px] truncate px-3 py-2 text-caption text-text-muted"
+                        title={metricsToString(event.pre_metrics)}
+                      >
                         {metricsToString(event.pre_metrics)}
                       </td>
-                      <td className="py-2 px-3 text-text-muted text-caption max-w-[160px] truncate" title={metricsToString(event.post_metrics)}>
+                      <td
+                        className="max-w-[160px] truncate px-3 py-2 text-caption text-text-muted"
+                        title={metricsToString(event.post_metrics)}
+                      >
                         {metricsToString(event.post_metrics)}
                       </td>
-                      <td className="py-2 px-3 text-text-secondary max-w-[200px] truncate">{event.notes ?? '—'}</td>
-                      <td className="py-2 px-3">
+                      <td className="max-w-[200px] truncate px-3 py-2 text-text-secondary">
+                        {event.notes ?? '—'}
+                      </td>
+                      <td className="px-3 py-2">
                         {event.verified ? (
                           <CheckCircle className="h-4 w-4 text-success" />
                         ) : (

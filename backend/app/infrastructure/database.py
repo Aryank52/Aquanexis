@@ -1,6 +1,7 @@
 """
 Database infrastructure: async SQLAlchemy engine, session management, initialization.
 """
+
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -21,6 +22,7 @@ settings = get_settings()
 
 class Base(DeclarativeBase):
     """Base class for all ORM models."""
+
     pass
 
 
@@ -48,7 +50,9 @@ class DatabaseManager:
             pool_pre_ping=True,
             echo=db_settings.echo and settings.is_development,
             # Use NullPool for testing
-            poolclass=NullPool if settings.is_development and "test" in str(db_settings.url) else None,
+            poolclass=NullPool
+            if settings.is_development and "test" in str(db_settings.url)
+            else None,
         )
 
         # Add connection event listeners for debugging

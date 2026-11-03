@@ -13,18 +13,16 @@ import type {
   PaginatedResponse,
 } from '@/types/api';
 
-export function useNotifications(
-  params?: {
-    device_id?: string;
-    alert_id?: string;
-    channel?: string;
-    status?: string;
-    start?: string;
-    end?: string;
-    limit?: number;
-    offset?: number;
-  }
-) {
+export function useNotifications(params?: {
+  device_id?: string;
+  alert_id?: string;
+  channel?: string;
+  status?: string;
+  start?: string;
+  end?: string;
+  limit?: number;
+  offset?: number;
+}) {
   return useQuery<NotificationOutboxResponse[]>({
     queryKey: ['notifications', params],
     queryFn: () => notificationsApi.list(params),
@@ -78,7 +76,8 @@ export function useProviderConfigs(deviceId?: string) {
 export function useCreateProviderConfig() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: NotificationProviderConfigCreate) => notificationsApi.createProviderConfig(data),
+    mutationFn: (data: NotificationProviderConfigCreate) =>
+      notificationsApi.createProviderConfig(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications', 'providers'] });
     },
@@ -88,8 +87,13 @@ export function useCreateProviderConfig() {
 export function useUpdateProviderConfig() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ configId, data }: { configId: string; data: NotificationProviderConfigUpdate }) =>
-      notificationsApi.updateProviderConfig(configId, data),
+    mutationFn: ({
+      configId,
+      data,
+    }: {
+      configId: string;
+      data: NotificationProviderConfigUpdate;
+    }) => notificationsApi.updateProviderConfig(configId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications', 'providers'] });
     },
@@ -125,7 +129,7 @@ export function useCreateTemplate() {
 
 export function useTestNotification() {
   return useMutation<NotificationTestResponse, Error, NotificationTestRequest>({
-    mutationFn: (data) => notificationsApi.testNotification(data),
+    mutationFn: data => notificationsApi.testNotification(data),
   });
 }
 

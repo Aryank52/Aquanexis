@@ -1,36 +1,31 @@
 """
 Notification service - manages outbox queue, delivery, retries, and worker.
 """
-import asyncio
-import logging
-import random
-from contextlib import asynccontextmanager
+
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List, Dict, Any
-from uuid import UUID, uuid4
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from sqlalchemy import select, and_, or_, func, update
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.config import get_settings
 from app.infrastructure.database import get_db
 from app.infrastructure.logging import get_logger
-from app.models.alert import Alert as AlertModel, AlertSeverity, AlertStatus
+from app.models.alert import Alert as AlertModel
+from app.models.alert import AlertSeverity
 from app.models.notification import (
+    NotificationChannel,
+    NotificationErrorCategory,
     NotificationOutbox,
     NotificationProviderConfig,
-    NotificationTemplate,
-    NotificationChannel,
     NotificationStatus,
-    NotificationErrorCategory,
 )
-from app.models.device import Device as DeviceModel
 from app.services.notification_providers import (
-    get_provider,
-    BaseNotificationProvider,
     NotificationResult,
+    get_provider,
 )
 
 logger = get_logger(__name__)
@@ -45,6 +40,7 @@ RETRY_JITTER_FACTOR = 0.1  # 10% jitter
 @dataclass
 class DeliveryStats:
     """Statistics for notification delivery."""
+
     total_pending: int = 0
     total_processing: int = 0
     total_sent: int = 0
@@ -55,11 +51,11 @@ class DeliveryStats:
 
 class NotificationService:
     """Service for managing notification delivery."""
-    
+
     def __init__(self, db: AsyncSession):
         self.db = db
         self.settings = get_settings()
-    
+
     async def create_notification(
         self,
         alert: AlertModel,
@@ -79,12 +75,10 @@ class NotificationService:
         # Generate dedupe key if not provided
         if not dedupe_key:
             dedupe_key = f"{alert.id}:{channel.value}:{recipient}"
-        
+
         # Check for existing notification with same dedupe_key
         existing = await self.db.execute(
-            select(NotificationOutbox).where(
-                NotificationOutbox.dedupe_key == dedupe_key
-            )
+            select(NotificationOutbox).where(NotificationOutbox.dedupe_key == dedupe_key)
         )
         if existing.scalar_one_or_none():
             logger.debug(
@@ -94,7 +88,7 @@ class NotificationService:
                 dedupe_key=dedupe_key,
             )
             return None
-        
+
         # Build template data
         if template_data is None:
             template_data = {
@@ -109,11 +103,11 @@ class NotificationService:
                 "device_id": str(alert.device_id),
                 "created_at": alert.created_at.isoformat() if alert.created_at else "",
             }
-        
+
         # Determine template name based on alert code
         if not template_name:
             template_name = alert.alert_code
-        
+
         # Create notification
         notification = NotificationOutbox(
             alert_id=alert.id,
@@ -129,11 +123,11 @@ class NotificationService:
             max_attempts=max_attempts,
             next_attempt_at=datetime.now(timezone.utc),
         )
-        
+
         self.db.add(notification)
         await self.db.commit()
         await self.db.refresh(notification)
-        
+
         logger.info(
             "notification_created",
             notification_id=str(notification.id),
@@ -142,9 +136,9 @@ class NotificationService:
             channel=channel.value,
             provider=provider,
         )
-        
+
         return notification
-    
+
     async def create_notifications_for_alert(
         self,
         alert: AlertModel,
@@ -154,18 +148,24 @@ class NotificationService:
         Uses provider configs for the alert's device.
         """
         notifications = []
-        
+
         # Get provider configs for this device
-        configs = await self._get_provider_configs(alert.device_id, alert.severity, alert.alert_code)
-        
+        configs = await self._get_provider_configs(
+            alert.device_id, alert.severity, alert.alert_code
+        )
+
         for config in configs:
             if not config.enabled:
                 continue
-            
+
             channel = config.channel
             provider_name = config.provider
-            recipient = config.config.get("recipient") or config.config.get("email") or config.config.get("url")
-            
+            recipient = (
+                config.config.get("recipient")
+                or config.config.get("email")
+                or config.config.get("url")
+            )
+
             if not recipient:
                 logger.warning(
                     "provider_config_missing_recipient",
@@ -174,7 +174,7 @@ class NotificationService:
                     provider=provider_name,
                 )
                 continue
-            
+
             # Check rate limit
             if await self._check_rate_limit(config, channel):
                 logger.warning(
@@ -183,7 +183,7 @@ class NotificationService:
                     channel=channel.value,
                 )
                 continue
-            
+
             notification = await self.create_notification(
                 alert=alert,
                 channel=channel,
@@ -194,9 +194,9 @@ class NotificationService:
             )
             if notification:
                 notifications.append(notification)
-        
+
         return notifications
-    
+
     async def _get_provider_configs(
         self,
         device_id: UUID,
@@ -210,28 +210,28 @@ class NotificationService:
                 NotificationProviderConfig.enabled == True,
             )
         )
-        
+
         result = await self.db.execute(query)
         configs = result.scalars().all()
-        
+
         # Filter by severity
         severity_order = {"info": 0, "warning": 1, "critical": 2}
         alert_severity_level = severity_order.get(severity.value, 0)
-        
+
         filtered = []
         for config in configs:
             min_severity_level = severity_order.get(config.min_severity, 0)
             if alert_severity_level < min_severity_level:
                 continue
-            
+
             # Filter by alert codes if specified
             if config.alert_codes and alert_code not in config.alert_codes:
                 continue
-            
+
             filtered.append(config)
-        
+
         return filtered
-    
+
     async def _check_rate_limit(
         self,
         config: NotificationProviderConfig,
@@ -240,7 +240,7 @@ class NotificationService:
         """Check if provider is rate limited. Returns True if limited."""
         if not config.rate_limit_per_hour:
             return False
-        
+
         # Count notifications sent in last hour
         hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
         query = select(func.count(NotificationOutbox.id)).where(
@@ -251,12 +251,12 @@ class NotificationService:
                 NotificationOutbox.sent_at >= hour_ago,
             )
         )
-        
+
         result = await self.db.execute(query)
         count = result.scalar() or 0
-        
+
         return count >= config.rate_limit_per_hour
-    
+
     async def process_pending_notifications(
         self,
         batch_size: int = 50,
@@ -266,25 +266,32 @@ class NotificationService:
         Returns statistics.
         """
         stats = {"processed": 0, "sent": 0, "retry": 0, "dead_letter": 0, "failed": 0}
-        
+
         # Get pending notifications ready for delivery
         now = datetime.now(timezone.utc)
-        query = select(NotificationOutbox).where(
-            and_(
-                NotificationOutbox.status.in_([
-                    NotificationStatus.PENDING,
-                    NotificationStatus.RETRY,
-                ]),
-                or_(
-                    NotificationOutbox.next_attempt_at.is_(None),
-                    NotificationOutbox.next_attempt_at <= now,
-                ),
+        query = (
+            select(NotificationOutbox)
+            .where(
+                and_(
+                    NotificationOutbox.status.in_(
+                        [
+                            NotificationStatus.PENDING,
+                            NotificationStatus.RETRY,
+                        ]
+                    ),
+                    or_(
+                        NotificationOutbox.next_attempt_at.is_(None),
+                        NotificationOutbox.next_attempt_at <= now,
+                    ),
+                )
             )
-        ).order_by(NotificationOutbox.next_attempt_at).limit(batch_size)
-        
+            .order_by(NotificationOutbox.next_attempt_at)
+            .limit(batch_size)
+        )
+
         result = await self.db.execute(query)
         notifications = result.scalars().all()
-        
+
         for notification in notifications:
             outcome = await self._deliver_notification(notification)
             stats["processed"] += 1
@@ -294,9 +301,9 @@ class NotificationService:
                 stats["dead_letter"] += 1
             else:
                 stats["retry"] += 1
-        
+
         return stats
-    
+
     async def _deliver_notification(
         self,
         notification: NotificationOutbox,
@@ -306,14 +313,14 @@ class NotificationService:
         notification.status = NotificationStatus.PROCESSING
         notification.attempt_count += 1
         await self.db.commit()
-        
+
         try:
             # Get provider
             provider = get_provider(notification.channel)
-            
+
             # Send notification
             result = await provider.send(notification)
-            
+
             if result.success:
                 notification.status = NotificationStatus.SENT
                 notification.sent_at = datetime.now(timezone.utc)
@@ -332,17 +339,20 @@ class NotificationService:
                     )
                     # Add jitter
                     import random
+
                     jitter = delay * RETRY_JITTER_FACTOR * random.uniform(-1, 1)
                     delay = max(1, delay + jitter)
-                    notification.next_attempt_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
-                
+                    notification.next_attempt_at = datetime.now(timezone.utc) + timedelta(
+                        seconds=delay
+                    )
+
                 notification.last_error = result.error_message
                 notification.error_category = result.error_category
-            
+
             notification.updated_at = datetime.now(timezone.utc)
             await self.db.commit()
             await self.db.refresh(notification)
-            
+
             logger.info(
                 "notification_delivery_attempt",
                 notification_id=str(notification.id),
@@ -352,9 +362,9 @@ class NotificationService:
                 status=notification.status.value,
                 error=result.error_message,
             )
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(
                 "notification_delivery_exception",
@@ -366,25 +376,24 @@ class NotificationService:
             notification.error_category = NotificationErrorCategory.UNKNOWN
             notification.updated_at = datetime.now(timezone.utc)
             await self.db.commit()
-            
+
             return NotificationResult(
                 success=False,
                 error_category=NotificationErrorCategory.UNKNOWN,
                 error_message=str(e),
             )
-    
+
     async def get_stats(self, device_id: Optional[UUID] = None) -> DeliveryStats:
         """Get delivery statistics."""
         stats = DeliveryStats()
-        
-        base_query = select(
-            NotificationOutbox.status,
-            func.count(NotificationOutbox.id)
-        ).group_by(NotificationOutbox.status)
-        
+
+        base_query = select(NotificationOutbox.status, func.count(NotificationOutbox.id)).group_by(
+            NotificationOutbox.status
+        )
+
         if device_id:
             base_query = base_query.where(NotificationOutbox.device_id == device_id)
-        
+
         result = await self.db.execute(base_query)
         for status, count in result:
             if status == NotificationStatus.PENDING:
@@ -399,9 +408,9 @@ class NotificationService:
                 stats.total_dead_letter = count
             elif status in (NotificationStatus.CANCELLED, NotificationStatus.FAILED):
                 stats.total_failed += count
-        
+
         return stats
-    
+
     async def retry_dead_letter(
         self,
         notification_id: UUID,
@@ -410,17 +419,17 @@ class NotificationService:
         notification = await self.db.get(NotificationOutbox, notification_id)
         if not notification or notification.status != NotificationStatus.DEAD_LETTER:
             return False
-        
+
         notification.status = NotificationStatus.PENDING
         notification.attempt_count = 0
         notification.next_attempt_at = datetime.now(timezone.utc)
         notification.last_error = None
         notification.error_category = None
         notification.updated_at = datetime.now(timezone.utc)
-        
+
         await self.db.commit()
         return True
-    
+
     async def cancel_notification(
         self,
         notification_id: UUID,
@@ -432,7 +441,7 @@ class NotificationService:
             NotificationStatus.DEAD_LETTER,
         ):
             return False
-        
+
         notification.status = NotificationStatus.CANCELLED
         notification.updated_at = datetime.now(timezone.utc)
         await self.db.commit()
