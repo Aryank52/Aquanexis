@@ -247,9 +247,8 @@ class DemoModeEngine:
                 "timestamp": now.isoformat(),
             }
 
-        # Clear prior scenario history and resolved/scenario alerts on clean scenario reset
-        if profile == SimulationProfile.NORMAL:
-            self.alerts.clear()
+        # Clear prior scenario history and alerts on scenario switch to isolate demonstration states
+        self.alerts.clear()
         self.adapter_history.clear()
 
         # Seed a short burst of profile readings so trend/exposure/persistence rules respond immediately

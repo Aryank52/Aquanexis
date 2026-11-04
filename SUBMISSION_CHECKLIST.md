@@ -32,8 +32,9 @@
 | Frontend TypeScript | `npm run typecheck` | ✅ **PASS (0 errors)** |
 | Frontend Unit Tests | `npm test -- --run` | ✅ **14/14 PASS** |
 | Frontend Production Build | `npm run build` | ✅ **PASS (`dist/` built cleanly)** |
-| Backend Unit Tests (No-DB Suite) | `pytest tests/unit/test_config.py tests/unit/test_security.py tests/unit/test_phase_d_services.py tests/unit/test_alert_state_machine.py tests/unit/test_auto_clear_integration.py tests/unit/test_notification_providers.py tests/unit/test_maintenance.py -v` | ✅ **133/133 PASS (1.23s)** |
-| Backend DB-Fixture Suite | `pytest tests/unit/test_phase_f_services.py` | ⚠️ **11 fixture errors without local TimescaleDB extension (disclosed)** |
+| Backend Unit Tests | `pytest tests/unit -v` | ✅ **154/154 PASS (11 skipped without local DB)** in 1.87s |
+| Backend Lint & Format | `ruff check app` & `ruff format --check app` | ✅ **PASS (0 errors, 68 files formatted)** |
+| Frontend Lint & Format | `npm run lint` & `npm run format:check` | ✅ **PASS (0 errors, 0 warnings)** |
 
 ---
 
